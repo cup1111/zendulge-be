@@ -1,45 +1,24 @@
 import { Request, Response } from 'express';
 import userService from '../../services/userService';
-import registerServices, { IBusinessOwnerRegistration } from '../../services/registerServices';
+import registerServices, { IBusinessOwnerRegistration, IClientRegistration } from '../../services/registerServices';
 
 export const registerBusinessOwner = async (req: Request, res: Response) => {
   const registrationData: IBusinessOwnerRegistration = req.body;
 
-  // Register business owner
   const result = await registerServices.businessOwnerRegister(registrationData);
 
   res.status(201).json(result);
+
+ 
 };
 
 export const registerClient = async (req: Request, res: Response) => {
-  const { email, password, name, jobTitle } = req.body;
+  const registrationData: IClientRegistration = req.body;
 
-  const userData = {
-    email,
-    password,
-    name,
-    jobTitle,
-    active: false,
-  };
+  const result = await registerServices.clientRegister(registrationData);
 
-  const user = await userService.store(userData);
+  res.status(201).json(result);
 
-  // Generate activation code
-  const activationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  await userService.updateActivationCode(user._id.toString(), activationCode);
-
-  // TODO: Send activation email
-  // await emailService.sendVerificationEmail(user.email, activationCode);
-
-  res.status(201).json({
-    success: true,
-    message: 'Client registered successfully. Please check your email to verify your account.',
-    user: {
-      id: user._id,
-      email: user.email,
-      name: user.name,
-    },
-  });
 };
 
 export const activateAccount = async (req: Request, res: Response) => {

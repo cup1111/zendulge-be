@@ -22,28 +22,19 @@ export const registerClient = async (req: Request, res: Response) => {
 };
 
 export const activateAccount = async (req: Request, res: Response) => {
-  try {
-    const { activationCode } = req.params;
+  const { activationCode } = req.params;
 
-    const user = await userService.activateUser(activationCode);
+  const user = await userService.activateUser(activationCode);
 
-    res.status(200).json({
-      success: true,
-      message: 'Account activated successfully',
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        active: user.active,
-      },
-    });
-
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Activation failed';
-    res.status(400).json({
-      success: false,
-      message: errorMessage,
-    });
-  }
+  res.status(200).json({
+    success: true,
+    message: 'Account activated successfully',
+    user: {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+      active: user.active,
+    },
+  });
 };
 

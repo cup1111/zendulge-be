@@ -1,12 +1,9 @@
-import mongoose, { Schema, Types, Document, mongo } from 'mongoose';
+import mongoose, { Schema, Types, Document } from 'mongoose';
 
 export interface ICompany {
   name: string;
   description?: string;
   website?: string;
-  industry?: string;
-  size?: string;
-  location?: string;
   logo?: string;
   owner: Types.ObjectId; // Reference to User who created the company
   members?: Types.ObjectId[]; // Other users who can access this company
@@ -39,14 +36,6 @@ const companySchema = new Schema<ICompanyDocument>(
         },
         message: 'Website must be a valid URL',
       },
-    },
-    size: {
-      type: String,
-      enum: ['1-10', '11-50', '51-200', '201-500', '500+'],
-    },
-    location: {
-      type: String,
-      trim: true,
     },
     logo: {
       type: String,

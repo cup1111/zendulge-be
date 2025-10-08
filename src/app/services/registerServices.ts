@@ -13,9 +13,6 @@ export interface IBusinessOwnerRegistration {
   companyName: string;
   companyDescription?: string;
   companyWebsite?: string;
-  companyIndustry?: string;
-  companySize?: '1-10' | '11-50' | '51-200' | '201-500' | '500+';
-  companyLocation?: string;
 }
 
 export const businessOwnerRegister = async (registrationData: IBusinessOwnerRegistration) => {
@@ -27,9 +24,6 @@ export const businessOwnerRegister = async (registrationData: IBusinessOwnerRegi
     companyName,
     companyDescription,
     companyWebsite,
-    companyIndustry,
-    companySize,
-    companyLocation,
   } = registrationData;
 
   try {
@@ -50,9 +44,6 @@ export const businessOwnerRegister = async (registrationData: IBusinessOwnerRegi
       name: companyName,
       description: companyDescription,
       website: companyWebsite,
-      industry: companyIndustry,
-      size: companySize,
-      location: companyLocation,
       owner: user._id,
       isActive: true,
     };
@@ -92,4 +83,4 @@ export const businessOwnerRegister = async (registrationData: IBusinessOwnerRegi
 };
 
 
-export default {  register: businessOwnerRegister  };
+export default {   businessOwnerRegister  };

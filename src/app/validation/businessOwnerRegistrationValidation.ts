@@ -38,23 +38,6 @@ export const businessOwnerRegistrationValidation = [
     .optional()
     .isURL()
     .withMessage('Please provide a valid website URL'),
-    
-  body('companyIndustry')
-    .optional()
-    .trim()
-    .isLength({ max: 100 })
-    .withMessage('Industry must be less than 100 characters'),
-    
-  body('companySize')
-    .optional()
-    .isIn(['1-10', '11-50', '51-200', '201-500', '500+'])
-    .withMessage('Invalid company size'),
-    
-  body('companyLocation')
-    .optional()
-    .trim()
-    .isLength({ max: 200 })
-    .withMessage('Location must be less than 200 characters'),
 ];
 
 export const activationValidation = [

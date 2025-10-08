@@ -1,7 +1,15 @@
 import request from 'supertest';
 import app from '../setup/app';
 
+// Import the mocked module to access mock functions
+const mockEmailService = require('../../src/app/services/emailService');
+
 describe('Register Company', () => {
+  beforeEach(() => {
+    // Clear all mocks before each test
+    jest.clearAllMocks();
+  });
+
   it('should register a company if valid data provided', async () => {
     const testData = {
       email: 'companytest@example.com',
@@ -23,5 +31,12 @@ describe('Register Company', () => {
     expect(res.body.user.name).toBe(testData.name);
     expect(res.body.company.name).toBe(testData.companyName);
     expect(res.body.message).toBe('Registration successful. Please check your email to verify your account.');
+
+    // Verify that the email service was called with correct parameters
+    expect(mockEmailService.default.sendVerificationEmail).toHaveBeenCalledTimes(1);
+    expect(mockEmailService.default.sendVerificationEmail).toHaveBeenCalledWith(
+      testData.email,
+      expect.any(String), // activation code is randomly generated
+    );
   });
 });

@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
+// Fix mongoose deprecation warnings
+mongoose.set('strictQuery', false);
+
 let mongod;
 let dbConnection;
 

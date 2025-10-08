@@ -3,7 +3,7 @@ export default {
   testEnvironment: 'node',
   coverageProvider: 'v8',
   globalTeardown: './test/testTeardownGlobals.js',
-  setupFilesAfterEnv: ['./test/setup/jest-setup.js'],
+  setupFilesAfterEnv: ['./test/setup/jest-setup.js', './test/setup/global-mocks.js'],
   transform: {
     '^.+\\.(js|ts|tsx)$': 'babel-jest',
   },

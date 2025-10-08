@@ -28,14 +28,14 @@ router.post('/login', (req: any, res: any) => {
   res.sendStatus(200);
 });
 
-router.get('/verify/:token', activateAccount);
-
-router.post('/login', (req: any, res: any) => {
-  res.sendStatus(200);
-});
-
 router.post('/logout', (req: any, res: any) => {
   res.sendStatus(200);
 });
 
+//may need to add middleware to get authenticate user
+router.get('/me', (req: any, res: any) => {
+  res.sendStatus(200);
+});
+
+router.get('/verify/:token', activateAccount);
 export default router;

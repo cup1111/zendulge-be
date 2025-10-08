@@ -33,60 +33,52 @@ export const businessOwnerRegister = async (registrationData: IBusinessOwnerRegi
     companyWebsite,
   } = registrationData;
 
-  try {
-    // Prepare user data
-    const userData = {
-      email,
-      password,
-      name,
-      jobTitle,
-      active: false, // Will be activated after email verification
-    };
+  // Prepare user data
+  const userData = {
+    email,
+    password,
+    name,
+    jobTitle,
+    active: false, // Will be activated after email verification
+  };
 
-    // Create the user
-    const user = await userService.store(userData);
+  // Create the user
+  const user = await userService.store(userData);
 
-    // Prepare company data
-    const companyData = {
-      name: companyName,
-      description: companyDescription,
-      website: companyWebsite,
-      owner: user._id,
-      isActive: true,
-    };
+  // Prepare company data
+  const companyData = {
+    name: companyName,
+    description: companyDescription,
+    website: companyWebsite,
+    owner: user._id,
+    isActive: true,
+  };
 
-    // Create the company
-    const company = await companyService.store(companyData);
+  // Create the company
+  const company = await companyService.store(companyData);
 
-    // Generate activation code/token for email verification
-    const activationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  // Generate activation code/token for email verification
+  const activationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     
-    // Update user with activation code
-    await userService.updateActivationCode(user._id.toString(), activationCode);
+  // Update user with activation code
+  await userService.updateActivationCode(user._id.toString(), activationCode);
 
-    // Send verification email
-    await emailService.sendVerificationEmail(user.email, activationCode);
+  // Send verification email
+  await emailService.sendVerificationEmail(user.email, activationCode);
 
-    return {
-      success: true,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-      },
-      company: {
-        id: company._id,
-        name: company.name,
-      },
-      message: 'Registration successful. Please check your email to verify your account.',
-    };
-
-  } catch (error) {
-    // If company creation fails, we might want to clean up the user
-    // This depends on your business logic and error handling strategy
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    throw new Error(`Registration failed: ${errorMessage}`);
-  }
+  return {
+    success: true,
+    user: {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+    },
+    company: {
+      id: company._id,
+      name: company.name,
+    },
+    message: 'Registration successful. Please check your email to verify your account.',
+  };
 };
 
 

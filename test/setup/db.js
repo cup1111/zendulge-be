@@ -1,5 +1,5 @@
-import UserBuilder from '../__tests__/builders/userBuilder';
-import CompanyBuilder from '../__tests__/builders/companyBuilder';
+import UserBuilder from '../__test__/builders/userBuilder';
+import CompanyBuilder from '../__test__/builders/companyBuilder';
 import dbHandler from './dbHandler';
 
 let dbConnection = null;

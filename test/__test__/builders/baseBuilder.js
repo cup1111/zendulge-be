@@ -1,9 +1,7 @@
-import db from '../../setup/db';
-
 export default class BaseBuilder {
-  constructor(defaultValues = true, hasTenant = true) {
+  constructor(defaultValues = true) {
     this.useDefault = defaultValues;
-    this.properties = hasTenant ? { tenant: db.defaultTenant._id } : {};
+    this.properties = {};
   }
 
   async buildDefault() {
@@ -16,7 +14,7 @@ export default class BaseBuilder {
     const filteredBuildResult = {
       ...this.properties,
       ...Object.fromEntries(
-        Object.entries(this.build()).filter(([_, value]) => value !== null && value !== undefined),
+        Object.entries(this.build()).filter(([, value]) => value !== null && value !== undefined),
       ),
     };
 

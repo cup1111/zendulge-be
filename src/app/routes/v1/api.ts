@@ -1,7 +1,7 @@
 import express from 'express';
-import { registerClient, registerBusinessOwner, activateAccount } from '../../controllers/v1/registerController';
-import { businessOwnerRegistrationValidation } from '../../validation/businessOwnerRegistrationValidation';
-import { clientRegistrationValidation } from '../../validation/clientRegistrationValidation';
+import { registerCustomer, registerBusiness, activateAccount } from '../../controllers/v1/registerController';
+import { businessRegistrationValidation } from '../../validation/businessRegistrationValidation';
+import { customerRegistrationValidation } from '../../validation/customerRegistrationValidation';
 import { handleValidationErrors } from '../../validation/validationHandler';
 
 const router = express.Router();
@@ -10,18 +10,18 @@ router.get('/', (req: any, res: any) => {
   res.sendStatus(201);
 });
 
-// Client registration
+// Customer registration
 router.post('/register', 
-  clientRegistrationValidation,
+  customerRegistrationValidation,
   handleValidationErrors,
-  registerClient,
+  registerCustomer,
 );
 
-// Business owner registration
-router.post('/business-owner-register', 
-  businessOwnerRegistrationValidation,
+// Business registration
+router.post('/business-register', 
+  businessRegistrationValidation,
   handleValidationErrors,
-  registerBusinessOwner,
+  registerBusiness,
 );
 
 router.post('/login', (req: any, res: any) => {

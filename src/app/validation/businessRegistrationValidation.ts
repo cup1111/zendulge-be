@@ -1,6 +1,6 @@
 import { body } from 'express-validator';
 
-export const clientRegistrationValidation = [
+export const businessRegistrationValidation = [
   body('email')
     .isEmail()
     .normalizeEmail()
@@ -22,15 +22,27 @@ export const clientRegistrationValidation = [
     .trim()
     .isLength({ max: 100 })
     .withMessage('Job title must be less than 100 characters'),
+    
+  body('companyName')
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Company name must be between 2 and 100 characters'),
+    
+  body('companyDescription')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Company description must be less than 500 characters'),
+    
+  body('companyWebsite')
+    .optional()
+    .isURL()
+    .withMessage('Please provide a valid website URL'),
 ];
 
-export const loginValidation = [
-  body('email')
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Please provide a valid email address'),
-    
-  body('password')
+export const activationValidation = [
+  body('activationCode')
     .notEmpty()
-    .withMessage('Password is required'),
+    .isLength({ min: 10 })
+    .withMessage('Invalid activation code'),
 ];

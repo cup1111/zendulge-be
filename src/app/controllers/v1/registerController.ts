@@ -1,24 +1,21 @@
 import { Request, Response } from 'express';
 import userService from '../../services/userService';
-import registerServices, { IBusinessOwnerRegistration, IClientRegistration } from '../../services/registerServices';
+import registerServices, { IBusinessRegistration, ICustomerRegistration } from '../../services/registerServices';
 
-export const registerBusinessOwner = async (req: Request, res: Response) => {
-  const registrationData: IBusinessOwnerRegistration = req.body;
+export const registerBusiness = async (req: Request, res: Response) => {
+  const registrationData: IBusinessRegistration = req.body;
 
-  const result = await registerServices.businessOwnerRegister(registrationData);
+  const result = await registerServices.businessRegister(registrationData);
 
   res.status(201).json(result);
-
- 
 };
 
-export const registerClient = async (req: Request, res: Response) => {
-  const registrationData: IClientRegistration = req.body;
+export const registerCustomer = async (req: Request, res: Response) => {
+  const registrationData: ICustomerRegistration = req.body;
 
-  const result = await registerServices.clientRegister(registrationData);
+  const result = await registerServices.customerRegister(registrationData);
 
   res.status(201).json(result);
-
 };
 
 export const activateAccount = async (req: Request, res: Response) => {

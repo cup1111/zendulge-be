@@ -2,7 +2,7 @@ import companyService from './companyService';
 import userService from './userService';
 import emailService from './emailService';
 
-export interface IBusinessOwnerRegistration {
+export interface IBusinessRegistration {
   // User data
   email: string;
   password: string;
@@ -15,14 +15,14 @@ export interface IBusinessOwnerRegistration {
   companyWebsite?: string;
 }
 
-export interface IClientRegistration {
+export interface ICustomerRegistration {
   email: string;
   password: string;
   name: string;
   jobTitle?: string;
 }
 
-export const businessOwnerRegister = async (registrationData: IBusinessOwnerRegistration) => {
+export const businessRegister = async (registrationData: IBusinessRegistration) => {
   const { 
     email, 
     password, 
@@ -82,7 +82,7 @@ export const businessOwnerRegister = async (registrationData: IBusinessOwnerRegi
 };
 
 
-export const clientRegister = async (registrationData: IClientRegistration) => {
+export const customerRegister = async (registrationData: ICustomerRegistration) => {
   try {
     const { email, password, name, jobTitle } = registrationData;
 
@@ -105,7 +105,7 @@ export const clientRegister = async (registrationData: IClientRegistration) => {
 
     return {
       success: true,
-      message: 'Client registered successfully. Please check your email to verify your account.',
+      message: 'Customer registered successfully. Please check your email to verify your account.',
       user: {
         id: user._id,
         email: user.email,
@@ -115,11 +115,11 @@ export const clientRegister = async (registrationData: IClientRegistration) => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    throw new Error(`Client registration failed: ${errorMessage}`);
+    throw new Error(`Customer registration failed: ${errorMessage}`);
   }
 };
 
 export default { 
-  businessOwnerRegister, 
-  clientRegister,
+  businessRegister, 
+  customerRegister,
 };

@@ -1,9 +1,9 @@
 import BaseBuilder from './baseBuilder';
-import User from '../../../src/app/model/user';
+import User, { IUserDocument } from '../../../src/app/model/user';
 
-export default class UserBuilder extends BaseBuilder {
-  constructor(defaultValues = true) {
-    super(defaultValues, false); // Users typically don't have tenant
+export default class UserBuilder extends BaseBuilder<IUserDocument> {
+  constructor(defaultValues: boolean = true) {
+    super(defaultValues);
     this.properties = {
       email: 'test@example.com',
       password: 'TestPassword123',
@@ -12,45 +12,45 @@ export default class UserBuilder extends BaseBuilder {
     };
   }
 
-  withEmail(email) {
+  withEmail(email: string): UserBuilder {
     this.properties.email = email;
     return this;
   }
 
-  withPassword(password) {
+  withPassword(password: string): UserBuilder {
     this.properties.password = password;
     return this;
   }
 
-  withName(name) {
+  withName(name: string): UserBuilder {
     this.properties.name = name;
     return this;
   }
 
-  withJobTitle(jobTitle) {
+  withJobTitle(jobTitle: string): UserBuilder {
     this.properties.jobTitle = jobTitle;
     return this;
   }
 
-  withActive(active) {
+  withActive(active: boolean): UserBuilder {
     this.properties.active = active;
     return this;
   }
 
-  withInactive() {
+  withInactive(): UserBuilder {
     this.properties.active = false;
     return this;
   }
 
-  build() {
+  build(): Record<string, any> {
     return this.properties;
   }
 
-  async buildDefault() {
+  async buildDefault(): Promise<Record<string, any>> {
     return {};
   }
 
-  async save() {
+  async save(): Promise<IUserDocument> {
     return super.save(User);
   }
 }

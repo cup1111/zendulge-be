@@ -2,8 +2,8 @@ export default {
   preset: 'ts-jest',
   testEnvironment: 'node',
   coverageProvider: 'v8',
-  globalTeardown: './test/testTeardownGlobals.js',
-  setupFilesAfterEnv: ['./test/setup/jest-setup.js', './test/setup/global-mocks.js'],
+  globalTeardown: './test/testTeardownGlobals.ts',
+  setupFilesAfterEnv: ['./test/setup/jest-setup.ts', './test/setup/global-mocks.ts'],
   transform: {
     '^.+\\.(js|ts|tsx)$': 'babel-jest',
   },
@@ -11,9 +11,11 @@ export default {
     'node_modules/(?!(.*\\.mjs$))',
   ],
   extensionsToTreatAsEsm: ['.ts'],
+  testPathIgnorePatterns: ['<rootDir>/dist/', '<rootDir>/node_modules/'],
   globals: {
     'ts-jest': {
       useESM: true,
+      tsconfig: 'tsconfig.test.json',
     },
   },
   testMatch: [

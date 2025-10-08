@@ -1,9 +1,9 @@
 import BaseBuilder from './baseBuilder';
-import Company from '../../../src/app/model/company';
+import Company, { ICompanyDocument } from '../../../src/app/model/company';
 
-export default class CompanyBuilder extends BaseBuilder {
-  constructor(defaultValues = true) {
-    super(defaultValues, false); // Companies typically don't have tenant
+export default class CompanyBuilder extends BaseBuilder<ICompanyDocument> {
+  constructor(defaultValues: boolean = true) {
+    super(defaultValues);
     this.properties = {
       name: 'Test Company',
       description: 'A test company for testing purposes',
@@ -12,45 +12,45 @@ export default class CompanyBuilder extends BaseBuilder {
     };
   }
 
-  withName(name) {
+  withName(name: string): CompanyBuilder {
     this.properties.name = name;
     return this;
   }
 
-  withDescription(description) {
+  withDescription(description: string): CompanyBuilder {
     this.properties.description = description;
     return this;
   }
 
-  withWebsite(website) {
+  withWebsite(website: string): CompanyBuilder {
     this.properties.website = website;
     return this;
   }
 
-  withOwner(ownerId) {
+  withOwner(ownerId: any): CompanyBuilder {
     this.properties.owner = ownerId;
     return this;
   }
 
-  withInactive() {
+  withInactive(): CompanyBuilder {
     this.properties.isActive = false;
     return this;
   }
 
-  withActive() {
+  withActive(): CompanyBuilder {
     this.properties.isActive = true;
     return this;
   }
 
-  build() {
+  build(): any {
     return this.properties;
   }
 
-  async buildDefault() {
+  async buildDefault(): Promise<any> {
     return {};
   }
 
-  async save() {
+  async save(): Promise<ICompanyDocument> {
     return super.save(Company);
   }
 }

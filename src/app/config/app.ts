@@ -2,7 +2,6 @@
 const dotenv = require('dotenv');
 process.env.NODE_ENV = process.env.NODE_ENV ?? 'development';
 dotenv.config();
-console.log(process.env.DB_CONNECTION);
 export const config = {
   environment: process.env.ENVIRONMENT ?? 'production',
   name: process.env.NAME ?? 'techscrumapp',

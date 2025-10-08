@@ -1,4 +1,5 @@
 import express from 'express';
+import { register, activateAccount } from '../../controllers/v1/registerController';
 
 const router = express.Router();
 
@@ -6,13 +7,11 @@ router.get('/', (req: any, res: any) => {
   res.sendStatus(201);
 });
 
-router.post('/register', (req: any, res: any) => {
-  res.sendStatus(201);
-});
+// Business owner registration
+router.post('/business-owner-register', register);
 
-router.post('/business-owner-register', (req: any, res: any) => {
-  res.sendStatus(201);
-});
+// Account activation
+router.get('/activate/:activationCode', activateAccount);
 
 router.post('/login', (req: any, res: any) => {
   res.sendStatus(200);

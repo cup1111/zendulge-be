@@ -24,8 +24,13 @@ const activateUser = async (activationCode: string) => {
   return user.save();
 };
 
+const findByEmail = async (email: string) => {
+  return User.findOne({ email: email.toLowerCase() });
+};
+
 export default { 
   store, 
   updateActivationCode,
   activateUser,
+  findByEmail,
 };

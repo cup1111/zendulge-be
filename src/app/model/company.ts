@@ -20,6 +20,13 @@ export interface ICompany {
 
 export type ICompanyDocument = ICompany & Document;
 
+export interface ICompanyModel extends mongoose.Model<ICompanyDocument> {
+  findByOwner(ownerId: Types.ObjectId): mongoose.Query<ICompanyDocument[], ICompanyDocument>;
+  findByUser(userId: Types.ObjectId): mongoose.Query<ICompanyDocument[], ICompanyDocument>;
+  search(searchTerm: string, userId?: Types.ObjectId): mongoose.Query<ICompanyDocument[], ICompanyDocument>;
+  isNameTaken(name: string, excludeId?: Types.ObjectId): Promise<ICompanyDocument | null>;
+}
+
 const companySchema = new Schema<ICompanyDocument>(
   {
     name: {
@@ -292,4 +299,5 @@ companySchema.methods.getMembersByRole = function (roleId: Types.ObjectId) {
   );
 };
 
-export default mongoose.model<ICompanyDocument>('companies', companySchema);
+const Company = mongoose.model<ICompanyDocument, ICompanyModel>('companies', companySchema);
+export default Company;

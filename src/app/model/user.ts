@@ -1,7 +1,7 @@
 import mongoose, { CallbackWithoutResultAndOptionalError, Schema, Types } from 'mongoose';
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import config from '../config/app';
-import bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt';
 import { winstonLogger } from '../../loaders/logger';
 
 export interface IProjectRole {
@@ -44,7 +44,13 @@ export interface IUser {
 
 
 
-export type IUserDocument = IUser & Document;
+export type IUserDocument = IUser & mongoose.Document;
+
+export interface IUserModel extends mongoose.Model<IUserDocument> {
+  findByCredentials(email: string, password: string): Promise<IUserDocument | null | undefined>;
+  saveInfo(email: string, name: string, password: string): Promise<IUserDocument>;
+  findByEmail(email: string): Promise<IUserDocument | null>;
+}
 
 const userSchema = new Schema<IUserDocument>(
   {
@@ -111,6 +117,10 @@ userSchema.statics.saveInfo = async function (email: string, name: string, passw
   return user;
 };
 
+userSchema.statics.findByEmail = async function (email: string) {
+  return this.findOne({ email: email.toLowerCase() }).exec();
+};
+
 userSchema.pre('save', async function (this: any, next: CallbackWithoutResultAndOptionalError) {
   const user = this;
   if (user.isModified('password')) {
@@ -152,5 +162,5 @@ userSchema.methods.activeAccount = function () {
   user.save();
 };
 
-const User = mongoose.model<IUserDocument>('users', userSchema);
+const User = mongoose.model<IUserDocument, IUserModel>('users', userSchema);
 export default User;

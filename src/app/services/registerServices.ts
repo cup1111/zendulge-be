@@ -1,6 +1,14 @@
-import companyService from './companyService';
+import User from '../model/user';
+import Company from '../model/company';
 import userService from './userService';
 import emailService from './emailService';
+
+// Helper function to generate activation code and send email
+const generateAndSendActivationEmail = async (user: any) => {
+  const activationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  await userService.updateActivationCode(user._id.toString(), activationCode);
+  await emailService.sendVerificationEmail(user.email, activationCode);
+};
 
 export interface IBusinessRegistration {
   // User data
@@ -42,8 +50,36 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
     active: false, // Will be activated after email verification
   };
 
+  const existingUser = await User.findByEmail(email);
+
+  if (existingUser) {
+    // If user exists and is active, return error
+    if (existingUser.active) {
+      throw new Error('Email already registered and activated');
+    }
+      
+    // If user exists but not active, resend activation email
+    await generateAndSendActivationEmail(existingUser);
+      
+    return {
+      success: true,
+      message: 'Account exists but not activated. A new verification email has been sent.',
+      user: {
+        id: existingUser._id,
+        email: existingUser.email,
+        name: existingUser.name,
+      },
+    };
+  }
+
   // Create the user
   const user = await userService.store(userData);
+
+  // Check if company name already exists
+  const existingCompany = await Company.isNameTaken(companyName);
+  if (existingCompany) {
+    throw new Error('Company already registered');
+  }
 
   // Prepare company data
   const companyData = {
@@ -55,16 +91,11 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
   };
 
   // Create the company
-  const company = await companyService.store(companyData);
+  const company = new Company(companyData);
+  await company.save();
 
-  // Generate activation code/token for email verification
-  const activationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    
-  // Update user with activation code
-  await userService.updateActivationCode(user._id.toString(), activationCode);
-
-  // Send verification email
-  await emailService.sendVerificationEmail(user.email, activationCode);
+  // Generate activation code and send email
+  await generateAndSendActivationEmail(user);
 
   return {
     success: true,
@@ -83,40 +114,55 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
 
 
 export const customerRegister = async (registrationData: ICustomerRegistration) => {
-  try {
-    const { email, password, name, jobTitle } = registrationData;
+  
+  const { email, password, name, jobTitle } = registrationData;
 
-    const userData = {
-      email,
-      password,
-      name,
-      jobTitle,
-      active: false,
-    };
-
-    const user = await userService.store(userData);
-
-    // Generate activation code
-    const activationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-    await userService.updateActivationCode(user._id.toString(), activationCode);
-
-    // Send verification email
-    await emailService.sendVerificationEmail(user.email, activationCode);
-
+  // Check if user already exists
+  const existingUser = await User.findByEmail(email);
+    
+  if (existingUser) {
+    // If user exists and is active, return error
+    if (existingUser.active) {
+      throw new Error('Email already registered and activated');
+    }
+      
+    // If user exists but not active, resend activation email
+    await generateAndSendActivationEmail(existingUser);
+      
     return {
       success: true,
-      message: 'Customer registered successfully. Please check your email to verify your account.',
+      message: 'Account exists but not activated. A new verification email has been sent.',
       user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
+        id: existingUser._id,
+        email: existingUser.email,
+        name: existingUser.name,
       },
     };
-
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    throw new Error(`Customer registration failed: ${errorMessage}`);
   }
+
+  // Create new user if doesn't exist
+  const userData = {
+    email,
+    password,
+    name,
+    jobTitle,
+    active: false,
+  };
+
+  const user = await userService.store(userData);
+
+  // Generate activation code and send email
+  await generateAndSendActivationEmail(user);
+
+  return {
+    success: true,
+    message: 'Customer registered successfully. Please check your email to verify your account.',
+    user: {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+    },
+  };
 };
 
 export default { 

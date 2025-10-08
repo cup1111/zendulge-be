@@ -73,14 +73,15 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
     };
   }
 
-  // Create the user
-  const user = await userService.store(userData);
 
   // Check if company name already exists
   const existingCompany = await Company.isNameTaken(companyName);
   if (existingCompany) {
     throw new CompanyAlreadyExistsException();
   }
+
+  // Create the user
+  const user = await userService.store(userData);
 
   // Prepare company data
   const companyData = {

@@ -2,6 +2,7 @@ import User from '../model/user';
 import Company from '../model/company';
 import userService from './userService';
 import emailService from './emailService';
+import { EmailAlreadyExistsException, CompanyAlreadyExistsException } from '../exceptions';
 
 // Helper function to generate activation code and send email
 const generateAndSendActivationEmail = async (user: any) => {
@@ -55,7 +56,7 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
   if (existingUser) {
     // If user exists and is active, return error
     if (existingUser.active) {
-      throw new Error('Email already registered and activated');
+      throw new EmailAlreadyExistsException();
     }
       
     // If user exists but not active, resend activation email
@@ -78,7 +79,7 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
   // Check if company name already exists
   const existingCompany = await Company.isNameTaken(companyName);
   if (existingCompany) {
-    throw new Error('Company already registered');
+    throw new CompanyAlreadyExistsException();
   }
 
   // Prepare company data
@@ -123,7 +124,7 @@ export const customerRegister = async (registrationData: ICustomerRegistration) 
   if (existingUser) {
     // If user exists and is active, return error
     if (existingUser.active) {
-      throw new Error('Email already registered and activated');
+      throw new EmailAlreadyExistsException();
     }
       
     // If user exists but not active, resend activation email

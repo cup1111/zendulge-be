@@ -1,4 +1,5 @@
 import User from '../model/user';
+import { InvalidActivationTokenException, AccountAlreadyActivatedException } from '../exceptions';
 
 const store = async (userData: any) => { 
   const user = new User(userData);
@@ -16,7 +17,11 @@ const updateActivationCode = async (userId: string, activationCode: string) => {
 const activateUser = async (activationCode: string) => {
   const user = await User.findOne({ activeCode: activationCode });
   if (!user) {
-    throw new Error('Invalid activation code');
+    throw new InvalidActivationTokenException();
+  }
+  
+  if (user.active) {
+    throw new AccountAlreadyActivatedException();
   }
   
   user.active = true;

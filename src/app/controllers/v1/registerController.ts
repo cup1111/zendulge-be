@@ -19,7 +19,8 @@ export const registerCustomer = async (req: Request, res: Response) => {
 };
 
 export const activateAccount = async (req: Request, res: Response) => {
-  const { activationCode } = req.params;
+  const { token } = req.params;
+  const activationCode = token;
 
   const user = await userService.activateUser(activationCode);
 

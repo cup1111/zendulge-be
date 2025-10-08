@@ -1,46 +1,50 @@
 import { Request, Response } from 'express';
-import registerServices, { IBusinessOwnerRegistration } from '../../services/registerServices';
 import userService from '../../services/userService';
+import registerServices, { IBusinessOwnerRegistration } from '../../services/registerServices';
 
-export const register = async (req: Request, res: Response) => {
-  try {
-    const registrationData: IBusinessOwnerRegistration = req.body;
+export const registerBusinessOwner = async (req: Request, res: Response) => {
+  const registrationData: IBusinessOwnerRegistration = req.body;
 
-    // Validate required fields
-    const requiredFields = ['email', 'password', 'name', 'companyName'];
-    const missingFields = requiredFields.filter(field => !registrationData[field as keyof IBusinessOwnerRegistration]);
-    
-    if (missingFields.length > 0) {
-      return res.status(400).json({
-        success: false,
-        message: `Missing required fields: ${missingFields.join(', ')}`,
-      });
-    }
+  // Register business owner
+  const result = await registerServices.businessOwnerRegister(registrationData);
 
-    // Register business owner
-    const result = await registerServices.register(registrationData);
+  res.status(201).json(result);
+};
 
-    res.status(201).json(result);
+export const registerClient = async (req: Request, res: Response) => {
+  const { email, password, name, jobTitle } = req.body;
 
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Registration failed';
-    res.status(400).json({
-      success: false,
-      message: errorMessage,
-    });
-  }
+  const userData = {
+    email,
+    password,
+    name,
+    jobTitle,
+    active: false,
+  };
+
+  const user = await userService.store(userData);
+
+  // Generate activation code
+  const activationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  await userService.updateActivationCode(user._id.toString(), activationCode);
+
+  // TODO: Send activation email
+  // await emailService.sendVerificationEmail(user.email, activationCode);
+
+  res.status(201).json({
+    success: true,
+    message: 'Client registered successfully. Please check your email to verify your account.',
+    user: {
+      id: user._id,
+      email: user.email,
+      name: user.name,
+    },
+  });
 };
 
 export const activateAccount = async (req: Request, res: Response) => {
   try {
     const { activationCode } = req.params;
-
-    if (!activationCode) {
-      return res.status(400).json({
-        success: false,
-        message: 'Activation code is required',
-      });
-    }
 
     const user = await userService.activateUser(activationCode);
 
@@ -63,3 +67,4 @@ export const activateAccount = async (req: Request, res: Response) => {
     });
   }
 };
+

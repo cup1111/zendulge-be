@@ -81,3 +81,45 @@ jest.mock('compression', () => {
 jest.mock('express-rate-limit', () => {
   return jest.fn(() => (req: any, res: any, next: any) => next());
 });
+
+// Mock jsonwebtoken
+jest.mock('jsonwebtoken', () => ({
+  sign: jest.fn().mockReturnValue('mock-jwt-token'),
+  verify: jest.fn().mockReturnValue({ id: 'user123' }),
+}));
+
+// Mock authentication middleware
+jest.mock('../../src/app/middleware/authMiddleware', () => ({
+  authenticationTokenMiddleware: jest.fn((req: any, res: any, next: any) => {
+    const authHeader = req.header('Authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      const { AuthenticationException } = require('../../src/app/exceptions');
+      return next(new AuthenticationException('Access token is required'));
+    }
+
+    const token = authHeader.substring(7);
+    
+    if (token === 'invalid-token' || token === 'expired-token') {
+      const { AuthenticationException } = require('../../src/app/exceptions');
+      return next(new AuthenticationException('Invalid access token'));
+    }
+
+    // Mock valid token
+    req.user = {
+      _id: 'user123',
+      email: 'test@example.com',
+      active: true,
+      refreshToken: 'current-refresh-token',
+      save: jest.fn().mockResolvedValue(true),
+      toJSON: () => ({
+        id: 'user123',
+        email: 'test@example.com',
+        name: 'Test User',
+      }),
+    };
+    next();
+  }),
+  optionalAuthenticate: jest.fn((req: any, res: any, next: any) => next()),
+  authorize: jest.fn(() => (req: any, res: any, next: any) => next()),
+}));

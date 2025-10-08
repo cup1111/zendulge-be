@@ -44,7 +44,11 @@ export interface IUser {
 
 
 
-export type IUserDocument = IUser & mongoose.Document;
+export interface IUserDocument extends IUser, mongoose.Document {
+  generateAuthToken(): Promise<{ token: string; refreshToken: string }>;
+  activeAccount(): void;
+  toJSON(): object;
+}
 
 export interface IUserModel extends mongoose.Model<IUserDocument> {
   findByCredentials(email: string, password: string): Promise<IUserDocument | null | undefined>;

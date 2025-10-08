@@ -1,8 +1,11 @@
 import express from 'express';
 import { registerCustomer, registerBusiness, activateAccount } from '../../controllers/v1/registerController';
+import { login, logout, getProfile, refreshToken } from '../../controllers/v1/authController';
 import { businessRegistrationValidation } from '../../validation/businessRegistrationValidation';
 import { customerRegistrationValidation } from '../../validation/customerRegistrationValidation';
+import { loginValidation, refreshTokenValidation } from '../../validation/authValidation';
 import { handleValidationErrors } from '../../validation/validationHandler';
+import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
 
 const router = express.Router();
 
@@ -24,18 +27,28 @@ router.post('/business-register',
   registerBusiness,
 );
 
-router.post('/login', (req: any, res: any) => {
-  res.sendStatus(200);
-});
+// Authentication routes
+router.post('/login', 
+  loginValidation,
+  handleValidationErrors,
+  login,
+);
 
-router.post('/logout', (req: any, res: any) => {
-  res.sendStatus(200);
-});
+router.post('/logout', 
+  authenticationTokenMiddleware,
+  logout,
+);
 
-//may need to add middleware to get authenticate user
-router.get('/me', (req: any, res: any) => {
-  res.sendStatus(200);
-});
+router.get('/me', 
+  authenticationTokenMiddleware,
+  getProfile,
+);
+
+router.post('/refresh-token',
+  refreshTokenValidation,
+  handleValidationErrors,
+  refreshToken,
+);
 
 router.get('/verify/:token', activateAccount);
 export default router;

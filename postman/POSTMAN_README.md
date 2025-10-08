@@ -1,11 +1,11 @@
 # Zendulge API Postman Collection
 
-This folder contains Postman collection and environment files to test the Zendulge API endpoints with Laravel-style error handling.
+This folder contains Postman collection and environment files to test the Zendulge API endpoints with Laravel-style error handling and JWT authentication.
 
 ## Files
 
-- `postman_collection.json` - Complete API collection with all endpoints
-- `postman_environment.json` - Environment variables for development testing
+- `postman_collection.json` - Complete API collection with all endpoints and comprehensive test scripts
+- `postman_environment.json` - Environment variables for development testing with JWT token management
 
 ## How to Import
 
@@ -26,14 +26,18 @@ This folder contains Postman collection and environment files to test the Zendul
 ### 🏥 Health Check
 - **GET** `/api/v1` - Health check endpoint
 
-### 🔐 Authentication
+### � User Registration
 - **POST** `/api/v1/register` - Customer registration
 - **POST** `/api/v1/business-register` - Business registration
-- **POST** `/api/v1/login` - User login (placeholder)
-- **POST** `/api/v1/logout` - User logout (placeholder)
 
 ### ✅ Account Activation
 - **GET** `/api/v1/verify/{token}` - Activate account with token
+
+### 🔐 JWT Authentication
+- **POST** `/api/v1/login` - User login with JWT token generation
+- **POST** `/api/v1/logout` - User logout (requires authentication)
+- **GET** `/api/v1/me` - Get user profile (requires authentication)
+- **POST** `/api/v1/refresh-token` - Refresh access token
 
 ## Error Testing Scenarios
 
@@ -45,9 +49,73 @@ The collection includes comprehensive error testing for Laravel-style exceptions
 - Missing required fields
 - Invalid field lengths
 
+### ❌ AuthenticationException (401)
+- Invalid credentials
+- Account not activated
+- Invalid/expired JWT tokens
+- Missing authorization headers
+
 ### ❌ ConflictException (409)
 - EmailAlreadyExistsException
-- CompanyAlreadyExistsException  
+- CompanyAlreadyExistsException
+- AccountAlreadyActivatedException
+
+### ❌ NotFoundException (404)
+- InvalidActivationTokenException
+
+## Laravel-style Response Format
+
+### Success Response
+```json
+{
+  "success": true,
+  "message": "Operation completed successfully",
+  "data": {
+    // Response data here
+  }
+}
+```
+
+### Error Response
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "statusCode": 400,
+  "errors": {
+    // Validation errors (when applicable)
+  }
+}
+```
+
+## JWT Token Management
+
+The collection automatically handles JWT token storage and management:
+
+- **Login Success**: Automatically stores `accessToken`, `refreshToken`, and `userId`
+- **Token Refresh**: Updates stored tokens with new ones
+- **Logout**: Clears all stored tokens
+- **Protected Routes**: Uses stored `accessToken` in Authorization header
+
+## Testing Workflow
+
+1. **Start with User Registration** - Create customer/business accounts
+2. **Use Account Activation** - Verify accounts with activation tokens  
+3. **Login with JWT Authentication** - Get tokens for protected routes
+4. **Test Protected Routes** - Use Profile endpoint to verify authentication
+5. **Test Token Refresh** - Renew tokens using refresh token
+6. **Test Logout** - Clear tokens and test authentication failures
+7. **Run Error Testing** - Verify all exception scenarios
+
+## Environment Variables
+
+The environment file includes:
+- `baseUrl` - API base URL (http://localhost:8000)
+- `apiPrefix` - API prefix (/api)
+- `accessToken` - JWT access token (auto-managed)
+- `refreshToken` - JWT refresh token (auto-managed)
+- `userId` - Current user ID (auto-managed)
+- `activationToken` - For testing activation flows  
 - AccountAlreadyActivatedException
 
 ### 🔒 AuthenticationException (401)

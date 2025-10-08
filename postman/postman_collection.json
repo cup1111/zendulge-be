@@ -1,0 +1,423 @@
+{
+  "info": {
+    "name": "Zendulge API",
+    "description": "Complete API collection for Zendulge backend with Laravel-style error handling",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "apiPrefix",
+      "value": "/api",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}{{apiPrefix}}/v1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "v1"]
+        },
+        "description": "Health check endpoint to verify API is running"
+      },
+      "response": []
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Customer Registration - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"SecurePass123\",\n  \"name\": \"John Doe\",\n  \"jobTitle\": \"Software Developer\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "register"]
+            },
+            "description": "Register a new customer account"
+          },
+          "response": []
+        },
+        {
+          "name": "Customer Registration - Validation Error (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalid-email\",\n  \"password\": \"weak\",\n  \"name\": \"A\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "register"]
+            },
+            "description": "Test validation errors - should return 422 status"
+          },
+          "response": []
+        },
+        {
+          "name": "Customer Registration - Email Already Exists (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"SecurePass123\",\n  \"name\": \"John Doe\",\n  \"jobTitle\": \"Software Developer\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "register"]
+            },
+            "description": "Try to register with existing email - should return 409 status"
+          },
+          "response": []
+        },
+        {
+          "name": "Business Registration - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"business@example.com\",\n  \"password\": \"SecurePass123\",\n  \"name\": \"Jane Smith\",\n  \"jobTitle\": \"CEO\",\n  \"companyName\": \"Tech Solutions Inc\",\n  \"companyDescription\": \"Leading technology solutions provider\",\n  \"companyWebsite\": \"https://techsolutions.example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/business-register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "business-register"]
+            },
+            "description": "Register a new business account"
+          },
+          "response": []
+        },
+        {
+          "name": "Business Registration - Validation Error (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalid-email\",\n  \"password\": \"weak\",\n  \"name\": \"A\",\n  \"companyName\": \"X\",\n  \"companyWebsite\": \"invalid-url\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/business-register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "business-register"]
+            },
+            "description": "Test business registration validation errors - should return 422 status"
+          },
+          "response": []
+        },
+        {
+          "name": "Business Registration - Company Already Exists (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"business2@example.com\",\n  \"password\": \"SecurePass123\",\n  \"name\": \"Jane Smith\",\n  \"jobTitle\": \"CEO\",\n  \"companyName\": \"Tech Solutions Inc\",\n  \"companyDescription\": \"Leading technology solutions provider\",\n  \"companyWebsite\": \"https://techsolutions.example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/business-register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "business-register"]
+            },
+            "description": "Try to register with existing company name - should return 409 status"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Account Activation",
+      "item": [
+        {
+          "name": "Activate Account - Success",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/verify/validactivationtoken123",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "verify", "validactivationtoken123"]
+            },
+            "description": "Activate account with valid activation token"
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Account - Invalid Token (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/verify/invalidtoken123",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "verify", "invalidtoken123"]
+            },
+            "description": "Try to activate with invalid token - should return 401 status"
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Account - Expired Token (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/verify/expiredtoken123",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "verify", "expiredtoken123"]
+            },
+            "description": "Try to activate with expired token - should return 401 status"
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Account - Already Activated (409)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/verify/alreadyactivated123",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "verify", "alreadyactivated123"]
+            },
+            "description": "Try to activate already activated account - should return 409 status"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authentication (Placeholders)",
+      "item": [
+        {
+          "name": "Login - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"SecurePass123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "login"]
+            },
+            "description": "User login (placeholder endpoint - returns 200)"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "logout"]
+            },
+            "description": "User logout (placeholder endpoint - returns 200)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Error Testing",
+      "item": [
+        {
+          "name": "Test ValidationException (422)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"\",\n  \"password\": \"\",\n  \"name\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "register"]
+            },
+            "description": "Test validation exception with empty fields"
+          },
+          "response": []
+        },
+        {
+          "name": "Test EmailAlreadyExistsException (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"duplicate@example.com\",\n  \"password\": \"SecurePass123\",\n  \"name\": \"Test User\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "register"]
+            },
+            "description": "First register, then run again to test EmailAlreadyExistsException"
+          },
+          "response": []
+        },
+        {
+          "name": "Test InvalidActivationTokenException (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/verify/totallyfaketoken",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "verify", "totallyfaketoken"]
+            },
+            "description": "Test invalid activation token exception"
+          },
+          "response": []
+        },
+        {
+          "name": "Test CompanyAlreadyExistsException (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"company@example.com\",\n  \"password\": \"SecurePass123\",\n  \"name\": \"Company User\",\n  \"companyName\": \"Duplicate Company Inc\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/v1/business-register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "business-register"]
+            },
+            "description": "First register, then run again to test CompanyAlreadyExistsException"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set dynamic variables if needed",
+          "// pm.environment.set('timestamp', Date.now());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test scripts",
+          "pm.test('Response time is acceptable', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('Response has proper JSON structure for errors', function () {",
+          "    if (pm.response.code >= 400) {",
+          "        const jsonData = pm.response.json();",
+          "        pm.expect(jsonData).to.have.property('success', false);",
+          "        pm.expect(jsonData).to.have.property('message');",
+          "        pm.expect(jsonData).to.have.property('statusCode');",
+          "    }",
+          "});",
+          "",
+          "pm.test('Response has proper JSON structure for success', function () {",
+          "    if (pm.response.code < 400) {",
+          "        const jsonData = pm.response.json();",
+          "        pm.expect(jsonData).to.have.property('success', true);",
+          "    }",
+          "});"
+        ]
+      }
+    }
+  ]
+}

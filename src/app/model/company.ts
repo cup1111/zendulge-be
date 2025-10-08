@@ -1,12 +1,18 @@
 import mongoose, { Schema, Types, Document } from 'mongoose';
 
+export interface ICompanyMember {
+  user: Types.ObjectId;
+  role: Types.ObjectId;
+  joinedAt?: Date;
+}
+
 export interface ICompany {
   name: string;
   description?: string;
   website?: string;
   logo?: string;
   owner: Types.ObjectId; // Reference to User who created the company
-  members?: Types.ObjectId[]; // Other users who can access this company
+  members?: ICompanyMember[]; // Other users who can access this company with their roles
   isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -68,13 +74,19 @@ const companySchema = new Schema<ICompanyDocument>(
       index: true,
     },
     members: [{
-      type: Schema.Types.ObjectId,
-      ref: 'users',
-      validate: {
-        validator: function (v: Types.ObjectId[]) {
-          return !v || v.length <= 100; // Max 100 members per company
-        },
-        message: 'Company cannot have more than 100 members',
+      user: {
+        type: Schema.Types.ObjectId,
+        ref: 'users',
+        required: true,
+      },
+      role: {
+        type: Schema.Types.ObjectId,
+        ref: 'roles',
+        required: true,
+      },
+      joinedAt: {
+        type: Date,
+        default: Date.now,
       },
     }],
     isActive: {
@@ -93,14 +105,26 @@ const companySchema = new Schema<ICompanyDocument>(
 companySchema.pre('save', function (next) {
   // Ensure owner is not in members array
   if (this.members && this.owner) {
-    this.members = this.members.filter((memberId: Types.ObjectId) => 
-      !memberId.equals(this.owner),
+    this.members = this.members.filter((member: ICompanyMember) => 
+      !member.user.equals(this.owner),
     );
   }
   
-  // Remove duplicate members
+  // Remove duplicate members (same user)
   if (this.members && this.members.length > 0) {
-    this.members = [...new Set(this.members.map(id => id.toString()))].map(id => new mongoose.Types.ObjectId(id));
+    const uniqueMembers = new Map();
+    this.members.forEach((member: ICompanyMember) => {
+      const userId = member.user.toString();
+      if (!uniqueMembers.has(userId)) {
+        uniqueMembers.set(userId, member);
+      }
+    });
+    this.members = Array.from(uniqueMembers.values());
+  }
+  
+  // Validate member limit
+  if (this.members && this.members.length > 100) {
+    return next(new Error('Company cannot have more than 100 members'));
   }
   
   next();
@@ -136,7 +160,7 @@ companySchema.statics.findByUser = function (userId: Types.ObjectId) {
   return this.find({ 
     $or: [
       { owner: userId },
-      { members: userId },
+      { 'members.user': userId },
     ],
     isActive: true,
   }).sort({ createdAt: -1 });
@@ -152,7 +176,7 @@ companySchema.statics.search = function (searchTerm: string, userId?: Types.Obje
   if (userId) {
     query.$or = [
       { owner: userId },
-      { members: userId },
+      { 'members.user': userId },
     ];
   }
   
@@ -174,15 +198,15 @@ companySchema.statics.isNameTaken = function (name: string, excludeId?: Types.Ob
 };
 
 // Instance method to add member
-companySchema.methods.addMember = function (userId: Types.ObjectId) {
+companySchema.methods.addMember = function (userId: Types.ObjectId, roleId: Types.ObjectId) {
   // Don't add owner as member
   if (this.owner.equals(userId)) {
     throw new Error('Owner cannot be added as a member');
   }
   
   // Check if already a member
-  const isAlreadyMember = this.members.some((memberId: Types.ObjectId) => 
-    memberId.equals(userId),
+  const isAlreadyMember = this.members.some((member: ICompanyMember) => 
+    member.user.equals(userId),
   );
   
   if (!isAlreadyMember) {
@@ -191,7 +215,11 @@ companySchema.methods.addMember = function (userId: Types.ObjectId) {
       throw new Error('Company has reached maximum member limit (100)');
     }
     
-    this.members.push(userId);
+    this.members.push({
+      user: userId,
+      role: roleId,
+      joinedAt: new Date(),
+    });
     return this.save();
   }
   
@@ -200,8 +228,8 @@ companySchema.methods.addMember = function (userId: Types.ObjectId) {
 
 // Instance method to remove member
 companySchema.methods.removeMember = function (userId: Types.ObjectId) {
-  this.members = this.members.filter((memberId: Types.ObjectId) => 
-    !memberId.equals(userId),
+  this.members = this.members.filter((member: ICompanyMember) => 
+    !member.user.equals(userId),
   );
   return this.save();
 };
@@ -209,25 +237,59 @@ companySchema.methods.removeMember = function (userId: Types.ObjectId) {
 // Instance method to check if user has access (owner or member)
 companySchema.methods.hasAccess = function (userId: Types.ObjectId) {
   return this.owner.equals(userId) || 
-    this.members.some((memberId: Types.ObjectId) => memberId.equals(userId));
+    this.members.some((member: ICompanyMember) => member.user.equals(userId));
 };
 
 // Instance method to transfer ownership
-companySchema.methods.transferOwnership = function (newOwnerId: Types.ObjectId) {
+companySchema.methods.transferOwnership = function (newOwnerId: Types.ObjectId, oldOwnerRoleId: Types.ObjectId) {
   const oldOwnerId = this.owner;
   
   // Remove new owner from members if they are a member
-  this.members = this.members.filter((memberId: Types.ObjectId) => 
-    !memberId.equals(newOwnerId),
+  this.members = this.members.filter((member: ICompanyMember) => 
+    !member.user.equals(newOwnerId),
   );
   
-  // Add old owner as member
-  if (!this.members.some((memberId: Types.ObjectId) => memberId.equals(oldOwnerId))) {
-    this.members.push(oldOwnerId);
+  // Add old owner as member with specified role
+  if (!this.members.some((member: ICompanyMember) => member.user.equals(oldOwnerId))) {
+    this.members.push({
+      user: oldOwnerId,
+      role: oldOwnerRoleId,
+      joinedAt: new Date(),
+    });
   }
   
   this.owner = newOwnerId;
   return this.save();
+};
+
+// Instance method to update member role
+companySchema.methods.updateMemberRole = function (userId: Types.ObjectId, newRoleId: Types.ObjectId) {
+  const memberToUpdate = this.members.find((member: ICompanyMember) => 
+    member.user.equals(userId),
+  );
+  
+  if (!memberToUpdate) {
+    throw new Error('User is not a member of this company');
+  }
+  
+  memberToUpdate.role = newRoleId;
+  return this.save();
+};
+
+// Instance method to get member role
+companySchema.methods.getMemberRole = function (userId: Types.ObjectId) {
+  const foundMember = this.members.find((member: ICompanyMember) => 
+    member.user.equals(userId),
+  );
+  
+  return foundMember ? foundMember.role : null;
+};
+
+// Instance method to get members by role
+companySchema.methods.getMembersByRole = function (roleId: Types.ObjectId) {
+  return this.members.filter((member: ICompanyMember) => 
+    member.role.equals(roleId),
+  );
 };
 
 export default mongoose.model<ICompanyDocument>('companies', companySchema);

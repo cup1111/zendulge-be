@@ -31,7 +31,7 @@ const createLogger = (logSourceFilePath?: string) => {
     format: winston.format.combine(
       winston.format.timestamp(),
       winston.format.printf(
-        ({ timestamp, level, message, file, error, requestPath, method }) => {
+        ({ timestamp, level, message, file, requestPath, method }) => {
           const fileInfo = file ? `[${file}]` : '';
           const requestInfo = requestPath && method ? `[${method} ${requestPath}]` : '';
           const stack = '';

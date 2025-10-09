@@ -1,0 +1,8 @@
+{
+  "watch": ["dist"],
+  "ext": "js",
+  "ignore": ["dist/**/*.test.js", "dist/**/*.spec.js"],
+  "exec": "node --no-deprecation dist/index.js",
+  "delay": 1000,
+  "verbose": false
+}

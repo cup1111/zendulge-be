@@ -1,0 +1,167 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
+
+orbs:
+  snyk: snyk/snyk@1.2.3
+  docker: circleci/docker@1.7.0
+
+executors:
+  docker-publisher:
+    environment:
+      IMAGE_NAME: zenduldge
+    docker: # Each job requires specifying an executor
+      # (either docker, macos, or machine), see
+      - image: cimg/node:22.13.0
+        auth:
+          username: $DOCKERHUB_USERNAME
+          password: $DOCKERHUB_PASSWORD
+# Define a job to be invoked later in a workflow.
+# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
+jobs:
+  # Build and prepare application
+  build:
+    docker:
+      - image: cimg/node:22.13.0
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "package.json" }}
+            - v1-dependencies-
+      - run:
+          name: Install dependencies
+          command: npm ci
+      - save_cache:
+          paths:
+            - node_modules
+            - ~/.npm
+          key: v1-dependencies-{{ checksum "package.json" }}
+      - run:
+          name: Build application
+          command: npm run build
+      - persist_to_workspace:
+          root: ~/repo
+          paths:
+            - dist
+            - node_modules
+            - package*.json
+
+  # Security vulnerability scanning
+  security_audit:
+    docker:
+      - image: cimg/node:22.13.0
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/repo
+      - run:
+          name: Run security audit
+          command: npm audit --audit-level moderate
+      - run:
+          name: Check for known security issues
+          command: npm audit --audit-level high --dry-run
+
+  # Code quality and linting
+  code_quality:
+    docker:
+      - image: cimg/node:22.13.0
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/repo
+      - run:
+          name: Run ESLint
+          command: npm run lint
+      - run:
+          name: Check TypeScript compilation
+          command: npx tsc --noEmit
+      - run:
+          name: Check code formatting
+          command: |
+            if npm list prettier > /dev/null 2>&1; then
+              npx prettier --check "src/**/*.{ts,js,json}"
+            else
+              echo "Prettier not found, skipping format check"
+            fi
+
+  # Unit tests with coverage
+  unit_tests:
+    docker:
+      - image: cimg/node:22.13.0
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/repo
+      - run:
+          name: Run unit tests with coverage
+          command: npm run test -- --coverage --watchAll=false
+      - run:
+          name: Upload coverage to Codecov
+          command: |
+            if [ -f coverage/lcov.info ]; then
+              bash <(curl -s https://codecov.io/bash) -f coverage/lcov.info
+            fi
+      - store_test_results:
+          path: coverage
+      - store_artifacts:
+          path: coverage
+          destination: coverage-reports
+
+  # Integration tests
+  integration_tests:
+    docker:
+      - image: cimg/node:22.13.0
+      - image: cimg/mongo:7.0
+        environment:
+          MONGO_INITDB_ROOT_USERNAME: testuser
+          MONGO_INITDB_ROOT_PASSWORD: testpass
+    working_directory: ~/repo
+    environment:
+      NODE_ENV: test
+      MONGODB_URI: mongodb://testuser:testpass@localhost:27017/test
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/repo
+      - run:
+          name: Wait for MongoDB
+          command: dockerize -wait tcp://localhost:27017 -timeout 1m
+      - run:
+          name: Run integration tests
+          command: npm run test:integration || npm test
+      - store_test_results:
+          path: test-results
+      - store_artifacts:
+          path: test-results
+          destination: integration-test-results
+# Invoke jobs via workflows
+# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+workflows:
+  ci_cd_pipeline:
+    jobs:
+      # Build stage - runs first and creates artifacts for other jobs
+      - build
+
+      # Quality and security checks - run in parallel after build
+      - security_audit:
+          requires:
+            - build
+      - code_quality:
+          requires:
+            - build
+
+      # Testing stages - run after quality checks pass
+      - unit_tests:
+          requires:
+            - build
+            - code_quality
+      - integration_tests:
+          requires:
+            - build
+            - security_audit
+            - unit_tests

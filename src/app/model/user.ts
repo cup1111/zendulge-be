@@ -13,6 +13,7 @@ export interface IUser {
   email: string;
   password?: string;
   isSuperUser?: number;
+  role?: Types.ObjectId; // Reference to Role model
   refreshToken?: string;
   activeCode?: string;
   active: boolean;
@@ -89,6 +90,11 @@ const userSchema = new Schema<IUserDocument>(
     userName: {
       type: String,
       trim: true,
+    },
+    role: {
+      type: Schema.Types.ObjectId,
+      ref: 'Role',
+      index: true,
     },
   },
   { timestamps: true },

@@ -193,3 +193,49 @@ Ensure all required environment variables are set in production:
 ## 👥 Authors
 
 - **Kitman Yiu**
+
+## Goals
+
+Month 1 (Nov 2025) 1.
+
+- Website Setup
+  - Backend Folder setup
+    - Eslint (Done)
+    - Test (Done)
+    - security (Done)
+    - folder structure (Done)
+  - Frontend
+    - eslint
+    - test
+    - security
+    - folder structure
+- deploy to Railway (WIP)
+- CI/CD (WIP)
+  - CircleCI
+- Authentication(BE Done)
+- Middleware(Done)
+- Roles
+  - Super Admin
+  - Business owner
+  - Customer
+- Redirects
+  - Login button redirect to login page
+  - register button redirect to register page
+- Online DB Setup
+- Pages
+  - Not found page
+  - Home page
+  - Login Page
+    - Business Login (BE Done)
+    - Customer Login (BE Done)
+    - Error handling
+  - Register
+    - Business Login (BE Done)
+    - Customer Login (BE Done)
+    - Error handling
+
+Month 2 (Dec 2025) 3. Browsing & Deal Cards + 4. Business Dashboard Homepage categories, deal cards, filters. Deal lifecycle dashboard. AUD $1,100 + Bonus Voucher $250
+
+Month 3 (Jan 2026) 5. Basic Booking Flow + 6. Notifications & Admin Panel Booking flow with simulated payments. Notifications & admin control. AUD $1,200
+
+Month 4 (Feb 2026, by 5 Feb) 7. Stripe Test Payment, 8. MVP Finalisation, 9. Final Handover Stripe payments (test + live), order lifecycle, refunds/cancellations, advanced search, error logging, handover package. AUD $1,400 + Bonus Voucher $250

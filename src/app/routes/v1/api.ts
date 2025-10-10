@@ -1,11 +1,27 @@
 import express from 'express';
 import { registerCustomer, registerBusiness, activateAccount } from '../../controllers/v1/registerController';
 import { login, logout, getProfile, refreshToken } from '../../controllers/v1/authController';
+import { 
+  createStore, 
+  getStores, 
+  getStoreById, 
+  updateStore, 
+  deleteStore, 
+  toggleStoreStatus, 
+  findNearbyStores, 
+  getStoreStatus,
+} from '../../controllers/v1/storeController';
 import { businessRegistrationValidation } from '../../validation/businessRegistrationValidation';
 import { customerRegistrationValidation } from '../../validation/customerRegistrationValidation';
 import { loginValidation, refreshTokenValidation } from '../../validation/authValidation';
 import { handleValidationErrors } from '../../validation/validationHandler';
 import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
+import { 
+  storeOwnershipOrAdminMiddleware, 
+  storeCreationMiddleware, 
+  isSuperAdmin, 
+  hasBusinessAccess,
+} from '../../middleware/storePermissionMiddleware';
 
 const router = express.Router();
 
@@ -51,4 +67,65 @@ router.post('/refresh-token',
 );
 
 router.get('/verify/:token', activateAccount);
+
+// Store routes (protected)
+router.post('/stores', 
+  authenticationTokenMiddleware,
+  storeCreationMiddleware,
+  createStore,
+);
+
+router.get('/stores', 
+  authenticationTokenMiddleware,
+  getStores,
+);
+
+router.get('/stores/nearby', 
+  findNearbyStores, // Public route for finding nearby stores
+);
+
+router.get('/stores/:id', 
+  authenticationTokenMiddleware,
+  getStoreById,
+);
+
+router.put('/stores/:id', 
+  authenticationTokenMiddleware,
+  storeOwnershipOrAdminMiddleware,
+  updateStore,
+);
+
+router.delete('/stores/:id', 
+  authenticationTokenMiddleware,
+  storeOwnershipOrAdminMiddleware,
+  deleteStore,
+);
+
+router.patch('/stores/:id/toggle-status', 
+  authenticationTokenMiddleware,
+  storeOwnershipOrAdminMiddleware,
+  toggleStoreStatus,
+);
+
+router.get('/stores/:id/status', 
+  authenticationTokenMiddleware,
+  getStoreStatus,
+);
+
+// Example routes using the new separated middleware
+
+// Admin-only route example - only super admins can access
+router.get('/admin/stores', 
+  authenticationTokenMiddleware,
+  isSuperAdmin,
+  getStores, // This would show all stores for admin
+);
+
+// Business access only route example - store owners can access their own store data
+router.get('/business/stores/:id/analytics', 
+  authenticationTokenMiddleware,
+  hasBusinessAccess,
+  getStoreById, // This would show analytics for store owners
+);
+
 export default router;

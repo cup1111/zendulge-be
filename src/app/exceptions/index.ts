@@ -28,6 +28,9 @@ export {
   AccountAlreadyActivatedException,
 } from './conflictException';
 
+// Bad request exceptions (400)
+export { BadRequestException } from './badRequestException';
+
 // Validation exceptions (422)
 export { ValidationException } from './validationException';
 

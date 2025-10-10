@@ -224,6 +224,7 @@ Month 1 (Nov 2025) 1.
   - Admin
   - xxx
 - Redirects
+- Online DB Setup
 
 Month 2 (Dec 2025) 3. Browsing & Deal Cards + 4. Business Dashboard Homepage categories, deal cards, filters. Deal lifecycle dashboard. AUD $1,100 + Bonus Voucher $250
 

@@ -11,6 +11,7 @@ export interface ICompany {
   description?: string;
   website?: string;
   logo?: string;
+  abn?: string;
   owner: Types.ObjectId; // Reference to User who created the company
   members?: ICompanyMember[]; // Other users who can access this company with their roles
   isActive: boolean;
@@ -25,6 +26,7 @@ export interface ICompanyModel extends mongoose.Model<ICompanyDocument> {
   findByUser(userId: Types.ObjectId): mongoose.Query<ICompanyDocument[], ICompanyDocument>;
   search(searchTerm: string, userId?: Types.ObjectId): mongoose.Query<ICompanyDocument[], ICompanyDocument>;
   isNameTaken(name: string, excludeId?: Types.ObjectId): Promise<ICompanyDocument | null>;
+  isAbnTaken(abn: string, excludeId?: Types.ObjectId): Promise<ICompanyDocument | null>;
 }
 
 const companySchema = new Schema<ICompanyDocument>(
@@ -74,6 +76,38 @@ const companySchema = new Schema<ICompanyDocument>(
         message: 'Logo must be a valid image URL (jpg, jpeg, png, gif, svg)',
       },
     },
+    abn: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      validate: {
+        validator: function (v: string) {
+          if (!v) return true; // ABN is optional
+          
+          // Remove spaces and ensure it's 11 digits
+          const cleanAbn = v.replace(/\s/g, '');
+          if (!/^\d{11}$/.test(cleanAbn)) {
+            return false;
+          }
+          
+          // ABN checksum validation
+          const weights = [10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
+          let sum = 0;
+          
+          // Subtract 1 from the first digit
+          const firstDigit = parseInt(cleanAbn[0]) - 1;
+          sum += firstDigit * weights[0];
+          
+          // Add weighted sum of remaining digits
+          for (let i = 1; i < 11; i++) {
+            sum += parseInt(cleanAbn[i]) * weights[i];
+          }
+          
+          return sum % 89 === 0;
+        },
+        message: 'Please provide a valid Australian Business Number (ABN)',
+      },
+    },
     owner: {
       type: Schema.Types.ObjectId,
       ref: 'users',
@@ -110,6 +144,11 @@ const companySchema = new Schema<ICompanyDocument>(
 
 // Pre-save middleware
 companySchema.pre('save', function (next) {
+  // Format ABN - remove spaces and convert to uppercase
+  if (this.abn) {
+    this.abn = this.abn.replace(/\s/g, '').toUpperCase();
+  }
+  
   // Ensure owner is not in members array
   if (this.members && this.owner) {
     this.members = this.members.filter((member: ICompanyMember) => 
@@ -140,6 +179,7 @@ companySchema.pre('save', function (next) {
 // Indexes for better performance
 companySchema.index({ owner: 1, isActive: 1 });
 companySchema.index({ name: 1 });
+companySchema.index({ abn: 1 }, { sparse: true }); // Sparse index for optional ABN field
 companySchema.index({ name: 'text', description: 'text' }); // Text search index
 
 // Virtual to populate owner details
@@ -194,6 +234,23 @@ companySchema.statics.search = function (searchTerm: string, userId?: Types.Obje
 companySchema.statics.isNameTaken = function (name: string, excludeId?: Types.ObjectId) {
   const query: any = { 
     name: new RegExp(`^${name}$`, 'i'), // Case insensitive
+    isActive: true,
+  };
+  
+  if (excludeId) {
+    query._id = { $ne: excludeId };
+  }
+  
+  return this.findOne(query);
+};
+
+// Static method to check if ABN is already registered
+companySchema.statics.isAbnTaken = function (abn: string, excludeId?: Types.ObjectId) {
+  if (!abn) return Promise.resolve(null);
+  
+  const cleanAbn = abn.replace(/\s/g, '').toUpperCase();
+  const query: any = { 
+    abn: cleanAbn,
     isActive: true,
   };
   

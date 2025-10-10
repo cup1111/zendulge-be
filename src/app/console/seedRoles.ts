@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Role from '../model/role';
 import config from '../config/app';
+import { RoleName } from '../enum/roles';
 
 const seedRoles = async () => {
   try {
@@ -12,17 +13,17 @@ const seedRoles = async () => {
     // Define default roles
     const defaultRoles = [
       {
-        name: 'admin',
+        name: RoleName.ADMIN,
         description: 'Administrator with full system access',
         isActive: true,
       },
       {
-        name: 'owner',
+        name: RoleName.OWNER,
         description: 'Store owner who can manage their own stores',
         isActive: true,
       },
       {
-        name: 'customer',
+        name: RoleName.CUSTOMER,
         description: 'Customer with basic access',
         isActive: true,
       },

@@ -201,7 +201,7 @@ Month 1 (Nov 2025) 1.
 - Website Setup
   - Backend Folder setup
     - Eslint (Done)
-    - Test ()
+    - Test (Done)
     - security (Done)
     - folder structure (Done)
   - Frontend
@@ -209,22 +209,30 @@ Month 1 (Nov 2025) 1.
     - test
     - security
     - folder structure
-- Login & Register Project setup
-  - Customer Login (BE Done)
-  - Business Login (BE Done)
-  - Business Register (BE Done)
-  - Customer Login (BE Done)
-  - Error handling (BE Done)
-- deploy to Railway
-- CI/CD
+- deploy to Railway (WIP)
+- CI/CD (WIP)
   - CircleCI
-- Authentication
-- Middleware
+- Authentication(BE Done)
+- Middleware(Done)
 - Roles
-  - Admin
-  - xxx
+  - Super Admin
+  - Business owner
+  - Customer
 - Redirects
+  - Login button redirect to login page
+  - register button redirect to register page
 - Online DB Setup
+- Pages
+  - Not found page
+  - Home page
+  - Login Page
+    - Business Login (BE Done)
+    - Customer Login (BE Done)
+    - Error handling
+  - Register
+    - Business Login (BE Done)
+    - Customer Login (BE Done)
+    - Error handling
 
 Month 2 (Dec 2025) 3. Browsing & Deal Cards + 4. Business Dashboard Homepage categories, deal cards, filters. Deal lifecycle dashboard. AUD $1,100 + Bonus Voucher $250
 

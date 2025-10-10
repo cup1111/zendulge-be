@@ -1,7 +1,8 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { RoleName, getAllRoleNames } from '../enum/roles';
 
 export interface IRole {
-  name: string;
+  name: RoleName;
   description: string;
   isActive: boolean;
   createdAt: Date;
@@ -20,7 +21,7 @@ const roleSchema = new Schema<IRoleDocument>({
     trim: true,
     maxlength: [50, 'Role name cannot exceed 50 characters'],
     enum: {
-      values: ['admin', 'owner', 'customer'],
+      values: getAllRoleNames(),
       message: 'Invalid role name',
     },
   },

@@ -16,7 +16,12 @@ import { customerRegistrationValidation } from '../../validation/customerRegistr
 import { loginValidation, refreshTokenValidation } from '../../validation/authValidation';
 import { handleValidationErrors } from '../../validation/validationHandler';
 import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
-import { storeOwnershipOrAdminMiddleware, storeCreationMiddleware } from '../../middleware/storePermissionMiddleware';
+import { 
+  storeOwnershipOrAdminMiddleware, 
+  storeCreationMiddleware, 
+  isSuperAdmin, 
+  hasBusinessAccess,
+} from '../../middleware/storePermissionMiddleware';
 
 const router = express.Router();
 
@@ -105,6 +110,22 @@ router.patch('/stores/:id/toggle-status',
 router.get('/stores/:id/status', 
   authenticationTokenMiddleware,
   getStoreStatus,
+);
+
+// Example routes using the new separated middleware
+
+// Admin-only route example - only super admins can access
+router.get('/admin/stores', 
+  authenticationTokenMiddleware,
+  isSuperAdmin,
+  getStores, // This would show all stores for admin
+);
+
+// Business access only route example - store owners can access their own store data
+router.get('/business/stores/:id/analytics', 
+  authenticationTokenMiddleware,
+  hasBusinessAccess,
+  getStoreById, // This would show analytics for store owners
 );
 
 export default router;

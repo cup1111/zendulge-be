@@ -155,6 +155,16 @@ userSchema.methods.generateAuthToken = async function () {
   // Populate role to include basic role info in JWT
   await user.populate('role');
   
+  // Get companies this user has access to (owner or member)
+  const Company = mongoose.model('companies');
+  const userCompanies = await Company.find({
+    $or: [
+      { owner: user._id },
+      { 'members.user': user._id },
+    ],
+    isActive: true,
+  }).select('_id name').lean();
+  
   const payload = {
     id: user.id,
     email: user.email,
@@ -163,6 +173,7 @@ userSchema.methods.generateAuthToken = async function () {
     userName: user.userName || null,
     avatarIcon: user.avatarIcon || null,
     role: user.role?.slug || null, // Include role slug for frontend decisions
+    companies: userCompanies.map((c: any) => ({ id: c._id, name: c.name })),
   };
   
   const token = jwt.sign(payload, config.accessSecret, {

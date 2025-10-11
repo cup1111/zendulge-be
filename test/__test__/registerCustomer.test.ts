@@ -17,7 +17,8 @@ describe('Register Customer', () => {
     mockUserService.default.store.mockImplementation((userData: any) => Promise.resolve({
       _id: 'user123',
       email: userData.email,
-      name: userData.name,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
     }));
     
     mockEmailService.default.sendVerificationEmail.mockResolvedValue(true);
@@ -27,7 +28,8 @@ describe('Register Customer', () => {
     const testData = {
       email: 'customer@example.com',
       password: 'TestPassword123',
-      name: 'Jane Smith',
+      firstName: 'Jane',
+      lastName: 'Smith',
       jobTitle: 'Designer',
     };
 
@@ -38,7 +40,8 @@ describe('Register Customer', () => {
     expect(res.statusCode).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.user.email).toBe(testData.email);
-    expect(res.body.user.name).toBe(testData.name);
+    expect(res.body.user.firstName).toBe(testData.firstName);
+    expect(res.body.user.lastName).toBe(testData.lastName);
     expect(res.body.message).toBe('Customer registered successfully. Please check your email to verify your account.');
 
     // Verify that the email service was called with correct parameters
@@ -53,14 +56,16 @@ describe('Register Customer', () => {
     const testData = {
       email: 'existing@example.com',
       password: 'TestPassword123',
-      name: 'Jane Smith',
+      firstName: 'Jane',
+      lastName: 'Smith',
     };
 
     // Mock User.findByEmail to return an active user
     const mockUser = {
       _id: 'user123',
       email: testData.email,
-      name: testData.name,
+      firstName: testData.firstName,
+      lastName: testData.lastName,
       active: true,
     };
 
@@ -80,14 +85,16 @@ describe('Register Customer', () => {
     const testData = {
       email: 'inactive@example.com',
       password: 'TestPassword123',
-      name: 'Jane Smith',
+      firstName: 'Jane',
+      lastName: 'Smith',
     };
 
     // Mock User.findByEmail to return an inactive user
     const mockUser = {
       _id: 'user456',
       email: testData.email,
-      name: testData.name,
+      firstName: testData.firstName,
+      lastName: testData.lastName,
       active: false,
     };
 
@@ -102,7 +109,8 @@ describe('Register Customer', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.message).toBe('Account exists but not activated. A new verification email has been sent.');
     expect(res.body.user.email).toBe(testData.email);
-    expect(res.body.user.name).toBe(testData.name);
+    expect(res.body.user.firstName).toBe(testData.firstName);
+    expect(res.body.user.lastName).toBe(testData.lastName);
 
     // Verify email service was called for resending activation
     expect(mockEmailService.default.sendVerificationEmail).toHaveBeenCalledTimes(1);
@@ -127,7 +135,8 @@ describe('Register Customer', () => {
     const invalidData = {
       email: 'invalid-email',
       password: 'TestPassword123',
-      name: 'Jane Smith',
+      firstName: 'Jane',
+      lastName: 'Smith',
     };
 
     const res = await request(app.application)
@@ -143,7 +152,8 @@ describe('Register Customer', () => {
     const invalidData = {
       email: 'test@example.com',
       password: '123', // Too weak
-      name: 'Jane Smith',
+      firstName: 'Jane',
+      lastName: 'Smith',
     };
 
     const res = await request(app.application)
@@ -159,7 +169,8 @@ describe('Register Customer', () => {
     const testData = {
       email: 'dbtest@example.com',
       password: 'TestPassword123',
-      name: 'Jane Smith',
+      firstName: 'Jane',
+      lastName: 'Smith',
     };
 
     // Mock User.findByEmail to throw a database error
@@ -179,7 +190,8 @@ describe('Register Customer', () => {
     const testData = {
       email: 'emailfail@example.com',
       password: 'TestPassword123',
-      name: 'Jane Smith',
+      firstName: 'Jane',
+      lastName: 'Smith',
     };
 
     // Mock successful user creation but email service failure
@@ -190,7 +202,8 @@ describe('Register Customer', () => {
     const mockNewUser = {
       _id: 'emailfailuser123',
       email: testData.email,
-      name: testData.name,
+      firstName: testData.firstName,
+      lastName: testData.lastName,
     };
     mockUserService.default.store.mockResolvedValue(mockNewUser);
     mockUserService.default.updateActivationCode.mockResolvedValue(true);
@@ -211,7 +224,8 @@ describe('Register Customer', () => {
     const testData = {
       email: 'minimal@example.com',
       password: 'TestPassword123',
-      name: 'Minimal User',
+      firstName: 'Minimal',
+      lastName: 'User',
       // No jobTitle provided
     };
 
@@ -222,7 +236,8 @@ describe('Register Customer', () => {
     expect(res.statusCode).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.user.email).toBe(testData.email);
-    expect(res.body.user.name).toBe(testData.name);
+    expect(res.body.user.firstName).toBe(testData.firstName);
+    expect(res.body.user.lastName).toBe(testData.lastName);
     expect(res.body.message).toBe('Customer registered successfully. Please check your email to verify your account.');
   });
 });

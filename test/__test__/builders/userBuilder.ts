@@ -7,7 +7,8 @@ export default class UserBuilder extends BaseBuilder<IUserDocument> {
     this.properties = {
       email: 'test@example.com',
       password: 'TestPassword123',
-      name: 'Test User',
+      firstName: 'Test',
+      lastName: 'User',
       active: true,
     };
   }
@@ -23,7 +24,19 @@ export default class UserBuilder extends BaseBuilder<IUserDocument> {
   }
 
   withName(name: string): UserBuilder {
-    this.properties.name = name;
+    const nameParts = name.split(' ');
+    this.properties.firstName = nameParts[0] || 'Test';
+    this.properties.lastName = nameParts.slice(1).join(' ') || 'User';
+    return this;
+  }
+
+  withFirstName(firstName: string): UserBuilder {
+    this.properties.firstName = firstName;
+    return this;
+  }
+
+  withLastName(lastName: string): UserBuilder {
+    this.properties.lastName = lastName;
     return this;
   }
 

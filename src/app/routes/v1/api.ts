@@ -18,10 +18,9 @@ import { handleValidationErrors } from '../../validation/validationHandler';
 import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
 import { 
   operateSiteOwnershipOrAdminMiddleware, 
-  operateSiteCreationMiddleware, 
-  isSuperAdmin, 
-  hasBusinessAccess,
+  isSuperAdmin,
 } from '../../middleware/operateSitePermissionMiddleware';
+import { requireCompanyAccess } from '../../middleware/companyAccessMiddleware';
 
 const router = express.Router();
 
@@ -69,14 +68,15 @@ router.post('/refresh-token',
 router.get('/verify/:token', activateAccount);
 
 // Operate Site routes (protected)
-router.post('/operate-sites', 
+router.post('/company/:id/operate-sites', 
   authenticationTokenMiddleware,
-  operateSiteCreationMiddleware,
+  requireCompanyAccess, // Validates company access + provides req.company
   createOperateSite,
 );
 
-router.get('/operate-sites', 
+router.get('/company/:id/operate-sites', 
   authenticationTokenMiddleware,
+  requireCompanyAccess, // Validates company access
   getOperateSites,
 );
 
@@ -84,48 +84,53 @@ router.get('/operate-sites/nearby',
   findNearbyOperateSites, // Public route for finding nearby operate sites
 );
 
-router.get('/operate-sites/:id', 
+router.get('/company/:id/operate-sites/:operateSiteId', 
   authenticationTokenMiddleware,
+  requireCompanyAccess, // Validates company access
   getOperateSiteById,
 );
 
-router.put('/operate-sites/:id', 
+router.put('/company/:id/operate-sites/:operateSiteId', 
   authenticationTokenMiddleware,
-  operateSiteOwnershipOrAdminMiddleware,
+  requireCompanyAccess, // Validates company access first
+  operateSiteOwnershipOrAdminMiddleware, // Then validates operate site permissions
   updateOperateSite,
 );
 
-router.delete('/operate-sites/:id', 
+router.delete('/company/:id/operate-sites/:operateSiteId', 
   authenticationTokenMiddleware,
+  requireCompanyAccess,
   operateSiteOwnershipOrAdminMiddleware,
   deleteOperateSite,
 );
 
-router.patch('/operate-sites/:id/toggle-status', 
+router.patch('/company/:id/operate-sites/:operateSiteId/toggle-status', 
   authenticationTokenMiddleware,
+  requireCompanyAccess,
   operateSiteOwnershipOrAdminMiddleware,
   toggleOperateSiteStatus,
 );
 
-router.get('/operate-sites/:id/status', 
+router.get('/company/:id/operate-sites/:operateSiteId/status', 
   authenticationTokenMiddleware,
+  requireCompanyAccess,
   getOperateSiteStatus,
 );
 
-// Example routes using the new separated middleware
+// Example routes using the new security approach
 
-// Admin-only route example - only super admins can access
+// Admin-only route example - only super admins can access ALL company data
 router.get('/admin/operate-sites', 
   authenticationTokenMiddleware,
   isSuperAdmin,
   getOperateSites, // This would show all operate sites for admin
 );
 
-// Business access only route example - operate site owners can access their own site data
-router.get('/business/operate-sites/:id/analytics', 
+// Business access route - company members can access their company's analytics
+router.get('/company/:id/operate-sites/:operateSiteId/analytics', 
   authenticationTokenMiddleware,
-  hasBusinessAccess,
-  getOperateSiteById, // This would show analytics for operate site owners
+  requireCompanyAccess, // Validates company access and provides req.company
+  getOperateSiteById, // This would show analytics for company members
 );
 
 export default router;

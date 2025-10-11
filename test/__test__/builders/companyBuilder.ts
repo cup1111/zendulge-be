@@ -17,7 +17,7 @@ export default class CompanyBuilder extends BaseBuilder<ICompanyDocument> {
         country: 'Australia',
       },
       contact: null, // Will be set when needed
-      abn: '12345678901',
+      abn: '51824753556', // Valid ABN for testing
       website: 'https://testcompany.com',
       facebookUrl: 'https://facebook.com/testcompany',
       twitterUrl: 'https://twitter.com/testcompany',

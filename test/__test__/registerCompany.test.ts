@@ -33,8 +33,21 @@ describe('Register Company', () => {
       name: 'John Doe',
       jobTitle: 'CEO',
       companyName: 'Test Company Ltd',
+      companyEmail: 'contact@testcompany.com',
       companyDescription: 'A test company for testing purposes',
+      serviceCategory: 'Beauty & Wellness',
+      businessAddress: {
+        street: '123 Test Street',
+        city: 'Melbourne',
+        state: 'VIC',
+        postcode: '3000',
+        country: 'Australia',
+      },
+      abn: '12345678901',
       companyWebsite: 'https://testcompany.com',
+      facebookUrl: 'https://facebook.com/testcompany',
+      twitterUrl: 'https://twitter.com/testcompany',
+      logo: 'https://testcompany.com/logo.png',
     };
 
     const res = await request(app.application)
@@ -63,7 +76,16 @@ describe('Register Company', () => {
       name: 'John Doe',
       jobTitle: 'CEO',
       companyName: 'Existing Company',
-      companyDescription: 'An existing company',
+      companyEmail: 'contact@existing.com',
+      companyDescription: 'An existing company for testing',
+      serviceCategory: 'Professional Services',
+      businessAddress: {
+        street: '456 Existing Street',
+        city: 'Sydney',
+        state: 'NSW',
+        postcode: '2000',
+        country: 'Australia',
+      },
       companyWebsite: 'https://existing.com',
     };
 
@@ -96,7 +118,16 @@ describe('Register Company', () => {
       name: 'John Doe',
       jobTitle: 'CEO',
       companyName: 'Inactive User Company',
-      companyDescription: 'A company for inactive user',
+      companyEmail: 'contact@inactive.com',
+      companyDescription: 'A company for inactive user testing',
+      serviceCategory: 'Health & Fitness',
+      businessAddress: {
+        street: '789 Inactive Street',
+        city: 'Brisbane',
+        state: 'QLD',
+        postcode: '4000',
+        country: 'Australia',
+      },
       companyWebsite: 'https://inactive.com',
     };
 
@@ -132,7 +163,16 @@ describe('Register Company', () => {
       name: 'John Doe',
       jobTitle: 'CEO',
       companyName: 'Existing Company Name',
-      companyDescription: 'A company with existing name',
+      companyEmail: 'contact@newcompany.com',
+      companyDescription: 'A company with existing name for testing',
+      serviceCategory: 'Technology',
+      businessAddress: {
+        street: '999 New Street',
+        city: 'Perth',
+        state: 'WA',
+        postcode: '6000',
+        country: 'Australia',
+      },
       companyWebsite: 'https://newcompany.com',
     };
 

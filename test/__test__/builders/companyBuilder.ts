@@ -6,8 +6,22 @@ export default class CompanyBuilder extends BaseBuilder<ICompanyDocument> {
     super(defaultValues);
     this.properties = {
       name: 'Test Company',
+      email: 'test@company.com',
       description: 'A test company for testing purposes',
+      serviceCategory: 'Beauty & Wellness',
+      businessAddress: {
+        street: '123 Test Street',
+        city: 'Melbourne',
+        state: 'VIC',
+        postcode: '3000',
+        country: 'Australia',
+      },
+      contact: null, // Will be set when needed
+      abn: '12345678901',
       website: 'https://testcompany.com',
+      facebookUrl: 'https://facebook.com/testcompany',
+      twitterUrl: 'https://twitter.com/testcompany',
+      logo: 'https://example.com/logo.png',
       isActive: true,
     };
   }
@@ -22,8 +36,48 @@ export default class CompanyBuilder extends BaseBuilder<ICompanyDocument> {
     return this;
   }
 
+  withEmail(email: string): CompanyBuilder {
+    this.properties.email = email;
+    return this;
+  }
+
+  withServiceCategory(serviceCategory: string): CompanyBuilder {
+    this.properties.serviceCategory = serviceCategory;
+    return this;
+  }
+
+  withBusinessAddress(address: any): CompanyBuilder {
+    this.properties.businessAddress = address;
+    return this;
+  }
+
+  withContact(contactId: any): CompanyBuilder {
+    this.properties.contact = contactId;
+    return this;
+  }
+
+  withAbn(abn: string): CompanyBuilder {
+    this.properties.abn = abn;
+    return this;
+  }
+
   withWebsite(website: string): CompanyBuilder {
     this.properties.website = website;
+    return this;
+  }
+
+  withFacebookUrl(facebookUrl: string): CompanyBuilder {
+    this.properties.facebookUrl = facebookUrl;
+    return this;
+  }
+
+  withTwitterUrl(twitterUrl: string): CompanyBuilder {
+    this.properties.twitterUrl = twitterUrl;
+    return this;
+  }
+
+  withLogo(logo: string): CompanyBuilder {
+    this.properties.logo = logo;
     return this;
   }
 

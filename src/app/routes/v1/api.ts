@@ -2,26 +2,26 @@ import express from 'express';
 import { registerCustomer, registerBusiness, activateAccount } from '../../controllers/v1/registerController';
 import { login, logout, getProfile, refreshToken } from '../../controllers/v1/authController';
 import { 
-  createStore, 
-  getStores, 
-  getStoreById, 
-  updateStore, 
-  deleteStore, 
-  toggleStoreStatus, 
-  findNearbyStores, 
-  getStoreStatus,
-} from '../../controllers/v1/storeController';
+  createOperateSite, 
+  getOperateSites, 
+  getOperateSiteById, 
+  updateOperateSite, 
+  deleteOperateSite, 
+  toggleOperateSiteStatus, 
+  findNearbyOperateSites, 
+  getOperateSiteStatus,
+} from '../../controllers/v1/operateSiteController';
 import { businessRegistrationValidation } from '../../validation/businessRegistrationValidation';
 import { customerRegistrationValidation } from '../../validation/customerRegistrationValidation';
 import { loginValidation, refreshTokenValidation } from '../../validation/authValidation';
 import { handleValidationErrors } from '../../validation/validationHandler';
 import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
 import { 
-  storeOwnershipOrAdminMiddleware, 
-  storeCreationMiddleware, 
+  operateSiteOwnershipOrAdminMiddleware, 
+  operateSiteCreationMiddleware, 
   isSuperAdmin, 
   hasBusinessAccess,
-} from '../../middleware/storePermissionMiddleware';
+} from '../../middleware/operateSitePermissionMiddleware';
 
 const router = express.Router();
 
@@ -68,64 +68,64 @@ router.post('/refresh-token',
 
 router.get('/verify/:token', activateAccount);
 
-// Store routes (protected)
-router.post('/stores', 
+// Operate Site routes (protected)
+router.post('/operate-sites', 
   authenticationTokenMiddleware,
-  storeCreationMiddleware,
-  createStore,
+  operateSiteCreationMiddleware,
+  createOperateSite,
 );
 
-router.get('/stores', 
+router.get('/operate-sites', 
   authenticationTokenMiddleware,
-  getStores,
+  getOperateSites,
 );
 
-router.get('/stores/nearby', 
-  findNearbyStores, // Public route for finding nearby stores
+router.get('/operate-sites/nearby', 
+  findNearbyOperateSites, // Public route for finding nearby operate sites
 );
 
-router.get('/stores/:id', 
+router.get('/operate-sites/:id', 
   authenticationTokenMiddleware,
-  getStoreById,
+  getOperateSiteById,
 );
 
-router.put('/stores/:id', 
+router.put('/operate-sites/:id', 
   authenticationTokenMiddleware,
-  storeOwnershipOrAdminMiddleware,
-  updateStore,
+  operateSiteOwnershipOrAdminMiddleware,
+  updateOperateSite,
 );
 
-router.delete('/stores/:id', 
+router.delete('/operate-sites/:id', 
   authenticationTokenMiddleware,
-  storeOwnershipOrAdminMiddleware,
-  deleteStore,
+  operateSiteOwnershipOrAdminMiddleware,
+  deleteOperateSite,
 );
 
-router.patch('/stores/:id/toggle-status', 
+router.patch('/operate-sites/:id/toggle-status', 
   authenticationTokenMiddleware,
-  storeOwnershipOrAdminMiddleware,
-  toggleStoreStatus,
+  operateSiteOwnershipOrAdminMiddleware,
+  toggleOperateSiteStatus,
 );
 
-router.get('/stores/:id/status', 
+router.get('/operate-sites/:id/status', 
   authenticationTokenMiddleware,
-  getStoreStatus,
+  getOperateSiteStatus,
 );
 
 // Example routes using the new separated middleware
 
 // Admin-only route example - only super admins can access
-router.get('/admin/stores', 
+router.get('/admin/operate-sites', 
   authenticationTokenMiddleware,
   isSuperAdmin,
-  getStores, // This would show all stores for admin
+  getOperateSites, // This would show all operate sites for admin
 );
 
-// Business access only route example - store owners can access their own store data
-router.get('/business/stores/:id/analytics', 
+// Business access only route example - operate site owners can access their own site data
+router.get('/business/operate-sites/:id/analytics', 
   authenticationTokenMiddleware,
   hasBusinessAccess,
-  getStoreById, // This would show analytics for store owners
+  getOperateSiteById, // This would show analytics for operate site owners
 );
 
 export default router;

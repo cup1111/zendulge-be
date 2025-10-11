@@ -20,8 +20,21 @@ export interface IBusinessRegistration {
   
   // Company data
   companyName: string;
+  companyEmail: string;
   companyDescription?: string;
+  serviceCategory: string;
+  businessAddress: {
+    street: string;
+    city: string;
+    state: string;
+    postcode: string;
+    country?: string;
+  };
+  abn?: string;
   companyWebsite?: string;
+  facebookUrl?: string;
+  twitterUrl?: string;
+  logo?: string;
 }
 
 export interface ICustomerRegistration {
@@ -38,8 +51,15 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
     name, 
     jobTitle,
     companyName,
+    companyEmail,
     companyDescription,
+    serviceCategory,
+    businessAddress,
+    abn,
     companyWebsite,
+    facebookUrl,
+    twitterUrl,
+    logo,
   } = registrationData;
 
   // Prepare user data
@@ -86,8 +106,19 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
   // Prepare company data
   const companyData = {
     name: companyName,
+    email: companyEmail,
     description: companyDescription,
+    serviceCategory,
+    businessAddress: {
+      ...businessAddress,
+      country: businessAddress.country || 'Australia',
+    },
+    contact: user._id, // The registering user becomes the contact person
+    abn,
     website: companyWebsite,
+    facebookUrl,
+    twitterUrl,
+    logo,
     owner: user._id,
     isActive: true,
   };

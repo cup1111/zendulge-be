@@ -12,10 +12,15 @@ export const customerRegistrationValidation = [
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .withMessage('Password must contain at least one lowercase letter, one uppercase letter, and one number'),
     
-  body('name')
+  body('firstName')
     .trim()
     .isLength({ min: 2 })
-    .withMessage('Name must be at least 2 characters long'),
+    .withMessage('First name must be at least 2 characters long'),
+    
+  body('lastName')
+    .trim()
+    .isLength({ min: 2 })
+    .withMessage('Last name must be at least 2 characters long'),
     
   body('jobTitle')
     .optional()

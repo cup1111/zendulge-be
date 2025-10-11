@@ -30,7 +30,8 @@ export const activateAccount = async (req: Request, res: Response) => {
     user: {
       id: user._id,
       email: user.email,
-      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
       active: user.active,
     },
   });

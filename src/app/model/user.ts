@@ -18,29 +18,15 @@ export interface IUser {
   activeCode?: string;
   active: boolean;
   projectsRoles?: IProjectRole[];
-  name?: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
   jobTitle?: string;
   department?: string;
   location?: string;
   avatarIcon?: string;
   abbreviation?: string;
   userName?: string;
-  customerId?: string;
-  paymentHistoryId?: Types.ObjectId[];
-  currentPaymentHistoryId?: Types.ObjectId;
-  subscriptionHistoryId?: string[];
-  stripePaymentIntentId?: string;
-  currentInvoice?: Types.ObjectId;
-  invoiceHistory?: string[];
-  currentProduct?: string;
-  productHistory?: string[];
-
-  freeTrialStartDate?: string;
-  freeTrialEndDate?: string;
-  currentChargeStartDate?: string;
-  currentChargeEndDate?: string;
-
-  tenants?: Types.ObjectId[];
 }
 
 
@@ -53,7 +39,7 @@ export interface IUserDocument extends IUser, mongoose.Document {
 
 export interface IUserModel extends mongoose.Model<IUserDocument> {
   findByCredentials(email: string, password: string): Promise<IUserDocument | null | undefined>;
-  saveInfo(email: string, name: string, password: string): Promise<IUserDocument>;
+  saveInfo(email: string, firstName: string, lastName: string, password: string): Promise<IUserDocument>;
   findByEmail(email: string): Promise<IUserDocument | null>;
 }
 
@@ -80,9 +66,18 @@ const userSchema = new Schema<IUserDocument>(
       required: true,
       default: false,
     },
-    name: {
+    firstName: {
       type: String,
       trim: true,
+    },
+    lastName: {
+      type: String,
+      trim: true,
+    },
+    phoneNumber: {
+      type: String,
+      trim: true,
+      maxlength: [20, 'Phone number cannot exceed 20 characters'],
     },
     avatarIcon: {
       type: String,
@@ -117,10 +112,10 @@ userSchema.statics.findByCredentials = async function (email: string, password: 
   return user;
 };
 
-userSchema.statics.saveInfo = async function (email: string, name: string, password: string) {
+userSchema.statics.saveInfo = async function (email: string, firstName: string, lastName: string, password: string) {
   const user = await this.findOneAndUpdate(
     { email },
-    { password: await bcrypt.hash(password, 8), name, activeCode: '' },
+    { password: await bcrypt.hash(password, 8), firstName, lastName, activeCode: '' },
     { new: true },
   ).exec();
   if (!user) throw new Error('Cannot find user');

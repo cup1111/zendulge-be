@@ -15,7 +15,8 @@ export interface IBusinessRegistration {
   // User data
   email: string;
   password: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   jobTitle?: string;
   
   // Company data
@@ -40,7 +41,8 @@ export interface IBusinessRegistration {
 export interface ICustomerRegistration {
   email: string;
   password: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   jobTitle?: string;
 }
 
@@ -48,7 +50,8 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
   const { 
     email, 
     password, 
-    name, 
+    firstName, 
+    lastName,
     jobTitle,
     companyName,
     companyEmail,
@@ -66,7 +69,8 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
   const userData = {
     email,
     password,
-    name,
+    firstName,
+    lastName,
     jobTitle,
     active: false, // Will be activated after email verification
   };
@@ -88,7 +92,8 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
       user: {
         id: existingUser._id,
         email: existingUser.email,
-        name: existingUser.name,
+        firstName: existingUser.firstName,
+        lastName: existingUser.lastName,
       },
     };
   }
@@ -135,7 +140,8 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
     user: {
       id: user._id,
       email: user.email,
-      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
     },
     company: {
       id: company._id,
@@ -148,7 +154,7 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
 
 export const customerRegister = async (registrationData: ICustomerRegistration) => {
   
-  const { email, password, name, jobTitle } = registrationData;
+  const { email, password, firstName, lastName, jobTitle } = registrationData;
 
   // Check if user already exists
   const existingUser = await User.findByEmail(email);
@@ -168,7 +174,8 @@ export const customerRegister = async (registrationData: ICustomerRegistration) 
       user: {
         id: existingUser._id,
         email: existingUser.email,
-        name: existingUser.name,
+        firstName: existingUser.firstName,
+        lastName: existingUser.lastName,
       },
     };
   }
@@ -177,7 +184,8 @@ export const customerRegister = async (registrationData: ICustomerRegistration) 
   const userData = {
     email,
     password,
-    name,
+    firstName,
+    lastName,
     jobTitle,
     active: false,
   };
@@ -193,7 +201,8 @@ export const customerRegister = async (registrationData: ICustomerRegistration) 
     user: {
       id: user._id,
       email: user.email,
-      name: user.name,
+      firstName: user.firstName,
+      lastName: user.lastName,
     },
   };
 };

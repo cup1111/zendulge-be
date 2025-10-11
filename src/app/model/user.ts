@@ -151,7 +151,21 @@ userSchema.methods.toJSON = function () {
 
 userSchema.methods.generateAuthToken = async function () {
   const user = this;
-  const token = jwt.sign({ id: user.id }, config.accessSecret, {
+  
+  // Populate role to include basic role info in JWT
+  await user.populate('role');
+  
+  const payload = {
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName || null,
+    lastName: user.lastName || null,
+    userName: user.userName || null,
+    avatarIcon: user.avatarIcon || null,
+    role: user.role?.slug || null, // Include role slug for frontend decisions
+  };
+  
+  const token = jwt.sign(payload, config.accessSecret, {
     expiresIn: '48h',
   });
   const refreshToken = jwt.sign({ id: user.id }, config.accessSecret, { expiresIn: '360h' });

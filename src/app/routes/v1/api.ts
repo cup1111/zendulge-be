@@ -11,6 +11,7 @@ import {
   findNearbyOperateSites, 
   getOperateSiteStatus,
 } from '../../controllers/v1/operateSiteController';
+import { getCompanyUsers } from '../../controllers/v1/companyController';
 import { businessRegistrationValidation } from '../../validation/businessRegistrationValidation';
 import { customerRegistrationValidation } from '../../validation/customerRegistrationValidation';
 import { loginValidation, refreshTokenValidation } from '../../validation/authValidation';
@@ -115,6 +116,13 @@ router.get('/company/:id/operate-sites/:operateSiteId/status',
   authenticationTokenMiddleware,
   requireCompanyAccess,
   getOperateSiteStatus,
+);
+
+// Company users route - get all users associated with a company
+router.get('/company/:id/users', 
+  authenticationTokenMiddleware,
+  requireCompanyAccess, // Validates company access and provides req.company
+  getCompanyUsers,
 );
 
 // Example routes using the new security approach

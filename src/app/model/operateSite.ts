@@ -210,6 +210,6 @@ operateSiteSchema.methods.getCurrentStatus = function (this: IOperateSiteDocumen
   return 'Closed';
 };
 
-const OperateSite = mongoose.model<IOperateSiteDocument>('OperateSite', operateSiteSchema);
+const OperateSite = mongoose.model<IOperateSiteDocument>('operateSites', operateSiteSchema);
 
 export default OperateSite;

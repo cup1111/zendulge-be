@@ -10,17 +10,6 @@ interface AuthenticatedRequest extends Request {
 }
 
 export const authenticationTokenMiddleware = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  if (config.emailBypass) {
-    // Find the first admin user (super user)
-    const adminUser = await User.findOne({ isSuperUser: 1, active: true });
-    if (adminUser) {
-      req.user = adminUser;
-      req.token = 'email-bypass-token';
-      return next();
-    }
-    throw new AuthenticationException('No active admin user found for email bypass');
-  }
-  
   // Get token from Authorization header
   const authHeader = req.header('Authorization');
   

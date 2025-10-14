@@ -88,7 +88,7 @@ const userSchema = new Schema<IUserDocument>(
     },
     role: {
       type: Schema.Types.ObjectId,
-      ref: 'Role',
+      ref: 'roles',
       index: true,
     },
   },

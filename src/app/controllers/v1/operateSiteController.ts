@@ -9,11 +9,10 @@ interface AuthenticatedRequest extends Request {
 
 export const createOperateSite = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   const { name, address, phoneNumber, emailAddress, longitude, latitude, operatingHours, specialInstruction } = req.body;
-  // Use user's ID as company identifier for now
-  const company = req.user?._id;
+  const { id: companyId } = req.params;
 
-  if (!company) {
-    throw new ValidationException('User not authenticated');
+  if (!companyId) {
+    throw new ValidationException('Company ID is required');
   }
 
   // Validate required fields
@@ -34,7 +33,7 @@ export const createOperateSite = async (req: AuthenticatedRequest, res: Response
     address,
     phoneNumber,
     emailAddress,
-    company,
+    company: companyId,
     longitude,
     latitude,
     operatingHours,
@@ -52,14 +51,14 @@ export const createOperateSite = async (req: AuthenticatedRequest, res: Response
 };
 
 export const getOperateSites = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const company = req.user?._id;
+  const { id: companyId } = req.params;
   const { isActive, page = 1, limit = 10 } = req.query;
 
-  if (!company) {
-    throw new ValidationException('User not authenticated');
+  if (!companyId) {
+    throw new ValidationException('Company ID is required');
   }
 
-  const filter: Record<string, unknown> = { company };
+  const filter: Record<string, unknown> = { company: companyId };
   if (isActive !== undefined) {
     filter.isActive = isActive === 'true';
   }
@@ -89,14 +88,13 @@ export const getOperateSites = async (req: AuthenticatedRequest, res: Response):
 };
 
 export const getOperateSiteById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { id } = req.params;
-  const company = req.user?._id;
+  const { id: companyId, operateSiteId } = req.params;
 
-  if (!company) {
-    throw new ValidationException('User not authenticated');
+  if (!companyId || !operateSiteId) {
+    throw new ValidationException('Company ID and Operate Site ID are required');
   }
 
-  const operateSite = await OperateSite.findOne({ _id: id, company });
+  const operateSite = await OperateSite.findOne({ _id: operateSiteId, company: companyId });
   
   if (!operateSite) {
     throw new NotFoundException('Operate site not found');
@@ -109,12 +107,11 @@ export const getOperateSiteById = async (req: AuthenticatedRequest, res: Respons
 };
 
 export const updateOperateSite = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { id } = req.params;
-  const company = req.user?._id;
+  const { id: companyId, operateSiteId } = req.params;
   const updateData = req.body;
 
-  if (!company) {
-    throw new ValidationException('User not authenticated');
+  if (!companyId || !operateSiteId) {
+    throw new ValidationException('Company ID and Operate Site ID are required');
   }
 
   // Validate coordinates if provided
@@ -126,7 +123,7 @@ export const updateOperateSite = async (req: AuthenticatedRequest, res: Response
   }
 
   const operateSite = await OperateSite.findOneAndUpdate(
-    { _id: id, company },
+    { _id: operateSiteId, company: companyId },
     updateData,
     { new: true, runValidators: true },
   );
@@ -143,14 +140,13 @@ export const updateOperateSite = async (req: AuthenticatedRequest, res: Response
 };
 
 export const deleteOperateSite = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { id } = req.params;
-  const company = req.user?._id;
+  const { id: companyId, operateSiteId } = req.params;
 
-  if (!company) {
-    throw new ValidationException('User not authenticated');
+  if (!companyId || !operateSiteId) {
+    throw new ValidationException('Company ID and Operate Site ID are required');
   }
 
-  const operateSite = await OperateSite.findOneAndDelete({ _id: id, company });
+  const operateSite = await OperateSite.findOneAndDelete({ _id: operateSiteId, company: companyId });
 
   if (!operateSite) {
     throw new NotFoundException('Operate site not found');
@@ -163,14 +159,13 @@ export const deleteOperateSite = async (req: AuthenticatedRequest, res: Response
 };
 
 export const toggleOperateSiteStatus = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { id } = req.params;
-  const company = req.user?._id;
+  const { id: companyId, operateSiteId } = req.params;
 
-  if (!company) {
-    throw new ValidationException('User not authenticated');
+  if (!companyId || !operateSiteId) {
+    throw new ValidationException('Company ID and Operate Site ID are required');
   }
 
-  const operateSite = await OperateSite.findOne({ _id: id, company });
+  const operateSite = await OperateSite.findOne({ _id: operateSiteId, company: companyId });
 
   if (!operateSite) {
     throw new NotFoundException('Operate site not found');
@@ -214,14 +209,13 @@ export const findNearbyOperateSites = async (req: Request, res: Response): Promi
 };
 
 export const getOperateSiteStatus = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { id } = req.params;
-  const company = req.user?._id;
+  const { id: companyId, operateSiteId } = req.params;
 
-  if (!company) {
-    throw new ValidationException('User not authenticated');
+  if (!companyId || !operateSiteId) {
+    throw new ValidationException('Company ID and Operate Site ID are required');
   }
 
-  const operateSite = await OperateSite.findOne({ _id: id, company });
+  const operateSite = await OperateSite.findOne({ _id: operateSiteId, company: companyId });
 
   if (!operateSite) {
     throw new NotFoundException('Operate site not found');

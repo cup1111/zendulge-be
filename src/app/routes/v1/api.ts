@@ -2,26 +2,26 @@ import express from 'express';
 import { registerCustomer, registerBusiness, activateAccount } from '../../controllers/v1/registerController';
 import { login, logout, getProfile, refreshToken } from '../../controllers/v1/authController';
 import { 
-  createStore, 
-  getStores, 
-  getStoreById, 
-  updateStore, 
-  deleteStore, 
-  toggleStoreStatus, 
-  findNearbyStores, 
-  getStoreStatus,
-} from '../../controllers/v1/storeController';
+  createOperateSite, 
+  getOperateSites, 
+  getOperateSiteById, 
+  updateOperateSite, 
+  deleteOperateSite, 
+  toggleOperateSiteStatus, 
+  findNearbyOperateSites, 
+  getOperateSiteStatus,
+} from '../../controllers/v1/operateSiteController';
+import { getCompanyUsers } from '../../controllers/v1/companyController';
 import { businessRegistrationValidation } from '../../validation/businessRegistrationValidation';
 import { customerRegistrationValidation } from '../../validation/customerRegistrationValidation';
 import { loginValidation, refreshTokenValidation } from '../../validation/authValidation';
 import { handleValidationErrors } from '../../validation/validationHandler';
 import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
 import { 
-  storeOwnershipOrAdminMiddleware, 
-  storeCreationMiddleware, 
-  isSuperAdmin, 
-  hasBusinessAccess,
-} from '../../middleware/storePermissionMiddleware';
+  operateSiteOwnershipOrAdminMiddleware, 
+  isSuperAdmin,
+} from '../../middleware/operateSitePermissionMiddleware';
+import { requireCompanyAccess } from '../../middleware/companyAccessMiddleware';
 
 const router = express.Router();
 
@@ -68,64 +68,77 @@ router.post('/refresh-token',
 
 router.get('/verify/:token', activateAccount);
 
-// Store routes (protected)
-router.post('/stores', 
+// Operate Site routes (protected)
+router.post('/company/:id/operate-sites', 
   authenticationTokenMiddleware,
-  storeCreationMiddleware,
-  createStore,
+  requireCompanyAccess, // Validates company access + provides req.company
+  createOperateSite,
 );
 
-router.get('/stores', 
+router.get('/company/:id/operate-sites', 
   authenticationTokenMiddleware,
-  getStores,
+  requireCompanyAccess, // Validates company access
+  getOperateSites,
 );
 
-router.get('/stores/nearby', 
-  findNearbyStores, // Public route for finding nearby stores
+router.get('/operate-sites/nearby', 
+  findNearbyOperateSites, // Public route for finding nearby operate sites
 );
 
-router.get('/stores/:id', 
+router.get('/company/:id/operate-sites/:operateSiteId', 
   authenticationTokenMiddleware,
-  getStoreById,
+  requireCompanyAccess, // Validates company access
+  getOperateSiteById,
 );
 
-router.put('/stores/:id', 
+router.put('/company/:id/operate-sites/:operateSiteId', 
   authenticationTokenMiddleware,
-  storeOwnershipOrAdminMiddleware,
-  updateStore,
+  requireCompanyAccess, // Validates company access first
+  operateSiteOwnershipOrAdminMiddleware, // Then validates operate site permissions
+  updateOperateSite,
 );
 
-router.delete('/stores/:id', 
+router.delete('/company/:id/operate-sites/:operateSiteId', 
   authenticationTokenMiddleware,
-  storeOwnershipOrAdminMiddleware,
-  deleteStore,
+  requireCompanyAccess,
+  operateSiteOwnershipOrAdminMiddleware,
+  deleteOperateSite,
 );
 
-router.patch('/stores/:id/toggle-status', 
+router.patch('/company/:id/operate-sites/:operateSiteId/toggle-status', 
   authenticationTokenMiddleware,
-  storeOwnershipOrAdminMiddleware,
-  toggleStoreStatus,
+  requireCompanyAccess,
+  operateSiteOwnershipOrAdminMiddleware,
+  toggleOperateSiteStatus,
 );
 
-router.get('/stores/:id/status', 
+router.get('/company/:id/operate-sites/:operateSiteId/status', 
   authenticationTokenMiddleware,
-  getStoreStatus,
+  requireCompanyAccess,
+  getOperateSiteStatus,
 );
 
-// Example routes using the new separated middleware
+// Company users route - get all users associated with a company
+router.get('/company/:id/users', 
+  authenticationTokenMiddleware,
+  requireCompanyAccess, // Validates company access and provides req.company
+  getCompanyUsers,
+);
 
-// Admin-only route example - only super admins can access
-router.get('/admin/stores', 
+// Example routes using the new security approach
+
+// Admin-only route example - only super admins can access ALL company data
+router.get('/admin/operate-sites', 
   authenticationTokenMiddleware,
   isSuperAdmin,
-  getStores, // This would show all stores for admin
+  getOperateSites, // This would show all operate sites for admin
 );
 
-// Business access only route example - store owners can access their own store data
-router.get('/business/stores/:id/analytics', 
+// Business access route - company members can access their company's analytics
+router.get('/company/:id/operate-sites/:operateSiteId/analytics', 
   authenticationTokenMiddleware,
-  hasBusinessAccess,
-  getStoreById, // This would show analytics for store owners
+  requireCompanyAccess, // Validates company access and provides req.company
+  getOperateSiteById, // This would show analytics for company members
 );
 
 export default router;

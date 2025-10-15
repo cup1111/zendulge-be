@@ -1,6 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-export interface IOpeningHours {
+export interface IOperatingHours {
   monday: { open: string; close: string; isClosed: boolean };
   tuesday: { open: string; close: string; isClosed: boolean };
   wednesday: { open: string; close: string; isClosed: boolean };
@@ -10,20 +10,25 @@ export interface IOpeningHours {
   sunday: { open: string; close: string; isClosed: boolean };
 }
 
-export interface IStore {
+export interface IOperateSite {
   name: string;
   address: string;
-  companyId: mongoose.Types.ObjectId;
-  isActive: boolean;
-  longitude: number;
+  phoneNumber: string;
+  emailAddress: string;
+  operatingHours: IOperatingHours;
+  specialInstruction: string;
+  company: mongoose.Types.ObjectId;
   latitude: number;
-  openingHours: IOpeningHours;
+  longitude: number;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface IStoreDocument extends IStore, Document {
+export interface IOperateSiteDocument extends IOperateSite, Document {
   _id: mongoose.Types.ObjectId;
+  isOpenAt(day: string, time: string): boolean;
+  getCurrentStatus(): string;
 }
 
 const openingHoursSchema = new Schema({
@@ -64,35 +69,48 @@ const openingHoursSchema = new Schema({
   },
 }, { _id: false });
 
-const storeSchema = new Schema<IStoreDocument>({
+const operateSiteSchema = new Schema<IOperateSiteDocument>({
   name: {
     type: String,
-    required: [true, 'Store name is required'],
+    required: [true, 'Name is required'],
     trim: true,
-    maxlength: [100, 'Store name cannot exceed 100 characters'],
+    maxlength: [100, 'Name cannot exceed 100 characters'],
   },
   address: {
     type: String,
-    required: [true, 'Store address is required'],
+    required: [true, 'Address is required'],
     trim: true,
     maxlength: [255, 'Address cannot exceed 255 characters'],
   },
-  companyId: {
+  phoneNumber: {
+    type: String,
+    required: [true, 'Phone number is required'],
+    trim: true,
+    maxlength: [20, 'Phone number cannot exceed 20 characters'],
+  },
+  emailAddress: {
+    type: String,
+    required: [true, 'Email address is required'],
+    trim: true,
+    lowercase: true,
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email address'],
+  },
+  operatingHours: {
+    type: openingHoursSchema,
+    required: true,
+    default: () => ({}),
+  },
+  specialInstruction: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Special instruction cannot exceed 500 characters'],
+    default: '',
+  },
+  company: {
     type: Schema.Types.ObjectId,
     ref: 'User',
     required: [true, 'Company ID is required'],
     index: true,
-  },
-  isActive: {
-    type: Boolean,
-    default: true,
-    index: true,
-  },
-  longitude: {
-    type: Number,
-    required: [true, 'Longitude is required'],
-    min: [-180, 'Longitude must be between -180 and 180'],
-    max: [180, 'Longitude must be between -180 and 180'],
   },
   latitude: {
     type: Number,
@@ -100,26 +118,32 @@ const storeSchema = new Schema<IStoreDocument>({
     min: [-90, 'Latitude must be between -90 and 90'],
     max: [90, 'Latitude must be between -90 and 90'],
   },
-  openingHours: {
-    type: openingHoursSchema,
-    required: true,
-    default: () => ({}),
+  longitude: {
+    type: Number,
+    required: [true, 'Longitude is required'],
+    min: [-180, 'Longitude must be between -180 and 180'],
+    max: [180, 'Longitude must be between -180 and 180'],
+  },
+  isActive: {
+    type: Boolean,
+    default: true,
+    index: true,
   },
 }, {
   timestamps: true,
-  collection: 'stores',
+  collection: 'operateSites',
 });
 
 // Indexes for better query performance
-storeSchema.index({ companyId: 1, isActive: 1 });
-storeSchema.index({ longitude: 1, latitude: 1 }); // For geospatial queries
-storeSchema.index({ name: 'text', address: 'text' }); // For text search
+operateSiteSchema.index({ company: 1, isActive: 1 });
+operateSiteSchema.index({ longitude: 1, latitude: 1 }); // For geospatial queries
+operateSiteSchema.index({ name: 'text', address: 'text' }); // For text search
 
 // Create a 2dsphere index for geospatial queries
-storeSchema.index({ location: '2dsphere' });
+operateSiteSchema.index({ location: '2dsphere' });
 
 // Virtual for location (GeoJSON format)
-storeSchema.virtual('location').get(function () {
+operateSiteSchema.virtual('location').get(function (this: IOperateSiteDocument) {
   return {
     type: 'Point',
     coordinates: [this.longitude, this.latitude],
@@ -127,11 +151,11 @@ storeSchema.virtual('location').get(function () {
 });
 
 // Ensure virtual fields are serialized
-storeSchema.set('toJSON', { virtuals: true });
-storeSchema.set('toObject', { virtuals: true });
+operateSiteSchema.set('toJSON', { virtuals: true });
+operateSiteSchema.set('toObject', { virtuals: true });
 
 // Pre-save middleware to validate coordinates
-storeSchema.pre('save', function (next) {
+operateSiteSchema.pre('save', function (this: IOperateSiteDocument, next: mongoose.CallbackWithoutResultAndOptionalError) {
   if (this.longitude < -180 || this.longitude > 180) {
     return next(new Error('Longitude must be between -180 and 180'));
   }
@@ -141,8 +165,8 @@ storeSchema.pre('save', function (next) {
   next();
 });
 
-// Static method to find stores near a location
-storeSchema.statics.findNearby = function (longitude: number, latitude: number, maxDistance: number = 10000) {
+// Static method to find operate sites near a location
+operateSiteSchema.statics.findNearby = function (longitude: number, latitude: number, maxDistance: number = 10000) {
   return this.aggregate([
     {
       $geoNear: {
@@ -159,10 +183,10 @@ storeSchema.statics.findNearby = function (longitude: number, latitude: number, 
   ]);
 };
 
-// Instance method to check if store is open at a specific time
-storeSchema.methods.isOpenAt = function (day: string, time: string): boolean {
-  const dayLower = day.toLowerCase() as keyof IOpeningHours;
-  const dayHours = this.openingHours[dayLower];
+// Instance method to check if operate site is open at a specific time
+operateSiteSchema.methods.isOpenAt = function (this: IOperateSiteDocument, day: string, time: string): boolean {
+  const dayLower = day.toLowerCase() as keyof IOperatingHours;
+  const dayHours = this.operatingHours[dayLower];
   
   if (dayHours.isClosed) {
     return false;
@@ -175,7 +199,7 @@ storeSchema.methods.isOpenAt = function (day: string, time: string): boolean {
 };
 
 // Instance method to get current status
-storeSchema.methods.getCurrentStatus = function (): string {
+operateSiteSchema.methods.getCurrentStatus = function (this: IOperateSiteDocument): string {
   const now = new Date();
   const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
   const currentTime = now.toTimeString().substring(0, 5); // HH:MM format
@@ -186,6 +210,6 @@ storeSchema.methods.getCurrentStatus = function (): string {
   return 'Closed';
 };
 
-const Store = mongoose.model<IStoreDocument>('Store', storeSchema);
+const OperateSite = mongoose.model<IOperateSiteDocument>('operateSites', operateSiteSchema);
 
-export default Store;
+export default OperateSite;

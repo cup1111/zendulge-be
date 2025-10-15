@@ -8,10 +8,22 @@ export interface ICompanyMember {
 
 export interface ICompany {
   name: string;
+  email: string;
   description?: string;
-  website?: string;
-  logo?: string;
+  serviceCategory: string;
+  businessAddress: {
+    street: string;
+    city: string;
+    state: string;
+    postcode: string;
+    country: string;
+  };
+  contact: Types.ObjectId; // Reference to User who is the contact person
   abn?: string;
+  website?: string;
+  facebookUrl?: string;
+  twitterUrl?: string;
+  logo?: string;
   owner: Types.ObjectId; // Reference to User who created the company
   members?: ICompanyMember[]; // Other users who can access this company with their roles
   isActive: boolean;
@@ -44,6 +56,18 @@ const companySchema = new Schema<ICompanyDocument>(
         message: 'Company name contains invalid characters',
       },
     },
+    email: {
+      type: String,
+      required: [true, 'Company email is required'],
+      trim: true,
+      lowercase: true,
+      validate: {
+        validator: function (v: string) {
+          return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+        },
+        message: 'Please provide a valid email address',
+      },
+    },
     description: {
       type: String,
       trim: true,
@@ -55,6 +79,57 @@ const companySchema = new Schema<ICompanyDocument>(
         message: 'Company description must be at least 10 characters if provided',
       },
     },
+    serviceCategory: {
+      type: String,
+      required: [true, 'Service category is required'],
+      trim: true,
+      minlength: [2, 'Service category must be at least 2 characters long'],
+      maxlength: [50, 'Service category cannot exceed 50 characters'],
+    },
+    businessAddress: {
+      street: {
+        type: String,
+        required: [true, 'Street address is required'],
+        trim: true,
+        maxlength: [200, 'Street address cannot exceed 200 characters'],
+      },
+      city: {
+        type: String,
+        required: [true, 'City is required'],
+        trim: true,
+        maxlength: [100, 'City cannot exceed 100 characters'],
+      },
+      state: {
+        type: String,
+        required: [true, 'State is required'],
+        trim: true,
+        maxlength: [50, 'State cannot exceed 50 characters'],
+      },
+      postcode: {
+        type: String,
+        required: [true, 'Postcode is required'],
+        trim: true,
+        validate: {
+          validator: function (v: string) {
+            return /^\d{4}$/.test(v); // Australian postcode format
+          },
+          message: 'Please provide a valid Australian postcode (4 digits)',
+        },
+      },
+      country: {
+        type: String,
+        required: [true, 'Country is required'],
+        trim: true,
+        default: 'Australia',
+        maxlength: [50, 'Country cannot exceed 50 characters'],
+      },
+    },
+    contact: {
+      type: Schema.Types.ObjectId,
+      ref: 'users',
+      required: [true, 'Contact person is required'],
+      index: true,
+    },
     website: {
       type: String,
       trim: true,
@@ -64,6 +139,28 @@ const companySchema = new Schema<ICompanyDocument>(
           return !v || /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/.test(v);
         },
         message: 'Please provide a valid website URL (must include http:// or https://)',
+      },
+    },
+    facebookUrl: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      validate: {
+        validator: function (v: string) {
+          return !v || /^https?:\/\/(www\.)?facebook\.com\/.+/.test(v);
+        },
+        message: 'Please provide a valid Facebook URL',
+      },
+    },
+    twitterUrl: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      validate: {
+        validator: function (v: string) {
+          return !v || /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/.+/.test(v);
+        },
+        message: 'Please provide a valid Twitter/X URL',
       },
     },
     logo: {

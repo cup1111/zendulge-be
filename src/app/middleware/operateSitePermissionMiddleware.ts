@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import Store from '../model/store';
+import OperateSite from '../model/operateSite';
 import Role from '../model/role';
 import { AuthorizationException, NotFoundException } from '../exceptions';
 import { RoleName } from '../enum/roles';
@@ -30,10 +30,10 @@ const isAdmin = async (user: any): Promise<boolean> => {
 };
 
 /**
- * Middleware to check if user can create stores
- * Only admin or owner roles can create stores
+ * Middleware to check if user can create operate sites
+ * Only admin or owner roles can create operate sites
  */
-export const storeCreationMiddleware = async (
+export const operateSiteCreationMiddleware = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
@@ -58,7 +58,7 @@ export const storeCreationMiddleware = async (
       }
     }
 
-    throw new AuthorizationException('You do not have permission to create stores');
+    throw new AuthorizationException('You do not have permission to create operate sites');
   } catch (error) {
     next(error);
   }
@@ -66,7 +66,7 @@ export const storeCreationMiddleware = async (
 
 /**
  * Middleware to check if user is a super admin
- * Super admins can perform any operation on any store
+ * Super admins can perform any operation on any operate site
  */
 export const isSuperAdmin = async (
   req: AuthenticatedRequest,
@@ -92,8 +92,8 @@ export const isSuperAdmin = async (
 };
 
 /**
- * Middleware to check if user has business access to a specific store
- * Checks if the user owns the store or has business-level permissions
+ * Middleware to check if user has business access to a specific operate site
+ * Checks if the user owns the operate site or has business-level permissions
  */
 export const hasBusinessAccess = async (
   req: AuthenticatedRequest,
@@ -102,34 +102,34 @@ export const hasBusinessAccess = async (
 ): Promise<void> => {
   try {
     const user = req.user;
-    const storeId = req.params.id;
+    const operateSiteId = req.params.id;
 
     if (!user) {
       throw new AuthorizationException('User not authenticated');
     }
 
-    if (!storeId) {
-      throw new AuthorizationException('Store ID is required');
+    if (!operateSiteId) {
+      throw new AuthorizationException('Operate site ID is required');
     }
 
-    const store = await Store.findById(storeId);
+    const operateSite = await OperateSite.findById(operateSiteId);
     
-    if (!store) {
-      throw new NotFoundException('Store not found');
+    if (!operateSite) {
+      throw new NotFoundException('Operate site not found');
     }
 
-    // Check if user has owner role and owns this store
+    // Check if user has owner role and owns this operate site
     if (user.role) {
       const userRole = await Role.findById(user.role);
       if (userRole && userRole.name === RoleName.OWNER) {
-        // Check if the user owns this store
-        if (store.companyId.toString() === user._id.toString()) {
+        // Check if the user owns this operate site
+        if (operateSite.company.toString() === user._id.toString()) {
           return next();
         }
       }
     }
 
-    throw new AuthorizationException('You do not have access to this store');
+    throw new AuthorizationException('You do not have access to this operate site');
   } catch (error) {
     next(error);
   }
@@ -139,7 +139,7 @@ export const hasBusinessAccess = async (
  * Combined middleware that allows either super admin OR business access
  * This replaces the old storeOwnershipOrAdminMiddleware
  */
-export const storeOwnershipOrAdminMiddleware = async (
+export const operateSiteOwnershipOrAdminMiddleware = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
@@ -151,36 +151,36 @@ export const storeOwnershipOrAdminMiddleware = async (
       throw new AuthorizationException('User not authenticated');
     }
 
-    // First check if user is admin (can modify any store)
+    // First check if user is admin (can modify any operate site)
     if (await isAdmin(user)) {
       return next();
     }
 
-    // Then check if user has business access to the specific store
-    const storeId = req.params.id;
+    // Then check if user has business access to the specific operate site
+    const operateSiteId = req.params.id;
 
-    if (!storeId) {
-      throw new AuthorizationException('Store ID is required');
+    if (!operateSiteId) {
+      throw new AuthorizationException('Operate site ID is required');
     }
 
-    const store = await Store.findById(storeId);
+    const operateSite = await OperateSite.findById(operateSiteId);
     
-    if (!store) {
-      throw new NotFoundException('Store not found');
+    if (!operateSite) {
+      throw new NotFoundException('Operate site not found');
     }
 
-    // Check if user has owner role and owns this store
+    // Check if user has owner role and owns this operate site
     if (user.role) {
       const userRole = await Role.findById(user.role);
       if (userRole && userRole.name === RoleName.OWNER) {
-        // Check if the user owns this store
-        if (store.companyId.toString() === user._id.toString()) {
+        // Check if the user owns this operate site
+        if (operateSite.company.toString() === user._id.toString()) {
           return next();
         }
       }
     }
 
-    throw new AuthorizationException('You do not have permission to modify this store');
+    throw new AuthorizationException('You do not have permission to modify this operate site');
   } catch (error) {
     next(error);
   }

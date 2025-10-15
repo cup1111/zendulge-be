@@ -17,7 +17,8 @@ describe('Register Company', () => {
     mockUserService.default.store.mockImplementation((userData: any) => Promise.resolve({
       _id: 'user123',
       email: userData.email,
-      name: userData.name,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
     }));
     
     const mockCompany = require('../../src/app/model/company');
@@ -30,11 +31,25 @@ describe('Register Company', () => {
     const testData = {
       email: 'companytest@example.com',
       password: 'TestPassword123',
-      name: 'John Doe',
+      firstName: 'John',
+      lastName: 'Doe',
       jobTitle: 'CEO',
       companyName: 'Test Company Ltd',
+      companyEmail: 'contact@testcompany.com',
       companyDescription: 'A test company for testing purposes',
+      serviceCategory: 'Beauty & Wellness',
+      businessAddress: {
+        street: '123 Test Street',
+        city: 'Melbourne',
+        state: 'VIC',
+        postcode: '3000',
+        country: 'Australia',
+      },
+      abn: '51824753556', // Valid ABN for testing
       companyWebsite: 'https://testcompany.com',
+      facebookUrl: 'https://facebook.com/testcompany',
+      twitterUrl: 'https://twitter.com/testcompany',
+      logo: 'https://testcompany.com/logo.png',
     };
 
     const res = await request(app.application)
@@ -44,7 +59,8 @@ describe('Register Company', () => {
     expect(res.statusCode).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.user.email).toBe(testData.email);
-    expect(res.body.user.name).toBe(testData.name);
+    expect(res.body.user.firstName).toBe(testData.firstName);
+    expect(res.body.user.lastName).toBe(testData.lastName);
     expect(res.body.company.name).toBe(testData.companyName);
     expect(res.body.message).toBe('Registration successful. Please check your email to verify your account.');
 
@@ -60,10 +76,20 @@ describe('Register Company', () => {
     const testData = {
       email: 'existing@example.com',
       password: 'TestPassword123',
-      name: 'John Doe',
+      firstName: 'John',
+      lastName: 'Doe',
       jobTitle: 'CEO',
       companyName: 'Existing Company',
-      companyDescription: 'An existing company',
+      companyEmail: 'contact@existing.com',
+      companyDescription: 'An existing company for testing',
+      serviceCategory: 'Professional Services',
+      businessAddress: {
+        street: '456 Existing Street',
+        city: 'Sydney',
+        state: 'NSW',
+        postcode: '2000',
+        country: 'Australia',
+      },
       companyWebsite: 'https://existing.com',
     };
 
@@ -73,7 +99,8 @@ describe('Register Company', () => {
     const mockUser = {
       _id: 'user123',
       email: testData.email,
-      name: testData.name,
+      firstName: testData.firstName,
+      lastName: testData.lastName,
       active: true,
     };
 
@@ -93,10 +120,20 @@ describe('Register Company', () => {
     const testData = {
       email: 'inactive@example.com',
       password: 'TestPassword123',
-      name: 'John Doe',
+      firstName: 'John',
+      lastName: 'Doe',
       jobTitle: 'CEO',
       companyName: 'Inactive User Company',
-      companyDescription: 'A company for inactive user',
+      companyEmail: 'contact@inactive.com',
+      companyDescription: 'A company for inactive user testing',
+      serviceCategory: 'Health & Fitness',
+      businessAddress: {
+        street: '789 Inactive Street',
+        city: 'Brisbane',
+        state: 'QLD',
+        postcode: '4000',
+        country: 'Australia',
+      },
       companyWebsite: 'https://inactive.com',
     };
 
@@ -104,7 +141,8 @@ describe('Register Company', () => {
     const mockUser = {
       _id: 'user456',
       email: testData.email,
-      name: testData.name,
+      firstName: testData.firstName,
+      lastName: testData.lastName,
       active: false,
     };
 
@@ -119,7 +157,8 @@ describe('Register Company', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.message).toBe('Account exists but not activated. A new verification email has been sent.');
     expect(res.body.user.email).toBe(testData.email);
-    expect(res.body.user.name).toBe(testData.name);
+    expect(res.body.user.firstName).toBe(testData.firstName);
+    expect(res.body.user.lastName).toBe(testData.lastName);
 
     // Verify email service was called for resending activation
     expect(mockEmailService.default.sendVerificationEmail).toHaveBeenCalledTimes(1);
@@ -129,10 +168,20 @@ describe('Register Company', () => {
     const testData = {
       email: 'newuser@example.com',
       password: 'TestPassword123',
-      name: 'John Doe',
+      firstName: 'John',
+      lastName: 'Doe',
       jobTitle: 'CEO',
       companyName: 'Existing Company Name',
-      companyDescription: 'A company with existing name',
+      companyEmail: 'contact@newcompany.com',
+      companyDescription: 'A company with existing name for testing',
+      serviceCategory: 'Technology',
+      businessAddress: {
+        street: '999 New Street',
+        city: 'Perth',
+        state: 'WA',
+        postcode: '6000',
+        country: 'Australia',
+      },
       companyWebsite: 'https://newcompany.com',
     };
 
@@ -145,7 +194,8 @@ describe('Register Company', () => {
     const mockNewUser = {
       _id: 'newuser123',
       email: testData.email,
-      name: testData.name,
+      firstName: testData.firstName,
+      lastName: testData.lastName,
     };
     mockUserService.default.store = jest.fn().mockResolvedValue(mockNewUser);
 
@@ -181,7 +231,8 @@ describe('Register Company', () => {
     const invalidData = {
       email: 'invalid-email',
       password: 'TestPassword123',
-      name: 'John Doe',
+      firstName: 'John',
+      lastName: 'Doe',
       companyName: 'Test Company',
     };
 
@@ -198,7 +249,8 @@ describe('Register Company', () => {
     const invalidData = {
       email: 'test@example.com',
       password: '123', // Too weak
-      name: 'John Doe',
+      firstName: 'John',
+      lastName: 'Doe',
       companyName: 'Test Company',
     };
 
@@ -215,9 +267,20 @@ describe('Register Company', () => {
     const testData = {
       email: 'dbtest@example.com',
       password: 'TestPassword123',
-      name: 'John Doe',
+      firstName: 'John',
+      lastName: 'Doe',
       jobTitle: 'CEO',
       companyName: 'DB Test Company',
+      companyEmail: 'contact@dbtestcompany.com',
+      serviceCategory: 'Technology',
+      businessAddress: {
+        street: '123 Test Street',
+        city: 'Melbourne',
+        state: 'VIC',
+        postcode: '3000',
+        country: 'Australia',
+      },
+      abn: '51824753556',
     };
 
     // Mock User.findByEmail to throw a database error
@@ -237,9 +300,20 @@ describe('Register Company', () => {
     const testData = {
       email: 'emailfail@example.com',
       password: 'TestPassword123',
-      name: 'John Doe',
+      firstName: 'John',
+      lastName: 'Doe',
       jobTitle: 'CEO',
       companyName: 'Email Fail Company',
+      companyEmail: 'contact@emailfailcompany.com',
+      serviceCategory: 'Technology',
+      businessAddress: {
+        street: '123 Test Street',
+        city: 'Melbourne',
+        state: 'VIC',
+        postcode: '3000',
+        country: 'Australia',
+      },
+      abn: '51824753556',
     };
 
     // Mock successful user and company creation but email service failure
@@ -250,7 +324,8 @@ describe('Register Company', () => {
     const mockNewUser = {
       _id: 'emailfailuser123',
       email: testData.email,
-      name: testData.name,
+      firstName: testData.firstName,
+      lastName: testData.lastName,
     };
     mockUserService.default.store = jest.fn().mockResolvedValue(mockNewUser);
     mockUserService.default.updateActivationCode = jest.fn().mockResolvedValue(true);

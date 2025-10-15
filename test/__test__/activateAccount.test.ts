@@ -12,7 +12,8 @@ describe('Account Activation', () => {
     const mockActivatedUser = {
       _id: 'user123',
       email: 'test@example.com',
-      name: 'Test User',
+      firstName: 'Test',
+      lastName: 'User',
       active: true,
     };
 
@@ -28,7 +29,8 @@ describe('Account Activation', () => {
     expect(res.body.message).toBe('Account activated successfully');
     expect(res.body.user.id).toBe(mockActivatedUser._id);
     expect(res.body.user.email).toBe(mockActivatedUser.email);
-    expect(res.body.user.name).toBe(mockActivatedUser.name);
+    expect(res.body.user.firstName).toBe(mockActivatedUser.firstName);
+    expect(res.body.user.lastName).toBe(mockActivatedUser.lastName);
     expect(res.body.user.active).toBe(true);
 
     // Verify that activateUser was called with correct parameter

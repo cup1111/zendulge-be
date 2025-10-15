@@ -49,6 +49,6 @@ roleSchema.statics.findByName = function (name: string) {
   return this.findOne({ name, isActive: true });
 };
 
-const Role = mongoose.model<IRoleDocument>('Role', roleSchema);
+const Role = mongoose.model<IRoleDocument>('roles', roleSchema);
 
 export default Role;

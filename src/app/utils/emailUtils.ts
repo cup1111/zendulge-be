@@ -7,6 +7,17 @@ const emailSenderTemplate = async (
   data: any,
   templateName: string,
 ): Promise<any> => {
+  // Check if email validation is bypassed
+  if (config.bypassEmailValidation) {
+    return {
+      MessageId: 'bypassed-email-template',
+      bypassed: true,
+      email,
+      templateName,
+      data,
+    };
+  }
+
   const sesClient = new SESClient({
     region: awsConfig.awsConfig.awsRegion || 'us-east-1',
     credentials: {

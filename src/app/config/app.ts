@@ -13,7 +13,8 @@ export const config = {
   emailSecret: process.env.EMAIL_SECRET ?? '123456',
   forgotSecret: process.env.FORGET_SECRET ?? '321654',
   accessSecret: process.env.ACCESS_SECRET ?? '',
-  emailBypass: process.env.EMAIL_BYPASS === 'true' ? true : false,
+  emailBypass: process.env.EMAIL_BYPASS === 'true',
+  bypassEmailValidation: process.env.BYPASS_EMAIL_VALIDATION === 'true',
   //---------------------------v2--------------------------
   dbConnection: process.env.DB_CONNECTION ?? '',
   mainDomain: process.env.MAIN_DOMAIN ?? null,

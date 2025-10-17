@@ -7,6 +7,8 @@ import { RoleName } from '../enum/roles';
 interface AuthenticatedRequest extends Request {
   user?: import('../model/user').IUserDocument;
   token?: string;
+  company?: any;
+  userType?: 'super_admin' | 'company_member';
 }
 
 /**
@@ -181,6 +183,100 @@ export const operateSiteOwnershipOrAdminMiddleware = async (
     }
 
     throw new AuthorizationException('You do not have permission to modify this operate site');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Middleware for user management endpoints that allows:
+ * 1. Super admins (global access to all companies)
+ * 2. Company owners/members (access only to their company's users)
+ */
+export const isSuperAdminOrCompanyAccess = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const user = req.user;
+
+    if (!user) {
+      throw new AuthorizationException('User not authenticated');
+    }
+
+    // Check if user is super admin first - they get global access
+    if (await isAdmin(user)) {
+      req.userType = 'super_admin'; // Mark as super admin for controller logic
+      return next();
+    }
+
+    // For non-super-admins, we need to validate company access
+    // The user ID in the route should belong to their company
+    const targetUserId = req.params.id;
+    const requestedCompanyId = req.body?.companyId || req.query?.companyId;
+    
+    // Import Company model dynamically to avoid circular dependencies
+    const Company = (await import('../model/company')).default;
+    const User = (await import('../model/user')).default;
+
+    // Check if the current user has access to the target user's company
+    if (targetUserId) {
+      const targetUser = await User.findById(targetUserId);
+      if (!targetUser) {
+        throw new NotFoundException('Target user not found');
+      }
+
+      // Find the company that contains the target user
+      const targetUserCompany = await Company.findOne({
+        $or: [
+          { owner: targetUser._id },
+          { 'members.user': targetUser._id },
+        ],
+        isActive: true,
+      });
+
+      if (!targetUserCompany) {
+        throw new AuthorizationException('Target user is not associated with any company');
+      }
+
+      // Check if current user has access to that company
+      const hasCompanyAccess = await Company.findOne({
+        _id: targetUserCompany._id,
+        $or: [
+          { owner: user._id },
+          { 'members.user': user._id },
+        ],
+        isActive: true,
+      });
+
+      if (!hasCompanyAccess) {
+        throw new AuthorizationException('Access denied: You do not have permission to manage users in this company');
+      }
+
+      req.company = hasCompanyAccess;
+    }
+
+    // For POST requests (creating users), validate the company they're being added to
+    if (req.method === 'POST' && requestedCompanyId) {
+      const targetCompany = await Company.findOne({
+        _id: requestedCompanyId,
+        $or: [
+          { owner: user._id },
+          { 'members.user': user._id },
+        ],
+        isActive: true,
+      });
+
+      if (!targetCompany) {
+        throw new AuthorizationException('Access denied: You do not have permission to add users to this company');
+      }
+
+      req.company = targetCompany;
+    }
+
+    req.userType = 'company_member'; // Mark as company member for controller logic
+    next();
   } catch (error) {
     next(error);
   }

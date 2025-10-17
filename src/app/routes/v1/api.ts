@@ -12,9 +12,24 @@ import {
   getOperateSiteStatus,
 } from '../../controllers/v1/operateSiteController';
 import { getCompanyUsers } from '../../controllers/v1/companyController';
+import {
+  getAllUsers,
+  getUserById,
+  createUserWithRole,
+  updateUserRole,
+  removeUserRole,
+  getAllRoles,
+  deleteUser,
+} from '../../controllers/v1/userManagementController';
 import { businessRegistrationValidation } from '../../validation/businessRegistrationValidation';
 import { customerRegistrationValidation } from '../../validation/customerRegistrationValidation';
 import { loginValidation, refreshTokenValidation } from '../../validation/authValidation';
+import {
+  createUserWithRoleValidation,
+  companyAndUserIdValidation,
+  companyUserRoleValidation,
+  companyUserRoleRemovalValidation,
+} from '../../validation/userManagementValidation';
 import { handleValidationErrors } from '../../validation/validationHandler';
 import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
 import { 
@@ -139,6 +154,61 @@ router.get('/company/:id/operate-sites/:operateSiteId/analytics',
   authenticationTokenMiddleware,
   requireCompanyAccess, // Validates company access and provides req.company
   getOperateSiteById, // This would show analytics for company members
+);
+
+// User Management routes following the company/:id pattern
+// Company-scoped user management (business owners manage their company users)
+router.get('/company/:id/users/:userId', 
+  authenticationTokenMiddleware,
+  requireCompanyAccess, // Validates company access and provides req.company
+  companyAndUserIdValidation,
+  handleValidationErrors,
+  getUserById,
+);
+
+router.post('/company/:id/users', 
+  authenticationTokenMiddleware,
+  requireCompanyAccess, // Validates company access and provides req.company
+  createUserWithRoleValidation,
+  handleValidationErrors,
+  createUserWithRole,
+);
+
+router.patch('/company/:id/users/:userId/role', 
+  authenticationTokenMiddleware,
+  requireCompanyAccess, // Validates company access and provides req.company
+  companyUserRoleValidation,
+  handleValidationErrors,
+  updateUserRole,
+);
+
+router.patch('/company/:id/users/:userId/remove-role', 
+  authenticationTokenMiddleware,
+  requireCompanyAccess, // Validates company access and provides req.company
+  companyUserRoleRemovalValidation,
+  handleValidationErrors,
+  removeUserRole,
+);
+
+router.delete('/company/:id/users/:userId', 
+  authenticationTokenMiddleware,
+  requireCompanyAccess, // Validates company access and provides req.company
+  companyAndUserIdValidation,
+  handleValidationErrors,
+  deleteUser,
+);
+
+// Super Admin only routes (global access)
+router.get('/admin/users', 
+  authenticationTokenMiddleware,
+  isSuperAdmin, // Only super admins can see ALL users across companies
+  getAllUsers,
+);
+
+router.get('/admin/roles', 
+  authenticationTokenMiddleware,
+  isSuperAdmin, // Only super admins can see all roles
+  getAllRoles,
 );
 
 export default router;

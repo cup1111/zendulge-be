@@ -26,7 +26,7 @@
 Before running this application, make sure you have the following installed:
 
 - **Node.js**: v18.x or higher
-- **npm**: v8.x or higher (or yarn v1.22.x)
+- **Yarn**: v1.22.x or higher
 - **MongoDB**: v5.x or higher
 - **AWS Account**: For S3 and SES services
 
@@ -35,12 +35,20 @@ Before running this application, make sure you have the following installed:
 ### 1. Install Dependencies
 
 ```bash
-npm install
-# or
 yarn install
 ```
 
-### 2. Environment Configuration
+### 2. Setup VS Code Extensions
+
+```bash
+# Fix VS Code CLI if needed
+yarn fix-vscode-cli
+
+# Install all recommended extensions
+yarn setup-vscode-plugin
+```
+
+### 3. Environment Configuration
 
 Copy the example environment file and configure your settings:
 
@@ -50,16 +58,16 @@ cp .env.example .env
 
 Edit the `.env` file with your configuration:
 
-### 3. Build the Application
+### 4. Build the Application
 
 ```bash
-npm run build
+yarn build
 ```
 
-### 4. Start the Development Server
+### 5. Start the Development Server
 
 ```bash
-npm run dev
+yarn dev
 ```
 
 The API will be available at `http://localhost:8000/api/v1/xxxx`
@@ -73,20 +81,20 @@ n/a
 ### Run All Tests
 
 ```bash
-npm test
+yarn test
 ```
 
 ### Run Tests with Coverage
 
 ```bash
-npm run coverage
+yarn coverage
 ```
 
 ### Run Load Tests
 
 ```bash
-npm run load-test
-npm run load-test-report
+yarn load-test
+yarn load-test-report
 ```
 
 ### Test Structure
@@ -124,14 +132,14 @@ src/
 
 | Script              | Description                              |
 | ------------------- | ---------------------------------------- |
-| `npm start`         | Start production server                  |
-| `npm run dev`       | Start development server with hot reload |
-| `npm run build`     | Build TypeScript to JavaScript           |
-| `npm test`          | Run test suite                           |
-| `npm run coverage`  | Run tests with coverage report           |
-| `npm run lint`      | Run ESLint                               |
-| `npm run setup`     | Initialize application setup             |
-| `npm run load-test` | Run performance tests                    |
+| `yarn start`        | Start production server                  |
+| `yarn dev`          | Start development server with hot reload |
+| `yarn build`        | Build TypeScript to JavaScript           |
+| `yarn test`         | Run test suite                           |
+| `yarn coverage`     | Run tests with coverage report           |
+| `yarn lint`         | Run ESLint                               |
+| `yarn setup`        | Initialize application setup             |
+| `yarn load-test`    | Run performance tests                    |
 
 ## 🐳 Docker Support
 
@@ -159,7 +167,7 @@ docker-compose up -d
 1. **Build the application**:
 
    ```bash
-   npm run build
+   yarn build
    ```
 
 2. **Set production environment variables**:
@@ -170,7 +178,7 @@ docker-compose up -d
 
 3. **Start the production server**:
    ```bash
-   npm start
+   yarn start
    ```
 
 ### Environment Variables

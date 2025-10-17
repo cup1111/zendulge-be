@@ -12,7 +12,7 @@ interface UserManagementRequest extends Request {
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const result = await userManagementService.getAllUsers();
-    res.status(200).json(result);
+    res.status(200).json(result.data);
   } catch (error) {
     winstonLogger.error(`Get all users controller error: ${error}`);
     res.status(500).json({
@@ -30,7 +30,7 @@ export const getUserById = async (req: UserManagementRequest, res: Response) => 
     const companyId = req.params.id || req.company?._id; // Company ID from URL path
     
     const result = await userManagementService.getUserById(userId, companyId);
-    res.status(200).json(result);
+    res.status(200).json(result.data);
   } catch (error) {
     winstonLogger.error(`Get user by ID controller error: ${error}`);
     
@@ -63,7 +63,7 @@ export const createUserWithRole = async (req: UserManagementRequest, res: Respon
     }
     
     const result = await userManagementService.createUserWithRole(userData);
-    res.status(201).json(result);
+    res.status(201).json(result.data);
   } catch (error) {
     winstonLogger.error(`Create user with role controller error: ${error}`);
     
@@ -88,7 +88,7 @@ export const updateUserRole = async (req: UserManagementRequest, res: Response) 
     const companyId = req.params.id || req.company?._id; // Company ID from URL path
     
     const result = await userManagementService.updateUserRole(userId, req.body, companyId);
-    res.status(200).json(result);
+    res.status(200).json(result.data);
   } catch (error) {
     winstonLogger.error(`Update user role controller error: ${error}`);
     
@@ -118,7 +118,7 @@ export const removeUserRole = async (req: UserManagementRequest, res: Response) 
     const companyId = req.params.id || req.company?._id; // Company ID from URL path
     
     const result = await userManagementService.removeUserRole(userId, companyId);
-    res.status(200).json(result);
+    res.status(200).json(result.data);
   } catch (error) {
     winstonLogger.error(`Remove user role controller error: ${error}`);
     
@@ -144,7 +144,7 @@ export const removeUserRole = async (req: UserManagementRequest, res: Response) 
 export const getAllRoles = async (req: Request, res: Response) => {
   try {
     const result = await userManagementService.getAllRoles();
-    res.status(200).json(result);
+    res.status(200).json(result.data);
   } catch (error) {
     winstonLogger.error(`Get all roles controller error: ${error}`);
     res.status(500).json({
@@ -162,7 +162,7 @@ export const deleteUser = async (req: UserManagementRequest, res: Response) => {
     const companyId = req.params.id || req.company?._id; // Company ID from URL path
     
     const result = await userManagementService.deleteUser(userId, companyId);
-    res.status(200).json(result);
+    res.status(200).json({ success: true, message: result.message });
   } catch (error) {
     winstonLogger.error(`Delete user controller error: ${error}`);
     

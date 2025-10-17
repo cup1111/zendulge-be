@@ -67,14 +67,9 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
       requestedBy: req.user?.email,
     });
 
-    res.status(200).json({
-      success: true,
-      message: 'Company users retrieved successfully',
-      data: {
-        users,
-        totalUsers: users.length,
-      },
-    });
+    res.status(200).json(
+      users,
+    );
 
   } catch (error: any) {
     winstonLogger.error('Error retrieving company users:', {

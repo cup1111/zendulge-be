@@ -1,9 +1,21 @@
 
 import { winstonLogger } from '../../loaders/logger';
 import { emailSenderTemplate } from '../utils/emailUtils';
+import config from '../config/app';
 
 const sendVerificationEmail = async (email: string, validationCode: string) => {
   try {
+    // Check if email validation is bypassed
+    if (config.bypassEmailValidation) {
+      winstonLogger.info(`Email sending bypassed for: ${email} (validation code: ${validationCode})`);
+      return { 
+        MessageId: 'bypassed-email-validation',
+        bypassed: true,
+        email,
+        validationCode,
+      };
+    }
+
     // Create sendEmail params
     const templateData = {
       name: email,

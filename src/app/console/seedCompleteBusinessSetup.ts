@@ -24,30 +24,30 @@ const seedCompleteBusinessSetup = async () => {
       throw new Error('Roles not found. Please run seed-roles first.');
     }
 
-    // Create Company Admin User
-    const companyAdminData = {
-      email: 'admin@zendulge.com',
-      password: await bcrypt.hash('Admin123!', 8),
+    // Create Company Owner User
+    const companyOwnerData = {
+      email: 'owner@zendulge.com',
+      password: await bcrypt.hash('Owner123!', 8),
       firstName: 'Company',
-      lastName: 'Admin',
+      lastName: 'Owner',
       phoneNumber: '+61412345678',
-      jobTitle: 'Business Administrator',
-      userName: 'companyadmin',
+      jobTitle: 'Business Owner',
+      userName: 'companyowner',
       active: true,
       role: ownerRole.id,
     };
 
-    // Check if company admin already exists
-    let companyAdmin = await User.findByEmail(companyAdminData.email);
-    if (!companyAdmin) {
-      companyAdmin = new User(companyAdminData);
-      await companyAdmin.save();
-      console.log('✅ Created Company Admin user');
+    // Check if company owner already exists
+    let companyOwner = await User.findByEmail(companyOwnerData.email);
+    if (!companyOwner) {
+      companyOwner = new User(companyOwnerData);
+      await companyOwner.save();
+      console.log('✅ Created Company Owner user');
     } else {
-      console.log('ℹ️  Company Admin user already exists');
+      console.log('ℹ️  Company Owner user already exists');
     }
 
-    // Create a Company for the Company Admin
+    // Create a Company for the Company Owner
     const companyData = {
       name: 'Zendulge Technologies Pty Ltd',
       email: 'info@zendulge.com',
@@ -60,12 +60,12 @@ const seedCompleteBusinessSetup = async () => {
         postcode: '3000',
         country: 'Australia',
       },
-      contact: companyAdmin.id,
+      contact: companyOwner.id,
       abn: '51824753556', // Valid ABN format for testing
       website: 'https://zendulge.com',
       facebookUrl: 'https://facebook.com/zendulge',
       twitterUrl: 'https://twitter.com/zendulge',
-      owner: companyAdmin.id,
+      owner: companyOwner.id,
       isActive: true,
     };
 
@@ -210,14 +210,14 @@ const seedCompleteBusinessSetup = async () => {
     // Summary
     console.log('\n🎉 Complete business setup seeding completed successfully!');
     console.log('\n📋 Summary of created data:');
-    console.log(`   👤 Company Admin: ${companyAdmin.email}`);
+    console.log(`   👤 Company Owner: ${companyOwner.email}`);
     console.log(`   🏢 Company: ${company.name}`);
     console.log('   📍 Operate Sites: 2 locations');
     console.log(`   👥 Team Members: 1 invited user (${invitedUser.email})`);
     console.log(`   🛠️  Services: ${servicesData.length} service offerings`);
     
     console.log('\n🔐 Login Credentials:');
-    console.log(`   Company Admin: ${companyAdmin.email} / Admin123!`);
+    console.log(`   Company Owner: ${companyOwner.email} / Owner123!`);
     console.log(`   Manager: ${invitedUser.email} / Manager123!`);
 
     process.exit(0);

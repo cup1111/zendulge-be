@@ -104,7 +104,7 @@ describe('User Management Endpoints', () => {
         .expect(403);
     });
 
-    it('should return roles for company admins', async () => {
+    it('should return roles for company owners', async () => {
       // First, let's create some test roles
       const Role = require('../../src/app/model/role').default;
       const { RoleName } = require('../../src/app/enum/roles');
@@ -133,7 +133,7 @@ describe('User Management Endpoints', () => {
 
       const response = await request(app.getApp())
         .get(`/api/v1/company/${TEST_COMPANY_ID}/roles`)
-        .set('Authorization', 'Bearer admin-token')
+        .set('Authorization', 'Bearer owner-token')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -161,7 +161,7 @@ describe('User Management Endpoints', () => {
         .expect(403);
     });
 
-    it('should return roles for company admin', async () => {
+    it('should return roles for company owner', async () => {
       // Mock the models
       const Role = require('../../src/app/model/role').default;
       const { RoleName } = require('../../src/app/enum/roles');
@@ -192,7 +192,7 @@ describe('User Management Endpoints', () => {
 
       const response = await request(app.getApp())
         .get(`/api/v1/company/${TEST_COMPANY_ID}/roles`)
-        .set('Authorization', 'Bearer admin-token')
+        .set('Authorization', 'Bearer owner-token')
         .expect(200);
 
       expect(response.body.success).toBe(true);

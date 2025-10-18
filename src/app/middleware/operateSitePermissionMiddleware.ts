@@ -101,9 +101,9 @@ export const hasBusinessAccess = async (
 
 /**
  * Combined middleware that allows business access
- * This replaces the old storeOwnershipOrAdminMiddleware
+ * This replaces the old storeOwnershipOrOwnerMiddleware
  */
-export const operateSiteOwnershipOrAdminMiddleware = async (
+export const operateSiteOwnershipOrOwnerMiddleware = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
@@ -235,3 +235,6 @@ export const requireCompanyUserAccess = async (
     next(error);
   }
 };
+
+// Export alias for backward compatibility
+export const operateSiteOwnershipOrAdminMiddleware = operateSiteOwnershipOrOwnerMiddleware;

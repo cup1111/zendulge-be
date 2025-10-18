@@ -133,7 +133,7 @@ export class UserManagementService {
         department: userData.department,
         location: userData.location,
         role: userData.role,
-        isEmailVerified: false, // Admin created users need to verify email
+        isEmailVerified: false, // Owner created users need to verify email
         active: true,
       });
 

@@ -130,16 +130,16 @@ src/
 
 ## 🔧 Available Scripts
 
-| Script              | Description                              |
-| ------------------- | ---------------------------------------- |
-| `yarn start`        | Start production server                  |
-| `yarn dev`          | Start development server with hot reload |
-| `yarn build`        | Build TypeScript to JavaScript           |
-| `yarn test`         | Run test suite                           |
-| `yarn coverage`     | Run tests with coverage report           |
-| `yarn lint`         | Run ESLint                               |
-| `yarn setup`        | Initialize application setup             |
-| `yarn load-test`    | Run performance tests                    |
+| Script           | Description                              |
+| ---------------- | ---------------------------------------- |
+| `yarn start`     | Start production server                  |
+| `yarn dev`       | Start development server with hot reload |
+| `yarn build`     | Build TypeScript to JavaScript           |
+| `yarn test`      | Run test suite                           |
+| `yarn coverage`  | Run tests with coverage report           |
+| `yarn lint`      | Run ESLint                               |
+| `yarn setup`     | Initialize application setup             |
+| `yarn load-test` | Run performance tests                    |
 
 ## 🐳 Docker Support
 

@@ -143,7 +143,7 @@ jest.mock('../../src/app/middleware/companyAccessMiddleware', () => ({
       return next(new AuthorizationException('Access denied: You do not have permission to access this company'));
     }
 
-    // For admin tokens or valid company access, attach mock company
+    // For owner tokens or valid company access, attach mock company
     req.company = {
       _id: companyId,
       name: 'Test Company',
@@ -159,5 +159,6 @@ jest.mock('../../src/app/middleware/companyAccessMiddleware', () => ({
 // Mock permission middleware
 jest.mock('../../src/app/middleware/operateSitePermissionMiddleware', () => ({
   operateSiteOwnershipOrAdminMiddleware: jest.fn((req: any, res: any, next: any) => next()),
+  operateSiteOwnershipOrOwnerMiddleware: jest.fn((req: any, res: any, next: any) => next()),
   requireCompanyUserAccess: jest.fn((req: any, res: any, next: any) => next()),
 }));

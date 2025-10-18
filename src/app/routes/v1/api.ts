@@ -181,7 +181,7 @@ router.delete('/company/:id/users/:userId',
   deleteUser,
 );
 
-// Get all roles (for company admin to assign roles to users)
+// Get all roles (for company owner to assign roles to users)
 router.get('/company/:id/roles', 
   authenticationTokenMiddleware,
   requireCompanyAccess,

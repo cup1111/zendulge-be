@@ -99,7 +99,7 @@ export class UserManagementService {
         throw new Error('Invalid role ID format');
       }
 
-      const role = await Role.findById(userData.role);
+      const role = await Role.findOne({ _id: userData.role, isActive: true });
       if (!role) {
         throw new Error('Role not found');
       }
@@ -205,7 +205,7 @@ export class UserManagementService {
       }
 
       // Check if role exists
-      const role = await Role.findById(roleData.role);
+      const role = await Role.findOne({ _id: roleData.role, isActive: true });
       if (!role) {
         throw new Error('Role not found');
       }
@@ -249,7 +249,7 @@ export class UserManagementService {
   // Get all roles
   async getAllRoles() {
     try {
-      const roles = await Role.find({ active: true })
+      const roles = await Role.find({ isActive: true })
         .select('name description permissions')
         .sort({ name: 1 });
 

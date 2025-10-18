@@ -16,9 +16,22 @@ export function transformLeanResult<T = any>(doc: T): T {
   if (typeof doc === 'object' && doc !== null) {
     const transformed = { ...doc } as any;
     
+    // Transform the main document _id to id
     if (transformed._id) {
       transformed.id = transformed._id;
       delete transformed._id;
+    }
+    
+    // Transform nested objects (like populated fields)
+    for (const key of Object.keys(transformed)) {
+      if (transformed[key] && typeof transformed[key] === 'object') {
+        if (Array.isArray(transformed[key])) {
+          transformed[key] = transformed[key].map((item: any) => transformLeanResult(item));
+        } else if (transformed[key]._id) {
+          // Handle populated documents
+          transformed[key] = transformLeanResult(transformed[key]);
+        }
+      }
     }
     
     delete transformed.__v;

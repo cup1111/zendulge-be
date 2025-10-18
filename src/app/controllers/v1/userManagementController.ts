@@ -115,7 +115,7 @@ export const updateUserRole = async (req: UserManagementRequest, res: Response) 
 export const getAllRoles = async (req: Request, res: Response) => {
   try {
     const result = await userManagementService.getAllRoles();
-    res.status(200).json(result.data);
+    res.status(200).json(result);
   } catch (error) {
     winstonLogger.error(`Get all roles controller error: ${error}`);
     res.status(500).json({

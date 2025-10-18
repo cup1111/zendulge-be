@@ -103,6 +103,61 @@ describe('User Management Endpoints', () => {
     });
   });
 
+  describe('GET /api/v1/company/:id/roles', () => {
+    it('should return 401 without authentication', async () => {
+      await request(app.getApp())
+        .get(`/api/v1/company/${TEST_COMPANY_ID}/roles`)
+        .expect(401);
+    });
+
+    it('should return 403 for users without company access', async () => {
+      await request(app.getApp())
+        .get(`/api/v1/company/${TEST_COMPANY_ID}/roles`)
+        .set('Authorization', 'Bearer regular-token')
+        .expect(403);
+    });
+
+    it('should return roles for company admins', async () => {
+      // First, let's create some test roles
+      const Role = require('../../src/app/model/role').default;
+      const { RoleName } = require('../../src/app/enum/roles');
+      
+      // Create test roles
+      await Role.deleteMany({}); // Clean up first
+      const testRoles = [
+        {
+          name: RoleName.ADMIN,
+          description: 'Administrator with full access',
+          isActive: true,
+        },
+        {
+          name: RoleName.OWNER,
+          description: 'Store owner',
+          isActive: true,
+        },
+        {
+          name: RoleName.CUSTOMER,
+          description: 'Customer role',
+          isActive: true,
+        },
+      ];
+      
+      await Role.insertMany(testRoles);
+
+      const response = await request(app.getApp())
+        .get(`/api/v1/company/${TEST_COMPANY_ID}/roles`)
+        .set('Authorization', 'Bearer admin-token')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBe(3);
+      expect(response.body.data[0]).toHaveProperty('name');
+      expect(response.body.data[0]).toHaveProperty('description');
+    });
+  });
+
   describe('GET /api/v1/admin/roles', () => {
     it('should return 401 without authentication', async () => {
       await request(app.getApp())
@@ -115,6 +170,104 @@ describe('User Management Endpoints', () => {
         .get('/api/v1/admin/roles')
         .set('Authorization', 'Bearer regular-token')
         .expect(403);
+    });
+
+    it('should return roles for super admin users', async () => {
+      // Ensure we have test roles in the database
+      const Role = require('../../src/app/model/role').default;
+      const { RoleName } = require('../../src/app/enum/roles');
+      
+      // Create test roles if they don't exist
+      const existingRoles = await Role.find({ isActive: true });
+      if (existingRoles.length === 0) {
+        const testRoles = [
+          {
+            name: RoleName.ADMIN,
+            description: 'Administrator with full access',
+            isActive: true,
+          },
+          {
+            name: RoleName.OWNER,
+            description: 'Store owner',
+            isActive: true,
+          },
+          {
+            name: RoleName.CUSTOMER,
+            description: 'Customer role',
+            isActive: true,
+          },
+        ];
+        
+        await Role.insertMany(testRoles);
+      }
+
+      const response = await request(app.getApp())
+        .get('/api/v1/admin/roles')
+        .set('Authorization', 'Bearer admin-token')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.data[0]).toHaveProperty('name');
+      expect(response.body.data[0]).toHaveProperty('description');
+    });
+  });
+
+  describe('GET /api/v1/company/:id/roles', () => {
+    it('should return 401 without authentication', async () => {
+      await request(app.getApp())
+        .get(`/api/v1/company/${TEST_COMPANY_ID}/roles`)
+        .expect(401);
+    });
+
+    it('should return 403 for users without company access', async () => {
+      await request(app.getApp())
+        .get(`/api/v1/company/${TEST_COMPANY_ID}/roles`)
+        .set('Authorization', 'Bearer regular-token')
+        .expect(403);
+    });
+
+    it('should return roles for company admin', async () => {
+      // Mock the models
+      const Role = require('../../src/app/model/role').default;
+      
+      // Create test roles if they don't exist
+      const existingRoles = await Role.find({ isActive: true });
+      if (existingRoles.length === 0) {
+        const testRoles = [
+          {
+            name: 'admin',
+            description: 'Administrator role',
+            isActive: true,
+          },
+          {
+            name: 'owner',
+            description: 'Owner role',
+            isActive: true,
+          },
+          {
+            name: 'customer',
+            description: 'Customer role',
+            isActive: true,
+          },
+        ];
+        
+        await Role.insertMany(testRoles);
+      }
+
+      const response = await request(app.getApp())
+        .get(`/api/v1/company/${TEST_COMPANY_ID}/roles`)
+        .set('Authorization', 'Bearer admin-token')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeDefined();
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.data[0]).toHaveProperty('name');
+      expect(response.body.data[0]).toHaveProperty('description');
     });
   });
 });

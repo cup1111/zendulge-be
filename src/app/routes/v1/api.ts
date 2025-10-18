@@ -188,6 +188,13 @@ router.delete('/company/:id/users/:userId',
   deleteUser,
 );
 
+// Get all roles (for company admin to assign roles to users)
+router.get('/company/:id/roles', 
+  authenticationTokenMiddleware,
+  requireCompanyAccess,
+  getAllRoles,
+);
+
 // Super Admin only routes (global access)
 router.get('/admin/users', 
   authenticationTokenMiddleware,

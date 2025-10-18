@@ -88,21 +88,6 @@ describe('User Management Endpoints', () => {
     });
   });
 
-  describe('PATCH /api/v1/company/:id/users/:userId/remove-role', () => {
-    it('should return 401 without authentication', async () => {
-      await request(app.getApp())
-        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}/remove-role`)
-        .expect(401);
-    });
-
-    it('should return 403 for users without company access', async () => {
-      await request(app.getApp())
-        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}/remove-role`)
-        .set('Authorization', 'Bearer regular-token')
-        .expect(403);
-    });
-  });
-
   describe('DELETE /api/v1/company/:id/users/:userId', () => {
     it('should return 401 without authentication', async () => {
       await request(app.getApp())

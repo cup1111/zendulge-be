@@ -110,13 +110,3 @@ export const companyUserRoleValidation = [
     .isMongoId()
     .withMessage('Please provide a valid role ID'),
 ];
-
-// Combined validation for company user role removal
-export const companyUserRoleRemovalValidation = [
-  param('id')
-    .isMongoId()
-    .withMessage('Please provide a valid company ID'),
-  param('userId')
-    .isMongoId()
-    .withMessage('Please provide a valid user ID'),
-];

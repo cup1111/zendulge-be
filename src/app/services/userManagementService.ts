@@ -246,69 +246,6 @@ export class UserManagementService {
     }
   }
 
-  // Remove user role (set to null) with optional company validation
-  async removeUserRole(userId: string, companyId?: string) {
-    try {
-      if (!Types.ObjectId.isValid(userId)) {
-        throw new Error('Invalid user ID format');
-      }
-
-      // Check if user exists
-      const user = await User.findOne({ _id: userId, active: true });
-      if (!user) {
-        throw new Error('User not found');
-      }
-
-      // If companyId is provided, validate that user belongs to that company
-      if (companyId) {
-        const Company = (await import('../model/company')).default;
-        const userInCompany = await Company.findOne({
-          _id: companyId,
-          $or: [
-            { owner: user.id },
-            { 'members.user': user.id },
-          ],
-          isActive: true,
-        });
-
-        if (!userInCompany) {
-          throw new Error('User not found in the specified company');
-        }
-
-        // Also remove role from company members
-        await Company.updateOne(
-          {
-            _id: companyId,
-            'members.user': userId,
-          },
-          {
-            $set: {
-              'members.$.role': null,
-            },
-          },
-        );
-      }
-
-      // Remove user role
-      const updatedUser = await User.findByIdAndUpdate(
-        userId,
-        { role: null },
-        { new: true, runValidators: true },
-      )
-        .populate('role', 'name description permissions')
-        .select('-password -refreshToken -activeCode');
-
-      return {
-        success: true,
-        message: 'User role removed successfully',
-        data: updatedUser,
-      };
-    } catch (error) {
-      winstonLogger.error(`Remove user role error: ${error}`);
-      throw error;
-    }
-  }
-
   // Get all roles
   async getAllRoles() {
     try {

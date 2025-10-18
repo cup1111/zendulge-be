@@ -17,7 +17,6 @@ import {
   getUserById,
   createUserWithRole,
   updateUserRole,
-  removeUserRole,
   getAllRoles,
   deleteUser,
 } from '../../controllers/v1/userManagementController';
@@ -28,7 +27,6 @@ import {
   createUserWithRoleValidation,
   companyAndUserIdValidation,
   companyUserRoleValidation,
-  companyUserRoleRemovalValidation,
 } from '../../validation/userManagementValidation';
 import { handleValidationErrors } from '../../validation/validationHandler';
 import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
@@ -180,14 +178,6 @@ router.patch('/company/:id/users/:userId/role',
   companyUserRoleValidation,
   handleValidationErrors,
   updateUserRole,
-);
-
-router.patch('/company/:id/users/:userId/remove-role', 
-  authenticationTokenMiddleware,
-  requireCompanyAccess, // Validates company access and provides req.company
-  companyUserRoleRemovalValidation,
-  handleValidationErrors,
-  removeUserRole,
 );
 
 router.delete('/company/:id/users/:userId', 

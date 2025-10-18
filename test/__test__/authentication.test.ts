@@ -41,10 +41,10 @@ describe('Authentication', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.message).toBe('Login successful');
-      expect(res.body.user).toBeDefined();
-      expect(res.body.tokens).toBeDefined();
-      expect(res.body.tokens.accessToken).toBe('mock-access-token');
-      expect(res.body.tokens.refreshToken).toBe('mock-refresh-token');
+      expect(res.body.data).toBeDefined();
+      expect(res.body.data.user).toBeDefined();
+      expect(res.body.data.accessToken).toBe('mock-access-token');
+      expect(res.body.data.refreshToken).toBe('mock-refresh-token');
     });
 
     it('should return 401 for invalid credentials', async () => {

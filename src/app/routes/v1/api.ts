@@ -13,7 +13,6 @@ import {
 } from '../../controllers/v1/operateSiteController';
 import { getCompanyUsers } from '../../controllers/v1/companyController';
 import {
-  getAllUsers,
   getUserById,
   createUserWithRole,
   updateUserRole,
@@ -31,8 +30,7 @@ import {
 import { handleValidationErrors } from '../../validation/validationHandler';
 import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
 import { 
-  operateSiteOwnershipOrAdminMiddleware, 
-  isSuperAdmin,
+  operateSiteOwnershipOrAdminMiddleware,
 } from '../../middleware/operateSitePermissionMiddleware';
 import { requireCompanyAccess } from '../../middleware/companyAccessMiddleware';
 
@@ -140,12 +138,7 @@ router.get('/company/:id/users',
 
 // Example routes using the new security approach
 
-// Admin-only route example - only super admins can access ALL company data
-router.get('/admin/operate-sites', 
-  authenticationTokenMiddleware,
-  isSuperAdmin,
-  getOperateSites, // This would show all operate sites for admin
-);
+
 
 // Business access route - company members can access their company's analytics
 router.get('/company/:id/operate-sites/:operateSiteId/analytics', 
@@ -195,17 +188,6 @@ router.get('/company/:id/roles',
   getAllRoles,
 );
 
-// Super Admin only routes (global access)
-router.get('/admin/users', 
-  authenticationTokenMiddleware,
-  isSuperAdmin, // Only super admins can see ALL users across companies
-  getAllUsers,
-);
 
-router.get('/admin/roles', 
-  authenticationTokenMiddleware,
-  isSuperAdmin, // Only super admins can see all roles
-  getAllRoles,
-);
 
 export default router;

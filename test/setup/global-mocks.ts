@@ -156,27 +156,8 @@ jest.mock('../../src/app/middleware/companyAccessMiddleware', () => ({
   validateCompanyAccess: jest.fn((req: any, res: any, next: any) => next()),
 }));
 
-// Mock super admin middleware
+// Mock permission middleware
 jest.mock('../../src/app/middleware/operateSitePermissionMiddleware', () => ({
-  isSuperAdmin: jest.fn((req: any, res: any, next: any) => {
-    const authHeader = req.header('Authorization');
-    
-    // If no authentication header, let the auth middleware handle it
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return next();
-    }
-
-    const token = authHeader.substring(7);
-    
-    // Simulate unauthorized access for regular tokens
-    if (token === 'regular-token') {
-      const { AuthorizationException } = require('../../src/app/exceptions');
-      return next(new AuthorizationException('Admin access required'));
-    }
-
-    // For admin tokens, continue
-    next();
-  }),
   operateSiteOwnershipOrAdminMiddleware: jest.fn((req: any, res: any, next: any) => next()),
-  isSuperAdminOrCompanyAccess: jest.fn((req: any, res: any, next: any) => next()),
+  requireCompanyUserAccess: jest.fn((req: any, res: any, next: any) => next()),
 }));

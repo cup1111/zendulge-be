@@ -2,8 +2,8 @@
  * Role names enum for consistent role checking across the application
  */
 export enum RoleName {
-  ADMIN = 'admin',
   OWNER = 'owner',
+  EMPLOYEE = 'employee',
   CUSTOMER = 'customer',
 }
 

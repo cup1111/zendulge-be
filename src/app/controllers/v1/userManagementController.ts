@@ -4,24 +4,9 @@ import { winstonLogger } from '../../../loaders/logger';
 
 // Extended request interface for user management
 interface UserManagementRequest extends Request {
-  userType?: 'super_admin' | 'company_member';
+  userType?: 'company_member';
   company?: any;
 }
-
-// Get all users with their roles
-export const getAllUsers = async (req: Request, res: Response) => {
-  try {
-    const result = await userManagementService.getAllUsers();
-    res.status(200).json(result.data);
-  } catch (error) {
-    winstonLogger.error(`Get all users controller error: ${error}`);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-  }
-};
 
 // Get user by ID with role
 export const getUserById = async (req: UserManagementRequest, res: Response) => {

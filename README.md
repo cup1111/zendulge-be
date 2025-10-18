@@ -223,8 +223,9 @@ Month 1 (Nov 2025) 1.
 - Authentication(BE Done)
 - Middleware(Done)
 - Roles
-  - Super Admin
   - Business owner
+  - Manager
+  - Employee
   - Customer
 - Redirects
   - Login button redirect to login page

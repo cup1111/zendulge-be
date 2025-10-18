@@ -13,16 +13,7 @@ const verifyBusinessSetupData = async () => {
     await mongoose.connect(config.dbConnection);
     console.log('Connected to MongoDB for business setup verification');
 
-    // Get Super Admin
-    const superAdmin = await User.findOne({ email: 'superadmin@zendulge.com' });
-    const superAdminRole = superAdmin?.role ? await Role.findById(superAdmin.role) : null;
-    
-    console.log('\n👤 Super Admin User:');
-    console.log(`   Email: ${superAdmin?.email}`);
-    console.log(`   Name: ${superAdmin?.firstName} ${superAdmin?.lastName}`);
-    console.log(`   Role: ${superAdminRole?.name}`);
-    console.log(`   Phone: ${superAdmin?.phoneNumber}`);
-    console.log(`   Active: ${superAdmin?.active}`);
+
 
     // Get Company
     const company = await Company.findOne({ name: 'Zendulge Technologies Pty Ltd' });

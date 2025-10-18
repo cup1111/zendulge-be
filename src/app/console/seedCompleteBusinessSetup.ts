@@ -16,39 +16,38 @@ const seedCompleteBusinessSetup = async () => {
     console.log('Connected to MongoDB for complete business setup seeding');
 
     // First, ensure roles exist
-    const adminRole = await Role.findOne({ name: RoleName.ADMIN });
     const ownerRole = await Role.findOne({ name: RoleName.OWNER });
+    const employeeRole = await Role.findOne({ name: RoleName.EMPLOYEE });
     const customerRole = await Role.findOne({ name: RoleName.CUSTOMER });
 
-    if (!adminRole || !ownerRole || !customerRole) {
+    if (!ownerRole || !employeeRole || !customerRole) {
       throw new Error('Roles not found. Please run seed-roles first.');
     }
 
-    // Create Super Admin User
-    const superAdminData = {
-      email: 'superadmin@zendulge.com',
-      password: await bcrypt.hash('SuperAdmin123!', 8),
-      firstName: 'Super',
+    // Create Company Admin User
+    const companyAdminData = {
+      email: 'admin@zendulge.com',
+      password: await bcrypt.hash('Admin123!', 8),
+      firstName: 'Company',
       lastName: 'Admin',
       phoneNumber: '+61412345678',
-      jobTitle: 'System Administrator',
-      userName: 'superadmin',
+      jobTitle: 'Business Administrator',
+      userName: 'companyadmin',
       active: true,
-      role: adminRole.id,
-      isSuperUser: 1,
+      role: ownerRole.id,
     };
 
-    // Check if super admin already exists
-    let superAdmin = await User.findByEmail(superAdminData.email);
-    if (!superAdmin) {
-      superAdmin = new User(superAdminData);
-      await superAdmin.save();
-      console.log('✅ Created Super Admin user');
+    // Check if company admin already exists
+    let companyAdmin = await User.findByEmail(companyAdminData.email);
+    if (!companyAdmin) {
+      companyAdmin = new User(companyAdminData);
+      await companyAdmin.save();
+      console.log('✅ Created Company Admin user');
     } else {
-      console.log('ℹ️  Super Admin user already exists');
+      console.log('ℹ️  Company Admin user already exists');
     }
 
-    // Create a Company for the Super Admin
+    // Create a Company for the Company Admin
     const companyData = {
       name: 'Zendulge Technologies Pty Ltd',
       email: 'info@zendulge.com',
@@ -61,12 +60,12 @@ const seedCompleteBusinessSetup = async () => {
         postcode: '3000',
         country: 'Australia',
       },
-      contact: superAdmin.id,
+      contact: companyAdmin.id,
       abn: '51824753556', // Valid ABN format for testing
       website: 'https://zendulge.com',
       facebookUrl: 'https://facebook.com/zendulge',
       twitterUrl: 'https://twitter.com/zendulge',
-      owner: superAdmin.id,
+      owner: companyAdmin.id,
       isActive: true,
     };
 
@@ -211,14 +210,14 @@ const seedCompleteBusinessSetup = async () => {
     // Summary
     console.log('\n🎉 Complete business setup seeding completed successfully!');
     console.log('\n📋 Summary of created data:');
-    console.log(`   👤 Super Admin: ${superAdmin.email}`);
+    console.log(`   👤 Company Admin: ${companyAdmin.email}`);
     console.log(`   🏢 Company: ${company.name}`);
     console.log('   📍 Operate Sites: 2 locations');
     console.log(`   👥 Team Members: 1 invited user (${invitedUser.email})`);
     console.log(`   🛠️  Services: ${servicesData.length} service offerings`);
     
     console.log('\n🔐 Login Credentials:');
-    console.log(`   Super Admin: ${superAdmin.email} / SuperAdmin123!`);
+    console.log(`   Company Admin: ${companyAdmin.email} / Admin123!`);
     console.log(`   Manager: ${invitedUser.email} / Manager123!`);
 
     process.exit(0);

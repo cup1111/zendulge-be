@@ -3,6 +3,7 @@ import User from '../../model/user';
 import { winstonLogger } from '../../../loaders/logger';
 import { BadRequestException } from '../../exceptions/badRequestException';
 import { InternalServerException } from '../../exceptions/serverException';
+import { transformLeanResult } from '../../../lib/mongoUtils';
 
 export interface AuthenticatedRequest extends Request {
   user?: any;
@@ -27,11 +28,12 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
     
     // Add company owner
     if (company.owner) {
-      const owner = await User.findById(company.owner)
+      const ownerRaw = await User.findById(company.owner)
         .select('firstName lastName email phoneNumber jobTitle active createdAt role')
         .lean();
       
-      if (owner) {
+      if (ownerRaw) {
+        const owner = transformLeanResult(ownerRaw);
         users.push({
           ...owner,
           companyRole: 'owner',
@@ -44,11 +46,12 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
     // Add company members
     if (company.members && company.members.length > 0) {
       for (const member of company.members) {
-        const memberUser = await User.findById(member.user)
+        const memberUserRaw = await User.findById(member.user)
           .select('firstName lastName email phoneNumber jobTitle active createdAt role')
           .lean();
         
-        if (memberUser) {
+        if (memberUserRaw) {
+          const memberUser = transformLeanResult(memberUserRaw);
           users.push({
             ...memberUser,
             companyRole: 'member',

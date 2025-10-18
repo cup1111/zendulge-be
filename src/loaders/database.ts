@@ -28,6 +28,7 @@ const initializeDatabase = async () => {
       return ret;
     },
   });
+
   const connection = await mongoose
     .connect(config.dbConnection)
     .catch((e: any) => {

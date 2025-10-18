@@ -3,6 +3,7 @@ import * as jwt from 'jsonwebtoken';
 import config from '../config/app';
 import * as bcrypt from 'bcrypt';
 import { winstonLogger } from '../../loaders/logger';
+import { transformLeanResult } from '../../lib/mongoUtils';
 
 export interface IProjectRole {
   project: Types.ObjectId;
@@ -160,6 +161,9 @@ userSchema.methods.generateAuthToken = async function () {
     ],
     isActive: true,
   }).select('_id name').lean();
+
+  // Transform lean results to ensure consistent id field
+  const transformedCompanies = transformLeanResult(userCompanies);
   
   const payload = {
     id: user.id,
@@ -169,7 +173,7 @@ userSchema.methods.generateAuthToken = async function () {
     userName: user.userName || null,
     avatarIcon: user.avatarIcon || null,
     role: user.role?.slug || null, // Include role slug for frontend decisions
-    companies: userCompanies.map((c: any) => ({ id: c.id || c._id, name: c.name })),
+    companies: transformedCompanies.map((c: any) => ({ id: c.id, name: c.name })),
   };
   
   const token = jwt.sign(payload, config.accessSecret, {

@@ -16,24 +16,30 @@ export function transformLeanResult<T = any>(doc: T): T {
   if (typeof doc === 'object' && doc !== null) {
     const transformed = { ...doc } as any;
     
-    // Transform the main document _id to id
+    // Transform the main document _id to id (convert ObjectId to string)
     if (transformed._id) {
-      transformed.id = transformed._id;
+      // Handle both ObjectId objects and string IDs
+      transformed.id = typeof transformed._id === 'string' 
+        ? transformed._id 
+        : transformed._id.toString();
       delete transformed._id;
     }
     
-    // Transform nested objects (like populated fields)
+    // Transform nested objects recursively
     for (const key of Object.keys(transformed)) {
-      if (transformed[key] && typeof transformed[key] === 'object') {
-        if (Array.isArray(transformed[key])) {
-          transformed[key] = transformed[key].map((item: any) => transformLeanResult(item));
-        } else if (transformed[key]._id) {
-          // Handle populated documents
-          transformed[key] = transformLeanResult(transformed[key]);
+      const value = transformed[key];
+      if (value && typeof value === 'object') {
+        if (Array.isArray(value)) {
+          // Transform arrays recursively
+          transformed[key] = value.map((item: any) => transformLeanResult(item));
+        } else {
+          // Transform nested objects recursively
+          transformed[key] = transformLeanResult(value);
         }
       }
     }
     
+    // Remove MongoDB version field
     delete transformed.__v;
     return transformed as T;
   }

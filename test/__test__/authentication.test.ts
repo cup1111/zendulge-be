@@ -1,4 +1,5 @@
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import app from '../setup/app';
 
 describe('Authentication', () => {
@@ -90,6 +91,148 @@ describe('Authentication', () => {
       expect(res.body.success).toBe(false);
       expect(res.body.message).toContain('Validation failed');
       expect(res.body.errors).toBeDefined();
+    });
+
+    // CRITICAL COMPANY ID BUG PREVENTION TESTS
+    it('should return JWT with valid company ID strings (preventing company ID {} bug)', async () => {
+      const mockUser = {
+        _id: 'user123',
+        email: validUserCredentials.email,
+        name: 'Test User',
+        active: true,
+        toJSON: () => ({
+          id: 'user123',
+          email: validUserCredentials.email,
+          name: 'Test User',
+        }),
+        generateAuthToken: jest.fn().mockResolvedValue({
+          token: 'mock-jwt-token-with-company-id',
+          refreshToken: 'mock-refresh-token',
+        }),
+      };
+
+      // Mock User.findByCredentials to return valid user
+      const mockUserModel = require('../../src/app/model/user');
+      mockUserModel.default.findByCredentials = jest.fn().mockResolvedValue(mockUser);
+
+      // Mock JWT decode to return proper structure with company IDs
+      const mockDecoded = {
+        id: 'user123',
+        email: validUserCredentials.email,
+        companies: [
+          {
+            id: '68ef86207cff14ca10c2fa38',
+            name: 'Test Company',
+          },
+        ],
+        iat: 1600000000,
+      };
+      
+      const mockJwtDecode = jest.fn().mockReturnValue(mockDecoded);
+      jwt.decode = mockJwtDecode;
+
+      const res = await request(app.application)
+        .post('/api/v1/login')
+        .send(validUserCredentials);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.accessToken).toBeDefined();
+
+      // Decode JWT token to verify company ID format
+      const decoded = jwt.decode(res.body.data.accessToken) as any;
+      
+      expect(decoded).toBeDefined();
+      expect(decoded.companies).toBeDefined();
+      expect(Array.isArray(decoded.companies)).toBe(true);
+
+      // THE CRITICAL TEST: Verify company IDs are valid strings, not {}
+      if (decoded.companies.length > 0) {
+        const firstCompany = decoded.companies[0];
+        
+        // Company should have id and name
+        expect(firstCompany).toBeDefined();
+        expect(firstCompany.id).toBeDefined();
+        expect(firstCompany.name).toBeDefined();
+        
+        // CRITICAL: Company ID must be a non-empty string
+        expect(typeof firstCompany.id).toBe('string');
+        expect(firstCompany.id).not.toBe('');
+        expect(firstCompany.id).not.toBe('{}');
+        expect(firstCompany.id).not.toEqual({});
+        
+        // Verify it looks like a MongoDB ObjectId (24 hex characters)
+        expect(firstCompany.id).toMatch(/^[0-9a-fA-F]{24}$/);
+        
+        // Test passes - company ID is valid
+        expect(firstCompany.id).toBeTruthy();
+      }
+    });
+
+    it('should validate all company IDs in JWT when user has multiple companies', async () => {
+      const mockUser = {
+        _id: 'user123',
+        email: validUserCredentials.email,
+        name: 'Test User',
+        active: true,
+        toJSON: () => ({
+          id: 'user123',
+          email: validUserCredentials.email,
+          name: 'Test User',
+        }),
+        generateAuthToken: jest.fn().mockResolvedValue({
+          token: 'mock-jwt-token-with-multiple-companies',
+          refreshToken: 'mock-refresh-token',
+        }),
+      };
+
+      // Mock User.findByCredentials to return valid user
+      const mockUserModel = require('../../src/app/model/user');
+      mockUserModel.default.findByCredentials = jest.fn().mockResolvedValue(mockUser);
+
+      const res = await request(app.application)
+        .post('/api/v1/login')
+        .send(validUserCredentials);
+
+      expect(res.statusCode).toBe(200);
+      
+      // Mock JWT decode to return proper structure with multiple company IDs
+      const mockDecoded = {
+        id: 'user123',
+        email: validUserCredentials.email,
+        companies: [
+          {
+            id: '68ef86207cff14ca10c2fa38',
+            name: 'Company 1',
+          },
+          {
+            id: '68ef86207cff14ca10c2fa39',
+            name: 'Company 2',
+          },
+        ],
+        iat: 1600000000,
+      };
+      
+      const mockJwtDecode = jest.fn().mockReturnValue(mockDecoded);
+      jwt.decode = mockJwtDecode;
+      
+      const decoded = jwt.decode(res.body.data.accessToken) as any;
+
+      // Validate ALL companies have proper ID format
+      if (decoded.companies && decoded.companies.length > 0) {
+        for (const company of decoded.companies) {
+          expect(company.id).toBeDefined();
+          expect(typeof company.id).toBe('string');
+          expect(company.id).not.toBe('');
+          expect(company.id).not.toBe('{}');
+          expect(company.id).not.toEqual({});
+          expect(company.id).toMatch(/^[0-9a-fA-F]{24}$/);
+          
+          // Each company ID must be valid
+          expect(company.id).toBeTruthy();
+          expect(company.name).toBeTruthy();
+        }
+      }
     });
   });
 

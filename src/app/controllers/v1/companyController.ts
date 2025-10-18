@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import User from '../../model/user';
+import Role from '../../model/role';
 import { winstonLogger } from '../../../loaders/logger';
 import { BadRequestException } from '../../exceptions/badRequestException';
 import { InternalServerException } from '../../exceptions/serverException';
+import { transformLeanResult } from '../../../lib/mongoUtils';
 
 export interface AuthenticatedRequest extends Request {
   user?: any;
@@ -29,26 +31,21 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
     if (company.owner) {
       const ownerRaw = await User.findById(company.owner)
         .select('firstName lastName email phoneNumber jobTitle active createdAt role')
-        .populate('role', 'name description permissions');
+        .populate('role', 'name description permissions')
+        .lean();
       
       if (ownerRaw) {
-        // Convert to lean-like object
-        const owner = {
-          id: ownerRaw._id.toString(),
-          firstName: ownerRaw.firstName,
-          lastName: ownerRaw.lastName,
-          email: ownerRaw.email,
-          phoneNumber: ownerRaw.phoneNumber,
-          jobTitle: ownerRaw.jobTitle,
-          active: ownerRaw.active,
-          createdAt: (ownerRaw as any).createdAt,
-          role: ownerRaw.role ? {
-            id: (ownerRaw.role as any)._id?.toString() || (ownerRaw.role as any).id,
-            name: (ownerRaw.role as any).name,
-            description: (ownerRaw.role as any).description,
-            permissions: (ownerRaw.role as any).permissions,
-          } : null,
-        };
+        const owner = transformLeanResult(ownerRaw);
+        
+        // If role is still just an ID, fetch it manually
+        if (owner.role && typeof owner.role === 'string') {
+          const roleData = await Role.findById(owner.role)
+            .select('name description permissions')
+            .lean();
+          if (roleData) {
+            (owner as any).role = transformLeanResult(roleData);
+          }
+        }
         
         users.push({
           ...owner,
@@ -63,32 +60,21 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
       for (const member of company.members) {
         const memberUserRaw = await User.findById(member.user)
           .select('firstName lastName email phoneNumber jobTitle active createdAt role')
-          .populate('role', 'name description permissions');
+          .populate('role', 'name description permissions')
+          .lean();
         
         if (memberUserRaw) {
-          // Convert to lean-like object
-          const memberUser = {
-            id: memberUserRaw._id.toString(),
-            firstName: memberUserRaw.firstName,
-            lastName: memberUserRaw.lastName,
-            email: memberUserRaw.email,
-            phoneNumber: memberUserRaw.phoneNumber,
-            jobTitle: memberUserRaw.jobTitle,
-            active: memberUserRaw.active,
-            createdAt: (memberUserRaw as any).createdAt,
-            role: memberUserRaw.role ? {
-              id: (memberUserRaw.role as any)._id?.toString() || (memberUserRaw.role as any).id,
-              name: (memberUserRaw.role as any).name,
-              description: (memberUserRaw.role as any).description,
-              permissions: (memberUserRaw.role as any).permissions,
-            } : null,
-          };
+          const memberUser = transformLeanResult(memberUserRaw);
           
-          winstonLogger.info('Debug member user role data:', {
-            rawRoleType: typeof memberUserRaw.role,
-            rawRole: memberUserRaw.role,
-            transformedRole: memberUser.role,
-          });
+          // If role is still just an ID, fetch it manually
+          if (memberUser.role && typeof memberUser.role === 'string') {
+            const roleData = await Role.findById(memberUser.role)
+              .select('name description permissions')
+              .lean();
+            if (roleData) {
+              (memberUser as any).role = transformLeanResult(roleData);
+            }
+          }
           
           users.push({
             ...memberUser,

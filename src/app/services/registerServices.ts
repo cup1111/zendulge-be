@@ -7,7 +7,7 @@ import { EmailAlreadyExistsException, CompanyAlreadyExistsException } from '../e
 // Helper function to generate activation code and send email
 const generateAndSendActivationEmail = async (user: any) => {
   const activationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  await userService.updateActivationCode(user._id.toString(), activationCode);
+  await userService.updateActivationCode(user.id.toString(), activationCode);
   await emailService.sendVerificationEmail(user.email, activationCode);
 };
 
@@ -90,7 +90,7 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
       success: true,
       message: 'Account exists but not activated. A new verification email has been sent.',
       user: {
-        id: existingUser._id,
+        id: existingUser.id,
         email: existingUser.email,
         firstName: existingUser.firstName,
         lastName: existingUser.lastName,
@@ -118,13 +118,13 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
       ...businessAddress,
       country: businessAddress.country || 'Australia',
     },
-    contact: user._id, // The registering user becomes the contact person
+    contact: user.id, // The registering user becomes the contact person
     abn,
     website: companyWebsite,
     facebookUrl,
     twitterUrl,
     logo,
-    owner: user._id,
+    owner: user.id,
     isActive: true,
   };
 
@@ -138,13 +138,13 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
   return {
     success: true,
     user: {
-      id: user._id,
+      id: user.id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
     },
     company: {
-      id: company._id,
+      id: company.id,
       name: company.name,
     },
     message: 'Registration successful. Please check your email to verify your account.',
@@ -172,7 +172,7 @@ export const customerRegister = async (registrationData: ICustomerRegistration) 
       success: true,
       message: 'Account exists but not activated. A new verification email has been sent.',
       user: {
-        id: existingUser._id,
+        id: existingUser.id,
         email: existingUser.email,
         firstName: existingUser.firstName,
         lastName: existingUser.lastName,
@@ -199,7 +199,7 @@ export const customerRegister = async (registrationData: ICustomerRegistration) 
     success: true,
     message: 'Customer registered successfully. Please check your email to verify your account.',
     user: {
-      id: user._id,
+      id: user.id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,

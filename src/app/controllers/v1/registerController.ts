@@ -28,7 +28,7 @@ export const activateAccount = async (req: Request, res: Response) => {
     success: true,
     message: 'Account activated successfully',
     user: {
-      id: user._id,
+      id: user.id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,

@@ -11,6 +11,7 @@ describe('Account Activation', () => {
     const activationCode = 'validactivationcode123';
     const mockActivatedUser = {
       _id: 'user123',
+      id: 'user123', // Add id field for compatibility with response
       email: 'test@example.com',
       firstName: 'Test',
       lastName: 'User',
@@ -27,7 +28,7 @@ describe('Account Activation', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.message).toBe('Account activated successfully');
-    expect(res.body.user.id).toBe(mockActivatedUser._id);
+    expect(res.body.user.id).toBe(mockActivatedUser.id);
     expect(res.body.user.email).toBe(mockActivatedUser.email);
     expect(res.body.user.firstName).toBe(mockActivatedUser.firstName);
     expect(res.body.user.lastName).toBe(mockActivatedUser.lastName);

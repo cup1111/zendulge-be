@@ -63,8 +63,8 @@ export class UserManagementService {
         const userInCompany = await Company.findOne({
           _id: companyId,
           $or: [
-            { owner: user._id },
-            { 'members.user': user._id },
+            { owner: user.id },
+            { 'members.user': user.id },
           ],
           isActive: true,
         });
@@ -142,7 +142,7 @@ export class UserManagementService {
         await company.updateOne({
           $push: {
             members: {
-              user: newUser._id,
+              user: newUser.id,
               role: userData.role,
               joinedAt: new Date(),
             },
@@ -193,8 +193,8 @@ export class UserManagementService {
         const userInCompany = await Company.findOne({
           _id: companyId,
           $or: [
-            { owner: user._id },
-            { 'members.user': user._id },
+            { owner: user.id },
+            { 'members.user': user.id },
           ],
           isActive: true,
         });
@@ -265,8 +265,8 @@ export class UserManagementService {
         const userInCompany = await Company.findOne({
           _id: companyId,
           $or: [
-            { owner: user._id },
-            { 'members.user': user._id },
+            { owner: user.id },
+            { 'members.user': user.id },
           ],
           isActive: true,
         });
@@ -346,8 +346,8 @@ export class UserManagementService {
         const userInCompany = await Company.findOne({
           _id: companyId,
           $or: [
-            { owner: user._id },
-            { 'members.user': user._id },
+            { owner: user.id },
+            { 'members.user': user.id },
           ],
           isActive: true,
         });

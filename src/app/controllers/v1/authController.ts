@@ -27,7 +27,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Find the first admin user
-    user = await User.findOne({ role: adminRole._id, active: true });
+    user = await User.findOne({ role: adminRole.id, active: true });
     
     if (!user) {
       throw new AuthenticationException('No admin user found in database');

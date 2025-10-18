@@ -13,8 +13,8 @@ beforeAll(async () => {
 
   sinon.stub(saasMiddleware, 'saas').callsFake(function (req: any, res: any, next: any) {
     req.dbConnection = db.dbConnection;
-    req.companyId = db.defaultCompany._id;
-    req.userId = db.defaultUser._id;
+    req.companyId = db.defaultCompany.id;
+    req.userId = db.defaultUser.id;
     return next();
   });
 

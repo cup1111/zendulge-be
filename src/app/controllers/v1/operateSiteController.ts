@@ -226,7 +226,7 @@ export const getOperateSiteStatus = async (req: AuthenticatedRequest, res: Respo
   res.status(200).json({
     success: true,
     data: {
-      siteId: operateSite._id,
+      siteId: operateSite.id,
       name: operateSite.name,
       status,
       isActive: operateSite.isActive,

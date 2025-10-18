@@ -27,7 +27,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
 export const getUserById = async (req: UserManagementRequest, res: Response) => {
   try {
     const userId = req.params.userId || req.params.id; // Support both userId and id params
-    const companyId = req.params.id || req.company?._id; // Company ID from URL path
+    const companyId = req.params.id || req.company?.id; // Company ID from URL path
     
     const result = await userManagementService.getUserById(userId, companyId);
     res.status(200).json(result.data);
@@ -57,7 +57,7 @@ export const createUserWithRole = async (req: UserManagementRequest, res: Respon
   try {
     // Add company ID from URL path to user data
     const userData = { ...req.body };
-    const companyId = req.params.id || req.company?._id; // Company ID from URL path
+    const companyId = req.params.id || req.company?.id; // Company ID from URL path
     if (companyId) {
       userData.companyId = companyId;
     }
@@ -85,7 +85,7 @@ export const createUserWithRole = async (req: UserManagementRequest, res: Respon
 export const updateUserRole = async (req: UserManagementRequest, res: Response) => {
   try {
     const userId = req.params.userId || req.params.id; // Support both userId and id params
-    const companyId = req.params.id || req.company?._id; // Company ID from URL path
+    const companyId = req.params.id || req.company?.id; // Company ID from URL path
     
     const result = await userManagementService.updateUserRole(userId, req.body, companyId);
     res.status(200).json(result.data);
@@ -115,7 +115,7 @@ export const updateUserRole = async (req: UserManagementRequest, res: Response) 
 export const removeUserRole = async (req: UserManagementRequest, res: Response) => {
   try {
     const userId = req.params.userId || req.params.id; // Support both userId and id params
-    const companyId = req.params.id || req.company?._id; // Company ID from URL path
+    const companyId = req.params.id || req.company?.id; // Company ID from URL path
     
     const result = await userManagementService.removeUserRole(userId, companyId);
     res.status(200).json(result.data);
@@ -159,7 +159,7 @@ export const getAllRoles = async (req: Request, res: Response) => {
 export const deleteUser = async (req: UserManagementRequest, res: Response) => {
   try {
     const userId = req.params.userId || req.params.id; // Support both userId and id params
-    const companyId = req.params.id || req.company?._id; // Company ID from URL path
+    const companyId = req.params.id || req.company?.id; // Company ID from URL path
     
     const result = await userManagementService.deleteUser(userId, companyId);
     res.status(200).json({ success: true, message: result.message });

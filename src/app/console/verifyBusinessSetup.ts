@@ -46,7 +46,7 @@ const verifyBusinessSetupData = async () => {
     }
 
     // Get Operate Sites
-    const operateSites = await OperateSite.find({ company: company?._id });
+    const operateSites = await OperateSite.find({ company: company?.id });
     console.log('\n📍 Operate Sites:');
     operateSites.forEach((site, index) => {
       console.log(`   ${index + 1}. ${site.name}`);

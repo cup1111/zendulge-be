@@ -27,7 +27,7 @@ async function createDefaultData(): Promise<void> {
   const user = await new UserBuilder().save();
   defaultUser = user;
 
-  const company = await new CompanyBuilder().withOwner(user._id).withContact(user._id).save();
+  const company = await new CompanyBuilder().withOwner(user.id).withContact(user.id).save();
   defaultCompany = company;
 }
 

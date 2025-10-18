@@ -34,7 +34,7 @@ const seedCompleteBusinessSetup = async () => {
       jobTitle: 'System Administrator',
       userName: 'superadmin',
       active: true,
-      role: adminRole._id,
+      role: adminRole.id,
       isSuperUser: 1,
     };
 
@@ -61,12 +61,12 @@ const seedCompleteBusinessSetup = async () => {
         postcode: '3000',
         country: 'Australia',
       },
-      contact: superAdmin._id,
+      contact: superAdmin.id,
       abn: '51824753556', // Valid ABN format for testing
       website: 'https://zendulge.com',
       facebookUrl: 'https://facebook.com/zendulge',
       twitterUrl: 'https://twitter.com/zendulge',
-      owner: superAdmin._id,
+      owner: superAdmin.id,
       isActive: true,
     };
 
@@ -95,7 +95,7 @@ const seedCompleteBusinessSetup = async () => {
         sunday: { open: '10:00', close: '16:00', isClosed: false },
       },
       specialInstruction: 'Main headquarters with full service availability. Meeting rooms available by appointment.',
-      company: company._id,
+      company: company.id,
       latitude: -37.8136,
       longitude: 144.9631,
       isActive: true,
@@ -116,7 +116,7 @@ const seedCompleteBusinessSetup = async () => {
         sunday: { open: '12:00', close: '15:00', isClosed: true },
       },
       specialInstruction: 'Boutique location specializing in premium consultations. Valet parking available.',
-      company: company._id,
+      company: company.id,
       latitude: -37.8394,
       longitude: 144.9944,
       isActive: true,
@@ -151,7 +151,7 @@ const seedCompleteBusinessSetup = async () => {
       jobTitle: 'Business Manager',
       userName: 'sjohnson',
       active: true,
-      role: ownerRole._id, // Give them owner role for the business
+      role: ownerRole.id, // Give them owner role for the business
     };
 
     let invitedUser = await User.findByEmail(invitedUserData.email);
@@ -164,14 +164,14 @@ const seedCompleteBusinessSetup = async () => {
     }
 
     // Add the invited user as a member of the company
-    const isAlreadyMember = company.members?.some(member => member.user.equals(invitedUser!._id));
+    const isAlreadyMember = company.members?.some(member => member.user.equals(invitedUser!.id));
     if (!isAlreadyMember) {
       if (!company.members) {
         company.members = [];
       }
       company.members.push({
-        user: invitedUser!._id,
-        role: ownerRole._id,
+        user: invitedUser!.id,
+        role: ownerRole.id,
         joinedAt: new Date(),
       });
       await company.save();
@@ -189,7 +189,7 @@ const seedCompleteBusinessSetup = async () => {
         price: 299.99,
         duration: '2 hours',
         isActive: true,
-        operateSites: [operateSite1._id, operateSite2._id],
+        operateSites: [operateSite1.id, operateSite2.id],
       },
       {
         name: 'Technology Integration Services',
@@ -198,7 +198,7 @@ const seedCompleteBusinessSetup = async () => {
         price: 499.99,
         duration: '4 hours',
         isActive: true,
-        operateSites: [operateSite1._id], // Only available at main location
+        operateSites: [operateSite1.id], // Only available at main location
       },
     ];
 

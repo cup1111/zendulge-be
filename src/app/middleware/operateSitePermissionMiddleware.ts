@@ -125,7 +125,7 @@ export const hasBusinessAccess = async (
       const userRole = await Role.findById(user.role);
       if (userRole && userRole.name === RoleName.OWNER) {
         // Check if the user owns this operate site
-        if (operateSite.company.toString() === user._id.toString()) {
+        if (operateSite.company.toString() === user.id.toString()) {
           return next();
         }
       }
@@ -176,7 +176,7 @@ export const operateSiteOwnershipOrAdminMiddleware = async (
       const userRole = await Role.findById(user.role);
       if (userRole && userRole.name === RoleName.OWNER) {
         // Check if the user owns this operate site
-        if (operateSite.company.toString() === user._id.toString()) {
+        if (operateSite.company.toString() === user.id.toString()) {
           return next();
         }
       }
@@ -230,8 +230,8 @@ export const isSuperAdminOrCompanyAccess = async (
       // Find the company that contains the target user
       const targetUserCompany = await Company.findOne({
         $or: [
-          { owner: targetUser._id },
-          { 'members.user': targetUser._id },
+          { owner: targetUser.id },
+          { 'members.user': targetUser.id },
         ],
         isActive: true,
       });
@@ -242,10 +242,10 @@ export const isSuperAdminOrCompanyAccess = async (
 
       // Check if current user has access to that company
       const hasCompanyAccess = await Company.findOne({
-        _id: targetUserCompany._id,
+        _id: targetUserCompany.id,
         $or: [
-          { owner: user._id },
-          { 'members.user': user._id },
+          { owner: user.id },
+          { 'members.user': user.id },
         ],
         isActive: true,
       });
@@ -262,8 +262,8 @@ export const isSuperAdminOrCompanyAccess = async (
       const targetCompany = await Company.findOne({
         _id: requestedCompanyId,
         $or: [
-          { owner: user._id },
-          { 'members.user': user._id },
+          { owner: user.id },
+          { 'members.user': user.id },
         ],
         isActive: true,
       });

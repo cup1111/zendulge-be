@@ -118,14 +118,10 @@ export class UserManagementService {
         }
       }
 
-      // Hash password
-      const saltRounds = 10;
-      const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
-
       // Create user
       const newUser = await User.create({
         email: userData.email.toLowerCase(),
-        password: hashedPassword,
+        password: userData.password,
         firstName: userData.firstName,
         lastName: userData.lastName,
         phoneNumber: userData.phoneNumber,

@@ -5,7 +5,6 @@ import OperateSite from '../model/operateSite';
 import Role from '../model/role';
 import config from '../config/app';
 import { RoleName } from '../enum/roles';
-import * as bcrypt from 'bcrypt';
 
 /* eslint-disable no-console */
 
@@ -27,7 +26,7 @@ const seedCompleteBusinessSetup = async () => {
     // Create Company Owner User
     const companyOwnerData = {
       email: 'owner@zendulge.com',
-      password: await bcrypt.hash('Owner123!', 8),
+      password: 'Owner123!',
       firstName: 'Company',
       lastName: 'Owner',
       phoneNumber: '+61412345678',
@@ -143,7 +142,7 @@ const seedCompleteBusinessSetup = async () => {
     // Create an invited user (Business Manager)
     const invitedUserData = {
       email: 'manager@zendulge.com',
-      password: await bcrypt.hash('Manager123!', 8),
+      password: 'Manager123!',
       firstName: 'Sarah',
       lastName: 'Johnson',
       phoneNumber: '+61412345679',

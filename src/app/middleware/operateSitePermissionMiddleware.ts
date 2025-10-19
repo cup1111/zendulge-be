@@ -7,21 +7,18 @@ import { RoleName } from '../enum/roles';
 interface AuthenticatedRequest extends Request {
   user?: import('../model/user').IUserDocument;
   token?: string;
+  company?: any;
+  userType?: 'company_member';
 }
 
 /**
- * Helper function to check if user is admin
+ * Helper function to check if user is owner
  */
-const isAdmin = async (user: any): Promise<boolean> => {
-  // Check if user is super user (backward compatibility)
-  if (user.isSuperUser === 1) {
-    return true;
-  }
-
-  // Check if user has admin role
+const isOwner = async (user: any): Promise<boolean> => {
+  // Check if user has owner role
   if (user.role) {
     const userRole = await Role.findById(user.role);
-    if (userRole && userRole.name === RoleName.ADMIN) {
+    if (userRole && userRole.name === RoleName.OWNER) {
       return true;
     }
   }
@@ -31,7 +28,7 @@ const isAdmin = async (user: any): Promise<boolean> => {
 
 /**
  * Middleware to check if user can create operate sites
- * Only admin or owner roles can create operate sites
+ * Only owner roles can create operate sites
  */
 export const operateSiteCreationMiddleware = async (
   req: AuthenticatedRequest,
@@ -45,17 +42,9 @@ export const operateSiteCreationMiddleware = async (
       throw new AuthorizationException('User not authenticated');
     }
 
-    // Check if user is admin
-    if (await isAdmin(user)) {
+    // Check if user is owner
+    if (await isOwner(user)) {
       return next();
-    }
-
-    // Check if user has owner role
-    if (user.role) {
-      const userRole = await Role.findById(user.role);
-      if (userRole && userRole.name === RoleName.OWNER) {
-        return next();
-      }
     }
 
     throw new AuthorizationException('You do not have permission to create operate sites');
@@ -64,32 +53,7 @@ export const operateSiteCreationMiddleware = async (
   }
 };
 
-/**
- * Middleware to check if user is a super admin
- * Super admins can perform any operation on any operate site
- */
-export const isSuperAdmin = async (
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
-  try {
-    const user = req.user;
 
-    if (!user) {
-      throw new AuthorizationException('User not authenticated');
-    }
-
-    // Check if user is admin
-    if (await isAdmin(user)) {
-      return next();
-    }
-
-    throw new AuthorizationException('Admin access required');
-  } catch (error) {
-    next(error);
-  }
-};
 
 /**
  * Middleware to check if user has business access to a specific operate site
@@ -123,7 +87,7 @@ export const hasBusinessAccess = async (
       const userRole = await Role.findById(user.role);
       if (userRole && userRole.name === RoleName.OWNER) {
         // Check if the user owns this operate site
-        if (operateSite.company.toString() === user._id.toString()) {
+        if (operateSite.company.toString() === user.id.toString()) {
           return next();
         }
       }
@@ -136,10 +100,10 @@ export const hasBusinessAccess = async (
 };
 
 /**
- * Combined middleware that allows either super admin OR business access
- * This replaces the old storeOwnershipOrAdminMiddleware
+ * Combined middleware that allows business access
+ * This replaces the old storeOwnershipOrOwnerMiddleware
  */
-export const operateSiteOwnershipOrAdminMiddleware = async (
+export const operateSiteOwnershipOrOwnerMiddleware = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
@@ -151,8 +115,8 @@ export const operateSiteOwnershipOrAdminMiddleware = async (
       throw new AuthorizationException('User not authenticated');
     }
 
-    // First check if user is admin (can modify any operate site)
-    if (await isAdmin(user)) {
+    // First check if user is owner (can modify any operate site)
+    if (await isOwner(user)) {
       return next();
     }
 
@@ -174,13 +138,99 @@ export const operateSiteOwnershipOrAdminMiddleware = async (
       const userRole = await Role.findById(user.role);
       if (userRole && userRole.name === RoleName.OWNER) {
         // Check if the user owns this operate site
-        if (operateSite.company.toString() === user._id.toString()) {
+        if (operateSite.company.toString() === user.id.toString()) {
           return next();
         }
       }
     }
 
     throw new AuthorizationException('You do not have permission to modify this operate site');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Middleware for user management endpoints that allows company owners/members 
+ * access only to their company's users
+ */
+export const requireCompanyUserAccess = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const user = req.user;
+
+    if (!user) {
+      throw new AuthorizationException('User not authenticated');
+    }
+
+    // Validate company access - user ID in the route should belong to their company
+    const targetUserId = req.params.id;
+    const requestedCompanyId = req.body?.companyId || req.query?.companyId;
+    
+    // Import Company model dynamically to avoid circular dependencies
+    const Company = (await import('../model/company')).default;
+    const User = (await import('../model/user')).default;
+
+    // Check if the current user has access to the target user's company
+    if (targetUserId) {
+      const targetUser = await User.findById(targetUserId);
+      if (!targetUser) {
+        throw new NotFoundException('Target user not found');
+      }
+
+      // Find the company that contains the target user
+      const targetUserCompany = await Company.findOne({
+        $or: [
+          { owner: targetUser.id },
+          { 'members.user': targetUser.id },
+        ],
+        isActive: true,
+      });
+
+      if (!targetUserCompany) {
+        throw new AuthorizationException('Target user is not associated with any company');
+      }
+
+      // Check if current user has access to that company
+      const hasCompanyAccess = await Company.findOne({
+        _id: targetUserCompany.id,
+        $or: [
+          { owner: user.id },
+          { 'members.user': user.id },
+        ],
+        isActive: true,
+      });
+
+      if (!hasCompanyAccess) {
+        throw new AuthorizationException('Access denied: You do not have permission to manage users in this company');
+      }
+
+      req.company = hasCompanyAccess;
+    }
+
+    // For POST requests (creating users), validate the company they're being added to
+    if (req.method === 'POST' && requestedCompanyId) {
+      const targetCompany = await Company.findOne({
+        _id: requestedCompanyId,
+        $or: [
+          { owner: user.id },
+          { 'members.user': user.id },
+        ],
+        isActive: true,
+      });
+
+      if (!targetCompany) {
+        throw new AuthorizationException('Access denied: You do not have permission to add users to this company');
+      }
+
+      req.company = targetCompany;
+    }
+
+    req.userType = 'company_member'; // Mark as company member for controller logic
+    next();
   } catch (error) {
     next(error);
   }

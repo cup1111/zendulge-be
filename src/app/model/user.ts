@@ -3,6 +3,7 @@ import * as jwt from 'jsonwebtoken';
 import config from '../config/app';
 import * as bcrypt from 'bcrypt';
 import { winstonLogger } from '../../loaders/logger';
+import { transformLeanResult } from '../../lib/mongoUtils';
 
 export interface IProjectRole {
   project: Types.ObjectId;
@@ -137,15 +138,11 @@ userSchema.pre('save', async function (this: any, next: CallbackWithoutResultAnd
 userSchema.methods.toJSON = function () {
   const user = this;
   const userObject = user.toObject();
-  const id = userObject._id;
-  userObject.id = id;
-  delete userObject._id;
   delete userObject.password;
   delete userObject.tokens;
   delete userObject.refreshToken;
   delete userObject.activeCode;
   delete userObject.active;
-  delete userObject.__v;
   return userObject;
 };
 
@@ -159,11 +156,14 @@ userSchema.methods.generateAuthToken = async function () {
   const Company = mongoose.model('companies');
   const userCompanies = await Company.find({
     $or: [
-      { owner: user._id },
-      { 'members.user': user._id },
+      { owner: user.id },
+      { 'members.user': user.id },
     ],
     isActive: true,
   }).select('_id name').lean();
+
+  // Transform lean results to ensure consistent id field
+  const transformedCompanies = transformLeanResult(userCompanies);
   
   const payload = {
     id: user.id,
@@ -173,7 +173,10 @@ userSchema.methods.generateAuthToken = async function () {
     userName: user.userName || null,
     avatarIcon: user.avatarIcon || null,
     role: user.role?.slug || null, // Include role slug for frontend decisions
-    companies: userCompanies.map((c: any) => ({ id: c._id, name: c.name })),
+    companies: transformedCompanies.map((c: any) => ({ 
+      id: c.id, 
+      name: c.name,
+    })),
   };
   
   const token = jwt.sign(payload, config.accessSecret, {

@@ -30,16 +30,35 @@ const createLogger = (logSourceFilePath?: string) => {
     },
     format: winston.format.combine(
       winston.format.timestamp(),
+      winston.format.errors({ stack: true }),
+      winston.format.json(),
       winston.format.printf(
-        ({ timestamp, level, message, file, requestPath, method }) => {
-          const fileInfo = file ? `[${file}]` : '';
-          const requestInfo = requestPath && method ? `[${method} ${requestPath}]` : '';
-          const stack = '';
-          const contextInfo = '';
-          // const stack = error?.stack;
-          // const contextInfo = error?.context ? `\n${JSON.stringify(error.context)}` : '';
-          const stackTrace = stack ? `\n${stack}` : '';
-          return `[${timestamp}]${fileInfo}${requestInfo} [${level}]: ${message}${contextInfo}${stackTrace}`;
+        (info: any) => {
+          const { timestamp, level, message, file, requestPath, method, error, stack, ...meta } = info;
+          const fileInfo = file ? `[${String(file)}]` : '';
+          const requestInfo = requestPath && method ? `[${String(method)} ${String(requestPath)}]` : '';
+          
+          // Handle error object properly
+          let errorDetails = '';
+          if (error && typeof error === 'object') {
+            errorDetails = `\nERROR DETAILS: ${JSON.stringify(error, null, 2)}`;
+          }
+          
+          // Handle stack trace
+          let stackTrace = '';
+          if (stack) {
+            stackTrace = `\nSTACK TRACE:\n${String(stack)}`;
+          } else if (error && typeof error === 'object' && 'stack' in error && error.stack) {
+            stackTrace = `\nSTACK TRACE:\n${String(error.stack)}`;
+          }
+          
+          // Handle additional metadata
+          let metadata = '';
+          if (Object.keys(meta).length > 0) {
+            metadata = `\nMETADATA: ${JSON.stringify(meta, null, 2)}`;
+          }
+          
+          return `[${timestamp}]${fileInfo}${requestInfo} [${level.toUpperCase()}]: ${message}${errorDetails}${stackTrace}${metadata}`;
         },
       ),
     ),

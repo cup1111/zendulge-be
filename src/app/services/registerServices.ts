@@ -7,7 +7,14 @@ import { EmailAlreadyExistsException, CompanyAlreadyExistsException } from '../e
 // Helper function to generate activation code and send email
 const generateAndSendActivationEmail = async (user: any) => {
   const activationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  await userService.updateActivationCode(user._id.toString(), activationCode);
+  
+  // Handle both transformed (id) and non-transformed (_id) user objects
+  const userId = user.id || user._id;
+  if (!userId) {
+    throw new Error('User object is missing both id and _id fields');
+  }
+  
+  await userService.updateActivationCode(userId.toString(), activationCode);
   await emailService.sendVerificationEmail(user.email, activationCode);
 };
 
@@ -90,7 +97,7 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
       success: true,
       message: 'Account exists but not activated. A new verification email has been sent.',
       user: {
-        id: existingUser._id,
+        id: existingUser.id || existingUser._id,
         email: existingUser.email,
         firstName: existingUser.firstName,
         lastName: existingUser.lastName,
@@ -107,6 +114,12 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
 
   // Create the user
   const user = await userService.store(userData);
+  
+  // Get user ID (handle both transformed and non-transformed objects)
+  const userId = user.id || user._id;
+  if (!userId) {
+    throw new Error('User creation failed - no ID returned');
+  }
 
   // Prepare company data
   const companyData = {
@@ -118,13 +131,13 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
       ...businessAddress,
       country: businessAddress.country || 'Australia',
     },
-    contact: user._id, // The registering user becomes the contact person
+    contact: userId, // The registering user becomes the contact person
     abn,
     website: companyWebsite,
     facebookUrl,
     twitterUrl,
     logo,
-    owner: user._id,
+    owner: userId,
     isActive: true,
   };
 
@@ -138,13 +151,13 @@ export const businessRegister = async (registrationData: IBusinessRegistration) 
   return {
     success: true,
     user: {
-      id: user._id,
+      id: userId,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
     },
     company: {
-      id: company._id,
+      id: company.id || company._id,
       name: company.name,
     },
     message: 'Registration successful. Please check your email to verify your account.',
@@ -172,7 +185,7 @@ export const customerRegister = async (registrationData: ICustomerRegistration) 
       success: true,
       message: 'Account exists but not activated. A new verification email has been sent.',
       user: {
-        id: existingUser._id,
+        id: existingUser.id || existingUser._id,
         email: existingUser.email,
         firstName: existingUser.firstName,
         lastName: existingUser.lastName,
@@ -191,6 +204,12 @@ export const customerRegister = async (registrationData: ICustomerRegistration) 
   };
 
   const user = await userService.store(userData);
+  
+  // Get user ID (handle both transformed and non-transformed objects)
+  const userId = user.id || user._id;
+  if (!userId) {
+    throw new Error('User creation failed - no ID returned');
+  }
 
   // Generate activation code and send email
   await generateAndSendActivationEmail(user);
@@ -199,7 +218,7 @@ export const customerRegister = async (registrationData: ICustomerRegistration) 
     success: true,
     message: 'Customer registered successfully. Please check your email to verify your account.',
     user: {
-      id: user._id,
+      id: userId,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,

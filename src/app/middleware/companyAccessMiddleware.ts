@@ -30,8 +30,8 @@ export const validateCompanyAccess = async (req: AuthenticatedRequest, res: Resp
     const hasAccess = await Company.findOne({
       _id: companyId,
       $or: [
-        { owner: user._id }, // User is owner
-        { 'members.user': user._id }, // User is member
+        { owner: user.id }, // User is owner
+        { 'members.user': user.id }, // User is member
       ],
       isActive: true,
     });
@@ -70,8 +70,8 @@ export const requireCompanyAccess = async (req: AuthenticatedRequest, res: Respo
     const company = await Company.findOne({
       _id: companyId,
       $or: [
-        { owner: user._id },
-        { 'members.user': user._id },
+        { owner: user.id },
+        { 'members.user': user.id },
       ],
       isActive: true,
     }).populate('members.user', 'firstName lastName email')
@@ -83,8 +83,8 @@ export const requireCompanyAccess = async (req: AuthenticatedRequest, res: Respo
 
     // Determine user's role in this company
     let userRoleInCompany = 'owner'; // Default if user is owner
-    if (!company.owner.equals(user._id)) {
-      const memberEntry = company.members?.find((member: any) => member.user._id.equals(user._id));
+    if (!company.owner.equals(user.id)) {
+      const memberEntry = company.members?.find((member: any) => member.user.id.equals(user.id));
       userRoleInCompany = (memberEntry?.role as any)?.name || 'member';
     }
 

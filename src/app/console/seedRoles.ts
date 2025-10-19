@@ -13,13 +13,13 @@ const seedRoles = async () => {
     // Define default roles
     const defaultRoles = [
       {
-        name: RoleName.ADMIN,
-        description: 'Administrator with full system access',
+        name: RoleName.OWNER,
+        description: 'Business owner who can manage their company',
         isActive: true,
       },
       {
-        name: RoleName.OWNER,
-        description: 'Store owner who can manage their own stores',
+        name: RoleName.EMPLOYEE,
+        description: 'Employee with limited access to company resources',
         isActive: true,
       },
       {

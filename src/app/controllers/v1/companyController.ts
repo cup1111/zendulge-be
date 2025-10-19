@@ -1,8 +1,10 @@
 import { Request, Response } from 'express';
 import User from '../../model/user';
+import Role from '../../model/role';
 import { winstonLogger } from '../../../loaders/logger';
 import { BadRequestException } from '../../exceptions/badRequestException';
 import { InternalServerException } from '../../exceptions/serverException';
+import { transformLeanResult } from '../../../lib/mongoUtils';
 
 export interface AuthenticatedRequest extends Request {
   user?: any;
@@ -27,16 +29,28 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
     
     // Add company owner
     if (company.owner) {
-      const owner = await User.findById(company.owner)
+      const ownerRaw = await User.findById(company.owner)
         .select('firstName lastName email phoneNumber jobTitle active createdAt role')
+        .populate('role', 'name description permissions')
         .lean();
       
-      if (owner) {
+      if (ownerRaw) {
+        const owner = transformLeanResult(ownerRaw);
+        
+        // If role is still just an ID, fetch it manually
+        if (owner.role && typeof owner.role === 'string') {
+          const roleData = await Role.findById(owner.role)
+            .select('name description permissions')
+            .lean();
+          if (roleData) {
+            (owner as any).role = transformLeanResult(roleData);
+          }
+        }
+        
         users.push({
           ...owner,
           companyRole: 'owner',
           fullName: `${owner.firstName || ''} ${owner.lastName || ''}`.trim(),
-          roleDetails: null,
         });
       }
     }
@@ -44,16 +58,28 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
     // Add company members
     if (company.members && company.members.length > 0) {
       for (const member of company.members) {
-        const memberUser = await User.findById(member.user)
+        const memberUserRaw = await User.findById(member.user)
           .select('firstName lastName email phoneNumber jobTitle active createdAt role')
+          .populate('role', 'name description permissions')
           .lean();
         
-        if (memberUser) {
+        if (memberUserRaw) {
+          const memberUser = transformLeanResult(memberUserRaw);
+          
+          // If role is still just an ID, fetch it manually
+          if (memberUser.role && typeof memberUser.role === 'string') {
+            const roleData = await Role.findById(memberUser.role)
+              .select('name description permissions')
+              .lean();
+            if (roleData) {
+              (memberUser as any).role = transformLeanResult(roleData);
+            }
+          }
+          
           users.push({
             ...memberUser,
             companyRole: 'member',
             fullName: `${memberUser.firstName || ''} ${memberUser.lastName || ''}`.trim(),
-            roleDetails: null,
             joinedAt: member.joinedAt,
           });
         }
@@ -67,14 +93,7 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
       requestedBy: req.user?.email,
     });
 
-    res.status(200).json({
-      success: true,
-      message: 'Company users retrieved successfully',
-      data: {
-        users,
-        totalUsers: users.length,
-      },
-    });
+    res.status(200).json(users);
 
   } catch (error: any) {
     winstonLogger.error('Error retrieving company users:', {

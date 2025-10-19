@@ -12,14 +12,25 @@ import {
   getOperateSiteStatus,
 } from '../../controllers/v1/operateSiteController';
 import { getCompanyUsers } from '../../controllers/v1/companyController';
+import {
+  getUserById,
+  createUserWithRole,
+  updateUserRole,
+  getAllRoles,
+  deleteUser,
+} from '../../controllers/v1/userManagementController';
 import { businessRegistrationValidation } from '../../validation/businessRegistrationValidation';
 import { customerRegistrationValidation } from '../../validation/customerRegistrationValidation';
 import { loginValidation, refreshTokenValidation } from '../../validation/authValidation';
+import {
+  createUserWithRoleValidation,
+  companyAndUserIdValidation,
+  companyUserRoleValidation,
+} from '../../validation/userManagementValidation';
 import { handleValidationErrors } from '../../validation/validationHandler';
 import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
 import { 
-  operateSiteOwnershipOrAdminMiddleware, 
-  isSuperAdmin,
+  operateSiteOwnershipOrOwnerMiddleware,
 } from '../../middleware/operateSitePermissionMiddleware';
 import { requireCompanyAccess } from '../../middleware/companyAccessMiddleware';
 
@@ -94,21 +105,21 @@ router.get('/company/:id/operate-sites/:operateSiteId',
 router.put('/company/:id/operate-sites/:operateSiteId', 
   authenticationTokenMiddleware,
   requireCompanyAccess, // Validates company access first
-  operateSiteOwnershipOrAdminMiddleware, // Then validates operate site permissions
+  operateSiteOwnershipOrOwnerMiddleware, // Then validates operate site permissions
   updateOperateSite,
 );
 
 router.delete('/company/:id/operate-sites/:operateSiteId', 
   authenticationTokenMiddleware,
   requireCompanyAccess,
-  operateSiteOwnershipOrAdminMiddleware,
+  operateSiteOwnershipOrOwnerMiddleware,
   deleteOperateSite,
 );
 
 router.patch('/company/:id/operate-sites/:operateSiteId/toggle-status', 
   authenticationTokenMiddleware,
   requireCompanyAccess,
-  operateSiteOwnershipOrAdminMiddleware,
+  operateSiteOwnershipOrOwnerMiddleware,
   toggleOperateSiteStatus,
 );
 
@@ -127,12 +138,7 @@ router.get('/company/:id/users',
 
 // Example routes using the new security approach
 
-// Admin-only route example - only super admins can access ALL company data
-router.get('/admin/operate-sites', 
-  authenticationTokenMiddleware,
-  isSuperAdmin,
-  getOperateSites, // This would show all operate sites for admin
-);
+
 
 // Business access route - company members can access their company's analytics
 router.get('/company/:id/operate-sites/:operateSiteId/analytics', 
@@ -140,5 +146,48 @@ router.get('/company/:id/operate-sites/:operateSiteId/analytics',
   requireCompanyAccess, // Validates company access and provides req.company
   getOperateSiteById, // This would show analytics for company members
 );
+
+// User Management routes following the company/:id pattern
+// Company-scoped user management (business owners manage their company users)
+router.get('/company/:id/users/:userId', 
+  authenticationTokenMiddleware,
+  requireCompanyAccess, // Validates company access and provides req.company
+  companyAndUserIdValidation,
+  handleValidationErrors,
+  getUserById,
+);
+
+router.post('/company/:id/users', 
+  authenticationTokenMiddleware,
+  requireCompanyAccess, // Validates company access and provides req.company
+  createUserWithRoleValidation,
+  handleValidationErrors,
+  createUserWithRole,
+);
+
+router.patch('/company/:id/users/:userId/role', 
+  authenticationTokenMiddleware,
+  requireCompanyAccess, // Validates company access and provides req.company
+  companyUserRoleValidation,
+  handleValidationErrors,
+  updateUserRole,
+);
+
+router.delete('/company/:id/users/:userId', 
+  authenticationTokenMiddleware,
+  requireCompanyAccess, // Validates company access and provides req.company
+  companyAndUserIdValidation,
+  handleValidationErrors,
+  deleteUser,
+);
+
+// Get all roles (for company owner to assign roles to users)
+router.get('/company/:id/roles', 
+  authenticationTokenMiddleware,
+  requireCompanyAccess,
+  getAllRoles,
+);
+
+
 
 export default router;

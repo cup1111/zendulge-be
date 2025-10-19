@@ -16,39 +16,38 @@ const seedCompleteBusinessSetup = async () => {
     console.log('Connected to MongoDB for complete business setup seeding');
 
     // First, ensure roles exist
-    const adminRole = await Role.findOne({ name: RoleName.ADMIN });
     const ownerRole = await Role.findOne({ name: RoleName.OWNER });
+    const employeeRole = await Role.findOne({ name: RoleName.EMPLOYEE });
     const customerRole = await Role.findOne({ name: RoleName.CUSTOMER });
 
-    if (!adminRole || !ownerRole || !customerRole) {
+    if (!ownerRole || !employeeRole || !customerRole) {
       throw new Error('Roles not found. Please run seed-roles first.');
     }
 
-    // Create Super Admin User
-    const superAdminData = {
-      email: 'superadmin@zendulge.com',
-      password: await bcrypt.hash('SuperAdmin123!', 8),
-      firstName: 'Super',
-      lastName: 'Admin',
+    // Create Company Owner User
+    const companyOwnerData = {
+      email: 'owner@zendulge.com',
+      password: await bcrypt.hash('Owner123!', 8),
+      firstName: 'Company',
+      lastName: 'Owner',
       phoneNumber: '+61412345678',
-      jobTitle: 'System Administrator',
-      userName: 'superadmin',
+      jobTitle: 'Business Owner',
+      userName: 'companyowner',
       active: true,
-      role: adminRole._id,
-      isSuperUser: 1,
+      role: ownerRole.id,
     };
 
-    // Check if super admin already exists
-    let superAdmin = await User.findByEmail(superAdminData.email);
-    if (!superAdmin) {
-      superAdmin = new User(superAdminData);
-      await superAdmin.save();
-      console.log('✅ Created Super Admin user');
+    // Check if company owner already exists
+    let companyOwner = await User.findByEmail(companyOwnerData.email);
+    if (!companyOwner) {
+      companyOwner = new User(companyOwnerData);
+      await companyOwner.save();
+      console.log('✅ Created Company Owner user');
     } else {
-      console.log('ℹ️  Super Admin user already exists');
+      console.log('ℹ️  Company Owner user already exists');
     }
 
-    // Create a Company for the Super Admin
+    // Create a Company for the Company Owner
     const companyData = {
       name: 'Zendulge Technologies Pty Ltd',
       email: 'info@zendulge.com',
@@ -61,12 +60,12 @@ const seedCompleteBusinessSetup = async () => {
         postcode: '3000',
         country: 'Australia',
       },
-      contact: superAdmin._id,
+      contact: companyOwner.id,
       abn: '51824753556', // Valid ABN format for testing
       website: 'https://zendulge.com',
       facebookUrl: 'https://facebook.com/zendulge',
       twitterUrl: 'https://twitter.com/zendulge',
-      owner: superAdmin._id,
+      owner: companyOwner.id,
       isActive: true,
     };
 
@@ -95,7 +94,7 @@ const seedCompleteBusinessSetup = async () => {
         sunday: { open: '10:00', close: '16:00', isClosed: false },
       },
       specialInstruction: 'Main headquarters with full service availability. Meeting rooms available by appointment.',
-      company: company._id,
+      company: company.id,
       latitude: -37.8136,
       longitude: 144.9631,
       isActive: true,
@@ -116,7 +115,7 @@ const seedCompleteBusinessSetup = async () => {
         sunday: { open: '12:00', close: '15:00', isClosed: true },
       },
       specialInstruction: 'Boutique location specializing in premium consultations. Valet parking available.',
-      company: company._id,
+      company: company.id,
       latitude: -37.8394,
       longitude: 144.9944,
       isActive: true,
@@ -151,7 +150,7 @@ const seedCompleteBusinessSetup = async () => {
       jobTitle: 'Business Manager',
       userName: 'sjohnson',
       active: true,
-      role: ownerRole._id, // Give them owner role for the business
+      role: ownerRole.id, // Give them owner role for the business
     };
 
     let invitedUser = await User.findByEmail(invitedUserData.email);
@@ -164,14 +163,14 @@ const seedCompleteBusinessSetup = async () => {
     }
 
     // Add the invited user as a member of the company
-    const isAlreadyMember = company.members?.some(member => member.user.equals(invitedUser!._id));
+    const isAlreadyMember = company.members?.some(member => member.user.equals(invitedUser!.id));
     if (!isAlreadyMember) {
       if (!company.members) {
         company.members = [];
       }
       company.members.push({
-        user: invitedUser!._id,
-        role: ownerRole._id,
+        user: invitedUser!.id,
+        role: ownerRole.id,
         joinedAt: new Date(),
       });
       await company.save();
@@ -189,7 +188,7 @@ const seedCompleteBusinessSetup = async () => {
         price: 299.99,
         duration: '2 hours',
         isActive: true,
-        operateSites: [operateSite1._id, operateSite2._id],
+        operateSites: [operateSite1.id, operateSite2.id],
       },
       {
         name: 'Technology Integration Services',
@@ -198,7 +197,7 @@ const seedCompleteBusinessSetup = async () => {
         price: 499.99,
         duration: '4 hours',
         isActive: true,
-        operateSites: [operateSite1._id], // Only available at main location
+        operateSites: [operateSite1.id], // Only available at main location
       },
     ];
 
@@ -211,14 +210,14 @@ const seedCompleteBusinessSetup = async () => {
     // Summary
     console.log('\n🎉 Complete business setup seeding completed successfully!');
     console.log('\n📋 Summary of created data:');
-    console.log(`   👤 Super Admin: ${superAdmin.email}`);
+    console.log(`   👤 Company Owner: ${companyOwner.email}`);
     console.log(`   🏢 Company: ${company.name}`);
     console.log('   📍 Operate Sites: 2 locations');
     console.log(`   👥 Team Members: 1 invited user (${invitedUser.email})`);
     console.log(`   🛠️  Services: ${servicesData.length} service offerings`);
     
     console.log('\n🔐 Login Credentials:');
-    console.log(`   Super Admin: ${superAdmin.email} / SuperAdmin123!`);
+    console.log(`   Company Owner: ${companyOwner.email} / Owner123!`);
     console.log(`   Manager: ${invitedUser.email} / Manager123!`);
 
     process.exit(0);

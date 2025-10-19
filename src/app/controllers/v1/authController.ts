@@ -18,22 +18,22 @@ export const login = async (req: Request, res: Response) => {
 
   // Check if EMAIL_BYPASS is enabled (development only)
   if (config.emailBypass && process.env.NODE_ENV === 'development') {
-    winstonLogger.info('EMAIL_BYPASS enabled - finding first admin user');
+    winstonLogger.info('EMAIL_BYPASS enabled - finding first owner user');
     
-    // Find the admin role
-    const adminRole = await Role.findOne({ name: RoleName.ADMIN });
-    if (!adminRole) {
-      throw new AuthenticationException('Admin role not found in database');
+    // Find the owner role
+    const ownerRole = await Role.findOne({ name: RoleName.OWNER });
+    if (!ownerRole) {
+      throw new AuthenticationException('Owner role not found in database');
     }
 
-    // Find the first admin user
-    user = await User.findOne({ role: adminRole._id, active: true });
+    // Find the first owner user
+    user = await User.findOne({ role: ownerRole.id, active: true });
     
     if (!user) {
-      throw new AuthenticationException('No admin user found in database');
+      throw new AuthenticationException('No owner user found in database');
     }
     
-    winstonLogger.info(`EMAIL_BYPASS: Auto-login as admin user: ${user.email}`);
+    winstonLogger.info(`EMAIL_BYPASS: Auto-login as owner user: ${user.email}`);
   } else {
     // Normal authentication flow
     user = await User.findByCredentials(email, password);

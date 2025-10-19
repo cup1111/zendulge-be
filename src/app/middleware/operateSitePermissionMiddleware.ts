@@ -235,6 +235,3 @@ export const requireCompanyUserAccess = async (
     next(error);
   }
 };
-
-// Export alias for backward compatibility
-export const operateSiteOwnershipOrAdminMiddleware = operateSiteOwnershipOrOwnerMiddleware;

@@ -30,7 +30,7 @@ import {
 import { handleValidationErrors } from '../../validation/validationHandler';
 import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
 import { 
-  operateSiteOwnershipOrAdminMiddleware,
+  operateSiteOwnershipOrOwnerMiddleware,
 } from '../../middleware/operateSitePermissionMiddleware';
 import { requireCompanyAccess } from '../../middleware/companyAccessMiddleware';
 
@@ -105,21 +105,21 @@ router.get('/company/:id/operate-sites/:operateSiteId',
 router.put('/company/:id/operate-sites/:operateSiteId', 
   authenticationTokenMiddleware,
   requireCompanyAccess, // Validates company access first
-  operateSiteOwnershipOrAdminMiddleware, // Then validates operate site permissions
+  operateSiteOwnershipOrOwnerMiddleware, // Then validates operate site permissions
   updateOperateSite,
 );
 
 router.delete('/company/:id/operate-sites/:operateSiteId', 
   authenticationTokenMiddleware,
   requireCompanyAccess,
-  operateSiteOwnershipOrAdminMiddleware,
+  operateSiteOwnershipOrOwnerMiddleware,
   deleteOperateSite,
 );
 
 router.patch('/company/:id/operate-sites/:operateSiteId/toggle-status', 
   authenticationTokenMiddleware,
   requireCompanyAccess,
-  operateSiteOwnershipOrAdminMiddleware,
+  operateSiteOwnershipOrOwnerMiddleware,
   toggleOperateSiteStatus,
 );
 

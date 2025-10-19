@@ -158,7 +158,6 @@ jest.mock('../../src/app/middleware/companyAccessMiddleware', () => ({
 
 // Mock permission middleware
 jest.mock('../../src/app/middleware/operateSitePermissionMiddleware', () => ({
-  operateSiteOwnershipOrAdminMiddleware: jest.fn((req: any, res: any, next: any) => next()),
   operateSiteOwnershipOrOwnerMiddleware: jest.fn((req: any, res: any, next: any) => next()),
   requireCompanyUserAccess: jest.fn((req: any, res: any, next: any) => next()),
 }));

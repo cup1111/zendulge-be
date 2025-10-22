@@ -30,8 +30,8 @@ export const validateCompanyAccess = async (req: AuthenticatedRequest, res: Resp
     const hasAccess = await Company.findOne({
       _id: companyId,
       $or: [
-        { owner: user.id }, // User is owner
-        { 'members.user': user.id }, // User is member
+        { owner: user._id }, // User is owner
+        { 'members.user': user._id }, // User is member
       ],
       isActive: true,
     });
@@ -49,51 +49,3 @@ export const validateCompanyAccess = async (req: AuthenticatedRequest, res: Resp
   }
 };
 
-/**
- * Enhanced middleware that combines auth + company access validation
- */
-export const requireCompanyAccess = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  try {
-    // This combines authentication + company validation in one step
-    const companyId = req.params.id || req.params.companyId;
-    const user = req.user;
-
-    if (!user) {
-      throw new AuthorizationException('Authentication required');
-    }
-
-    if (!companyId) {
-      throw new BadRequestException('Company ID is required in route');
-    }
-
-    // Check company access
-    const company = await Company.findOne({
-      _id: companyId,
-      $or: [
-        { owner: user.id },
-        { 'members.user': user.id },
-      ],
-      isActive: true,
-    }).populate('members.user', 'firstName lastName email')
-      .populate('members.role', 'name');
-
-    if (!company) {
-      throw new AuthorizationException('Access denied: Invalid company or insufficient permissions');
-    }
-
-    // Determine user's role in this company
-    let userRoleInCompany = 'owner'; // Default if user is owner
-    if (!company.owner.equals(user.id)) {
-      const memberEntry = company.members?.find((member: any) => member.user.id.equals(user.id));
-      userRoleInCompany = (memberEntry?.role as any)?.name || 'member';
-    }
-
-    // Attach to request
-    req.company = company;
-    req.userRoleInCompany = userRoleInCompany;
-    
-    next();
-  } catch (error) {
-    next(error);  
-  }
-};

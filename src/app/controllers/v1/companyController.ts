@@ -18,7 +18,7 @@ export interface AuthenticatedRequest extends Request {
 export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const companyId = req.params.id;
-    const company = req.company; // Provided by requireCompanyAccess middleware
+    const company = req.company; // Provided by validateCompanyAccess middleware
 
     if (!company) {
       throw new BadRequestException('Company not found or access denied');

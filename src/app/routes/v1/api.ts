@@ -151,7 +151,7 @@ router.get('/company/:id/users/:userId',
   getUserById,
 );
 
-router.post('/company/:id/users', 
+router.post('/company/:id/invite', 
   authenticationTokenMiddleware,
   validateCompanyAccess, // Validates company access and provides req.company
   createUserWithRoleValidation,

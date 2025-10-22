@@ -1,13 +1,11 @@
 import User from '../model/user';
 import Role from '../model/role';
 import { winstonLogger } from '../../loaders/logger';
-import * as bcrypt from 'bcrypt';
 import { Types } from 'mongoose';
 
 // Interface for service input types
 interface CreateUserRequest {
   email: string;
-  password: string;
   firstName: string;
   lastName: string;
   phoneNumber?: string;
@@ -118,10 +116,9 @@ export class UserManagementService {
         }
       }
 
-      // Create user
+      // Create user (invited users will set password during account activation)
       const newUser = await User.create({
         email: userData.email.toLowerCase(),
-        password: userData.password,
         firstName: userData.firstName,
         lastName: userData.lastName,
         phoneNumber: userData.phoneNumber,
@@ -129,8 +126,8 @@ export class UserManagementService {
         department: userData.department,
         location: userData.location,
         role: userData.role,
-        isEmailVerified: false, // Owner created users need to verify email
-        active: true,
+        isEmailVerified: false, // Invited users need to verify email and set password
+        active: false, // Inactive until they complete account setup
       });
 
       // Add user to company if specified
@@ -268,7 +265,7 @@ export class UserManagementService {
       }
 
       // Check if user exists and is active
-      const user = await User.findOne({ _id: userId, active: true });
+      const user = await User.findOne({ _id: userId });
       if (!user) {
         throw new Error('User not found');
       }

@@ -16,13 +16,12 @@ describe('User Management Endpoints', () => {
 
 
 
-  describe('POST /api/v1/company/:id/users', () => {
+  describe('POST /api/v1/company/:id/invite', () => {
     it('should return 401 without authentication', async () => {
       await request(app.getApp())
-        .post(`/api/v1/company/${TEST_COMPANY_ID}/users`)
+        .post(`/api/v1/company/${TEST_COMPANY_ID}/invite`)
         .send({
           email: 'test@example.com',
-          password: 'password123',
           firstName: 'Test',
           lastName: 'User',     
         })
@@ -31,11 +30,10 @@ describe('User Management Endpoints', () => {
 
     it('should return 403 for users without company access', async () => {
       await request(app.getApp())
-        .post(`/api/v1/company/${TEST_COMPANY_ID}/users`)
+        .post(`/api/v1/company/${TEST_COMPANY_ID}/invite`)
         .set('Authorization', 'Bearer regular-token')
         .send({
           email: 'test@example.com',
-          password: 'password123',
           firstName: 'Test',
           lastName: 'User',
         })

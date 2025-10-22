@@ -14,10 +14,16 @@ interface CreateUserRequest {
   location?: string;
   role: string; // Role ID
   companyId?: string; // Company to add user to
+  operateSiteIds?: string[]; // Array of operate site IDs the user should have access to
 }
 
-interface UpdateUserRoleRequest {
-  role: string; // Role ID
+interface UpdateUserRequest {
+  role?: string; // Role ID
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  jobTitle?: string;
+  operateSiteIds?: string[]; // Array of operate site IDs the user should have access to
 }
 
 export class UserManagementService {
@@ -104,6 +110,8 @@ export class UserManagementService {
 
       // Validate company if provided
       let company = null;
+      let validatedOperateSiteIds: Types.ObjectId[] = [];
+      
       if (userData.companyId) {
         if (!Types.ObjectId.isValid(userData.companyId)) {
           throw new Error('Invalid company ID format');
@@ -113,6 +121,30 @@ export class UserManagementService {
         company = await Company.findOne({ _id: userData.companyId, isActive: true });
         if (!company) {
           throw new Error('Company not found');
+        }
+
+        // Validate operate site IDs if provided
+        if (userData.operateSiteIds && userData.operateSiteIds.length > 0) {
+          // Check if all operate site IDs are valid ObjectIds
+          for (const siteId of userData.operateSiteIds) {
+            if (!Types.ObjectId.isValid(siteId)) {
+              throw new Error(`Invalid operate site ID format: ${siteId}`);
+            }
+          }
+
+          // Check if all operate sites belong to the company and are active
+          const OperateSite = (await import('../model/operateSite')).default;
+          const operateSites = await OperateSite.find({
+            _id: { $in: userData.operateSiteIds },
+            company: userData.companyId,
+            isActive: true,
+          });
+
+          if (operateSites.length !== userData.operateSiteIds.length) {
+            throw new Error('One or more operate sites not found or not accessible for this company');
+          }
+
+          validatedOperateSiteIds = userData.operateSiteIds.map((id: string) => new Types.ObjectId(id));
         }
       }
 
@@ -141,6 +173,15 @@ export class UserManagementService {
             },
           },
         });
+
+        // Add user to the specified operate sites
+        if (validatedOperateSiteIds.length > 0) {
+          const OperateSite = (await import('../model/operateSite')).default;
+          await OperateSite.updateMany(
+            { _id: { $in: validatedOperateSiteIds } },
+            { $addToSet: { members: newUser._id } },
+          );
+        }
       }
 
       // Populate role information for response
@@ -163,15 +204,11 @@ export class UserManagementService {
     }
   }
 
-  // Update user role (with optional company validation)
-  async updateUserRole(userId: string, roleData: UpdateUserRoleRequest, companyId?: string) {
+  // Update user information (role, personal info, and operate site access)
+  async updateUser(userId: string, updateData: UpdateUserRequest, companyId?: string) {
     try {
       if (!Types.ObjectId.isValid(userId)) {
         throw new Error('Invalid user ID format');
-      }
-
-      if (!Types.ObjectId.isValid(roleData.role)) {
-        throw new Error('Invalid role ID format');
       }
 
       // Check if user exists
@@ -181,9 +218,10 @@ export class UserManagementService {
       }
 
       // If companyId is provided, validate that user belongs to that company
+      let company = null;
       if (companyId) {
         const Company = (await import('../model/company')).default;
-        const userInCompany = await Company.findOne({
+        company = await Company.findOne({
           _id: companyId,
           $or: [
             { owner: user.id },
@@ -192,28 +230,67 @@ export class UserManagementService {
           isActive: true,
         });
 
-        if (!userInCompany) {
+        if (!company) {
           throw new Error('User not found in the specified company');
         }
       }
 
-      // Check if role exists
-      const role = await Role.findOne({ _id: roleData.role, isActive: true });
-      if (!role) {
-        throw new Error('Role not found');
+      // Validate role if provided
+      if (updateData.role) {
+        if (!Types.ObjectId.isValid(updateData.role)) {
+          throw new Error('Invalid role ID format');
+        }
+
+        const role = await Role.findOne({ _id: updateData.role, isActive: true });
+        if (!role) {
+          throw new Error('Role not found');
+        }
       }
 
-      // Update user role
+      // Validate operate site IDs if provided
+      let validatedOperateSiteIds: Types.ObjectId[] = [];
+      if (updateData.operateSiteIds && updateData.operateSiteIds.length > 0 && companyId) {
+        // Check if all operate site IDs are valid ObjectIds
+        for (const siteId of updateData.operateSiteIds) {
+          if (!Types.ObjectId.isValid(siteId)) {
+            throw new Error(`Invalid operate site ID format: ${siteId}`);
+          }
+        }
+
+        // Check if all operate sites belong to the company and are active
+        const OperateSite = (await import('../model/operateSite')).default;
+        const operateSites = await OperateSite.find({
+          _id: { $in: updateData.operateSiteIds },
+          company: companyId,
+          isActive: true,
+        });
+
+        if (operateSites.length !== updateData.operateSiteIds.length) {
+          throw new Error('One or more operate sites not found or not accessible for this company');
+        }
+
+        validatedOperateSiteIds = updateData.operateSiteIds.map((id: string) => new Types.ObjectId(id));
+      }
+
+      // Prepare update object for user
+      const userUpdateData: any = {};
+      if (updateData.role) userUpdateData.role = updateData.role;
+      if (updateData.firstName) userUpdateData.firstName = updateData.firstName;
+      if (updateData.lastName) userUpdateData.lastName = updateData.lastName;
+      if (updateData.phoneNumber !== undefined) userUpdateData.phoneNumber = updateData.phoneNumber;
+      if (updateData.jobTitle !== undefined) userUpdateData.jobTitle = updateData.jobTitle;
+
+      // Update user information
       const updatedUser = await User.findByIdAndUpdate(
         userId,
-        { role: roleData.role },
+        userUpdateData,
         { new: true, runValidators: true },
       )
         .populate('role', 'name description permissions')
         .select('-password -refreshToken -activeCode');
 
-      // Also update role in company members if user is in a company
-      if (companyId) {
+      // Update company member role if needed
+      if (company && updateData.role) {
         const Company = (await import('../model/company')).default;
         await Company.updateOne(
           {
@@ -221,20 +298,37 @@ export class UserManagementService {
             'members.user': userId,
           },
           {
-            $set: {
-              'members.$.role': roleData.role,
-            },
+            $set: { 'members.$.role': updateData.role },
           },
         );
       }
 
+      // Update operate site access if specified
+      if (updateData.operateSiteIds !== undefined && companyId) {
+        const OperateSite = (await import('../model/operateSite')).default;
+        
+        // Remove user from all operate sites in this company first
+        await OperateSite.updateMany(
+          { company: companyId },
+          { $pull: { members: userId } },
+        );
+
+        // Add user to the new operate sites
+        if (validatedOperateSiteIds.length > 0) {
+          await OperateSite.updateMany(
+            { _id: { $in: validatedOperateSiteIds } },
+            { $addToSet: { members: userId } },
+          );
+        }
+      }
+
       return {
         success: true,
-        message: 'User role updated successfully',
+        message: 'User updated successfully',
         data: updatedUser,
       };
     } catch (error) {
-      winstonLogger.error(`Update user role error: ${error}`);
+      winstonLogger.error(`Update user error: ${error}`);
       throw error;
     }
   }

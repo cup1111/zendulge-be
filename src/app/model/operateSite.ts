@@ -18,6 +18,7 @@ export interface IOperateSite {
   operatingHours: IOperatingHours;
   specialInstruction: string;
   company: mongoose.Types.ObjectId;
+  members?: mongoose.Types.ObjectId[]; // Array of user IDs who have access to this operate site
   latitude: number;
   longitude: number;
   isActive: boolean;
@@ -112,6 +113,10 @@ const operateSiteSchema = new Schema<IOperateSiteDocument>({
     required: [true, 'Company ID is required'],
     index: true,
   },
+  members: [{
+    type: Schema.Types.ObjectId,
+    ref: 'users',
+  }],
   latitude: {
     type: Number,
     required: [true, 'Latitude is required'],

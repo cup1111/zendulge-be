@@ -178,6 +178,17 @@ const seedCompleteBusinessSetup = async () => {
       console.log('ℹ️  Sarah Johnson is already a company member');
     }
 
+    // Add Sarah Johnson to operate sites as a member
+    // Add her to operateSite1 (Melbourne CBD)
+    if (!operateSite1.members || !operateSite1.members.includes(invitedUser!.id)) {
+      operateSite1.members = operateSite1.members || [];
+      operateSite1.members.push(invitedUser!.id);
+      await operateSite1.save();
+      console.log('✅ Added Sarah Johnson to Melbourne CBD operate site');
+    } else {
+      console.log('ℹ️  Sarah Johnson is already a member of Melbourne CBD operate site');
+    }
+
     // Create sample services data (as simple objects since no Service model exists yet)
     const servicesData = [
       {

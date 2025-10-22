@@ -15,7 +15,7 @@ import { getCompanyUsers } from '../../controllers/v1/companyController';
 import {
   getUserById,
   createUserWithRole,
-  updateUserRole,
+  updateUser,
   getAllRoles,
   deleteUser,
 } from '../../controllers/v1/userManagementController';
@@ -25,7 +25,7 @@ import { loginValidation, refreshTokenValidation } from '../../validation/authVa
 import {
   createUserWithRoleValidation,
   companyAndUserIdValidation,
-  companyUserRoleValidation,
+  updateUserValidation,
 } from '../../validation/userManagementValidation';
 import { handleValidationErrors } from '../../validation/validationHandler';
 import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
@@ -159,12 +159,12 @@ router.post('/company/:id/invite',
   createUserWithRole,
 );
 
-router.patch('/company/:id/users/:userId/role', 
+router.patch('/company/:id/users/:userId', 
   authenticationTokenMiddleware,
   validateCompanyAccess, // Validates company access and provides req.company
-  companyUserRoleValidation,
+  updateUserValidation,
   handleValidationErrors,
-  updateUserRole,
+  updateUser,
 );
 
 router.delete('/company/:id/users/:userId', 

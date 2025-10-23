@@ -28,25 +28,26 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "package.json" }}
-            - v1-dependencies-
+            - v1-yarn-deps-{{ checksum "yarn.lock" }}
+            - v1-yarn-deps-
       - run:
           name: Install dependencies
-          command: npm ci
+          command: yarn install --frozen-lockfile
       - save_cache:
           paths:
             - node_modules
-            - ~/.npm
-          key: v1-dependencies-{{ checksum "package.json" }}
+            - ~/.cache/yarn
+          key: v1-yarn-deps-{{ checksum "yarn.lock" }}
       - run:
           name: Build application
-          command: npm run build
+          command: yarn build
       - persist_to_workspace:
           root: ~/repo
           paths:
             - dist
             - node_modules
-            - package*.json
+            - package.json
+            - yarn.lock
 
   # Security vulnerability scanning
   security_audit:
@@ -59,10 +60,10 @@ jobs:
           at: ~/repo
       - run:
           name: Run security audit
-          command: npm audit --audit-level moderate
+          command: yarn audit --level moderate
       - run:
           name: Check for known security issues
-          command: npm audit --audit-level high --dry-run
+          command: yarn audit --level high
 
   # Code quality and linting
   code_quality:
@@ -75,15 +76,15 @@ jobs:
           at: ~/repo
       - run:
           name: Run ESLint
-          command: npm run lint
+          command: yarn lint
       - run:
           name: Check TypeScript compilation
-          command: npx tsc --noEmit
+          command: yarn tsc --noEmit
       - run:
           name: Check code formatting
           command: |
-            if npm list prettier > /dev/null 2>&1; then
-              npx prettier --check "src/**/*.{ts,js,json}"
+            if yarn list --pattern prettier > /dev/null 2>&1; then
+              yarn prettier --check "src/**/*.{ts,js,json}"
             else
               echo "Prettier not found, skipping format check"
             fi
@@ -99,7 +100,7 @@ jobs:
           at: ~/repo
       - run:
           name: Run unit tests with coverage
-          command: npm run test -- --coverage --watchAll=false
+          command: yarn test --coverage --watchAll=false
       - run:
           name: Upload coverage to Codecov
           command: |
@@ -133,7 +134,7 @@ jobs:
           command: dockerize -wait tcp://localhost:27017 -timeout 1m
       - run:
           name: Run integration tests
-          command: npm run test:integration || npm test
+          command: yarn test:integration || yarn test
       - store_test_results:
           path: test-results
       - store_artifacts:

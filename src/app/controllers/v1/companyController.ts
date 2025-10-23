@@ -14,7 +14,7 @@ export interface AuthenticatedRequest extends Request {
 
 /**
  * Get all users associated with a company
- * This includes the company owner and any members
+ * This includes only company members, NOT the owner
  */
 export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -25,43 +25,15 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
       throw new BadRequestException('Company not found or access denied');
     }
 
-    // Get the company owner and members
+    // Only add company members (not the owner)
     let users = [];
-    
-    // Get all operate sites for this company
-    const allOperateSites = await OperateSite.find({ company: companyId })
-      .select('name address isActive')
-      .lean();
-    const transformedOperateSites = allOperateSites.map(site => transformLeanResult(site));
 
-    // Add company owner
-    if (company.owner) {
-      const ownerRaw = await User.findById(company.owner)
-        .select('firstName lastName email phoneNumber jobTitle active createdAt role')
-        .populate('role', 'name description permissions')
-        .lean();
-      
-      if (ownerRaw) {
-        const owner = transformLeanResult(ownerRaw);
-        
-        // If role is still just an ID, fetch it manually
-        if (owner.role && typeof owner.role === 'string') {
-          const roleData = await Role.findById(owner.role)
-            .select('name description permissions')
-            .lean();
-          if (roleData) {
-            (owner as any).role = transformLeanResult(roleData);
-          }
-        }
-        
-        users.push({
-          ...owner,
-          companyRole: 'owner',
-          fullName: `${owner.firstName || ''} ${owner.lastName || ''}`.trim(),
-          operatingSites: transformedOperateSites, // Owner has access to all operate sites
-        });
-      }
-    }
+    // Get all operate sites for this company (no longer needed for filtering members)
+    // const allOperateSites = await OperateSite.find({ company: companyId })
+    //   .select('name address isActive')
+    //   .lean();
+
+    // Do NOT add company owner
 
     // Add company members
     if (company.members && company.members.length > 0) {
@@ -70,10 +42,10 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
           .select('firstName lastName email phoneNumber jobTitle active createdAt role')
           .populate('role', 'name description permissions')
           .lean();
-        
+
         if (memberUserRaw) {
           const memberUser = transformLeanResult(memberUserRaw);
-          
+
           // If role is still just an ID, fetch it manually
           if (memberUser.role && typeof memberUser.role === 'string') {
             const roleData = await Role.findById(memberUser.role)
@@ -93,7 +65,7 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
             .select('name address isActive')
             .lean();
           memberOperateSites = memberOperateSitesRaw.map(site => transformLeanResult(site));
-          
+
           users.push({
             ...memberUser,
             companyRole: 'member',

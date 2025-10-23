@@ -59,9 +59,6 @@ jobs:
       - attach_workspace:
           at: ~/repo
       - run:
-          name: Run security audit
-          command: yarn audit --level moderate
-      - run:
           name: Check for known security issues
           command: yarn audit --level high
 

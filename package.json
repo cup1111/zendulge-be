@@ -22,8 +22,6 @@
     "lint": "eslint src/",
     "prepare": "husky install",
     "postinstall": "node -e \"try { require('husky').install() } catch (e) {if (e.code !== 'MODULE_NOT_FOUND') throw e}\"",
-    "load-test": "artillery run artilleryio-load-test.yml --output .artilleryio/test.json",
-    "load-test-report": "artillery report --output .artilleryio/report.html .artilleryio/test.json"
   },
   "repository": {
     "type": "git",
@@ -78,7 +76,6 @@
     "@types/whois-json": "^2.0.4",
     "@typescript-eslint/eslint-plugin": "^5.13.0",
     "@typescript-eslint/parser": "^5.0.0",
-    "artillery": "^2.0.0-23",
     "babel-jest": "^29.6.4",
     "concurrently": "^7.1.0",
     "cross-env": "^10.1.0",

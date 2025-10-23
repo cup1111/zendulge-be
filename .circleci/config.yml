@@ -119,9 +119,6 @@ jobs:
   integration_tests:
     docker:
       - image: cimg/node:22.20.0
-        environment:
-          MONGO_INITDB_ROOT_USERNAME: testuser
-          MONGO_INITDB_ROOT_PASSWORD: testpass
     working_directory: ~/repo
     steps:
       - checkout

@@ -32,7 +32,7 @@ const seedRoles = async () => {
     // Insert roles if they don't exist
     for (const roleData of defaultRoles) {
       const existingRole = await Role.findOne({ name: roleData.name });
-      
+
       if (!existingRole) {
         const role = new Role(roleData);
         await role.save();

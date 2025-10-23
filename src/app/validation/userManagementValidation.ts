@@ -7,53 +7,51 @@ export const createUserWithRoleValidation = [
     .withMessage('Please enter a valid email address')
     .normalizeEmail()
     .toLowerCase(),
-  
+
   body('firstName')
     .trim()
     .isLength({ min: 2, max: 50 })
     .withMessage('First name must be between 2 and 50 characters')
     .matches(/^[a-zA-Z\s]+$/)
     .withMessage('First name can only contain letters and spaces'),
-  
+
   body('lastName')
     .trim()
     .isLength({ min: 2, max: 50 })
     .withMessage('Last name must be between 2 and 50 characters')
     .matches(/^[a-zA-Z\s]+$/)
     .withMessage('Last name can only contain letters and spaces'),
-  
+
   body('phoneNumber')
     .optional()
     .isMobilePhone('any')
     .withMessage('Please enter a valid phone number'),
-  
+
   body('jobTitle')
     .optional()
     .trim()
     .isLength({ max: 100 })
     .withMessage('Job title cannot exceed 100 characters'),
-  
+
   body('department')
     .optional()
     .trim()
     .isLength({ max: 100 })
     .withMessage('Department cannot exceed 100 characters'),
-  
+
   body('location')
     .optional()
     .trim()
     .isLength({ max: 200 })
     .withMessage('Location cannot exceed 200 characters'),
-  
-  body('role')
-    .isMongoId()
-    .withMessage('Please provide a valid role ID'),
-  
+
+  body('role').isMongoId().withMessage('Please provide a valid role ID'),
+
   body('operateSiteIds')
     .optional()
     .isArray()
     .withMessage('Operate site IDs must be an array'),
-  
+
   body('operateSiteIds.*')
     .optional()
     .isMongoId()
@@ -62,10 +60,8 @@ export const createUserWithRoleValidation = [
 
 // Validation for updating user information
 export const updateUserValidation = [
-  param('userId')
-    .isMongoId()
-    .withMessage('Please provide a valid user ID'),
-  
+  param('userId').isMongoId().withMessage('Please provide a valid user ID'),
+
   body('role')
     .optional()
     .isMongoId()
@@ -78,7 +74,7 @@ export const updateUserValidation = [
     .withMessage('First name must be between 2 and 50 characters')
     .matches(/^[a-zA-Z\s]+$/)
     .withMessage('First name can only contain letters and spaces'),
-  
+
   body('lastName')
     .optional()
     .trim()
@@ -86,23 +82,23 @@ export const updateUserValidation = [
     .withMessage('Last name must be between 2 and 50 characters')
     .matches(/^[a-zA-Z\s]+$/)
     .withMessage('Last name can only contain letters and spaces'),
-  
+
   body('phoneNumber')
     .optional()
     .isMobilePhone('any')
     .withMessage('Please enter a valid phone number'),
-  
+
   body('jobTitle')
     .optional()
     .trim()
     .isLength({ max: 100 })
     .withMessage('Job title cannot exceed 100 characters'),
-  
+
   body('operateSiteIds')
     .optional()
     .isArray()
     .withMessage('Operate site IDs must be an array'),
-  
+
   body('operateSiteIds.*')
     .optional()
     .isMongoId()
@@ -111,44 +107,28 @@ export const updateUserValidation = [
 
 // Validation for removing user role
 export const removeUserRoleValidation = [
-  param('userId')
-    .isMongoId()
-    .withMessage('Please provide a valid user ID'),
+  param('userId').isMongoId().withMessage('Please provide a valid user ID'),
 ];
 
 // Validation for user ID parameter
 export const userIdValidation = [
-  param('userId')
-    .isMongoId()
-    .withMessage('Please provide a valid user ID'),
+  param('userId').isMongoId().withMessage('Please provide a valid user ID'),
 ];
 
 // Validation for company ID parameter
 export const companyIdValidation = [
-  param('id')
-    .isMongoId()
-    .withMessage('Please provide a valid company ID'),
+  param('id').isMongoId().withMessage('Please provide a valid company ID'),
 ];
 
 // Combined validation for company and user ID parameters
 export const companyAndUserIdValidation = [
-  param('id')
-    .isMongoId()
-    .withMessage('Please provide a valid company ID'),
-  param('userId')
-    .isMongoId()
-    .withMessage('Please provide a valid user ID'),
+  param('id').isMongoId().withMessage('Please provide a valid company ID'),
+  param('userId').isMongoId().withMessage('Please provide a valid user ID'),
 ];
 
 // Combined validation for company user role update
 export const companyUserRoleValidation = [
-  param('id')
-    .isMongoId()
-    .withMessage('Please provide a valid company ID'),
-  param('userId')
-    .isMongoId()
-    .withMessage('Please provide a valid user ID'),
-  body('role')
-    .isMongoId()
-    .withMessage('Please provide a valid role ID'),
+  param('id').isMongoId().withMessage('Please provide a valid company ID'),
+  param('userId').isMongoId().withMessage('Please provide a valid user ID'),
+  body('role').isMongoId().withMessage('Please provide a valid role ID'),
 ];

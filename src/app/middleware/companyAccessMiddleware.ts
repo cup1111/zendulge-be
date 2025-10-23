@@ -13,7 +13,11 @@ interface AuthenticatedRequest extends Request {
  * Middleware to validate company access from route parameter
  * This should be used AFTER authenticationTokenMiddleware
  */
-export const validateCompanyAccess = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const validateCompanyAccess = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
     const companyId = req.params.id || req.params.companyId;
     const user = req.user;
@@ -37,15 +41,16 @@ export const validateCompanyAccess = async (req: AuthenticatedRequest, res: Resp
     });
 
     if (!hasAccess) {
-      throw new AuthorizationException('Access denied: You do not have permission to access this company');
+      throw new AuthorizationException(
+        'Access denied: You do not have permission to access this company',
+      );
     }
 
     // Attach company to request for use in controllers
     req.company = hasAccess;
-    
+
     next();
   } catch (error) {
     next(error);
   }
 };
-

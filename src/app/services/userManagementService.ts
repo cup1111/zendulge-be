@@ -44,7 +44,9 @@ export class UserManagementService {
       };
     } catch (error) {
       winstonLogger.error(`Get all users error: ${error}`);
-      throw new Error(error instanceof Error ? error.message : 'Failed to retrieve users');
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to retrieve users',
+      );
     }
   }
 
@@ -67,10 +69,7 @@ export class UserManagementService {
       if (companyId) {
         const userInCompany = await Company.findOne({
           _id: companyId,
-          $or: [
-            { owner: user.id },
-            { 'members.user': user.id },
-          ],
+          $or: [{ owner: user.id }, { 'members.user': user.id }],
           isActive: true,
         });
 
@@ -112,13 +111,16 @@ export class UserManagementService {
       // Validate company if provided
       let company = null;
       let validatedOperateSiteIds: Types.ObjectId[] = [];
-      
+
       if (userData.companyId) {
         if (!Types.ObjectId.isValid(userData.companyId)) {
           throw new Error('Invalid company ID format');
         }
 
-        company = await Company.findOne({ _id: userData.companyId, isActive: true });
+        company = await Company.findOne({
+          _id: userData.companyId,
+          isActive: true,
+        });
         if (!company) {
           throw new Error('Company not found');
         }
@@ -140,10 +142,14 @@ export class UserManagementService {
           });
 
           if (operateSites.length !== userData.operateSiteIds.length) {
-            throw new Error('One or more operate sites not found or not accessible for this company');
+            throw new Error(
+              'One or more operate sites not found or not accessible for this company',
+            );
           }
 
-          validatedOperateSiteIds = userData.operateSiteIds.map((id: string) => new Types.ObjectId(id));
+          validatedOperateSiteIds = userData.operateSiteIds.map(
+            (id: string) => new Types.ObjectId(id),
+          );
         }
       }
 
@@ -193,7 +199,9 @@ export class UserManagementService {
 
       return {
         success: true,
-        message: `User created successfully${company ? ' and added to company' : ''}`,
+        message: `User created successfully${
+          company ? ' and added to company' : ''
+        }`,
         data: userResponse,
       };
     } catch (error) {
@@ -203,7 +211,11 @@ export class UserManagementService {
   }
 
   // Update user information (role, personal info, and operate site access)
-  async updateUser(userId: string, updateData: UpdateUserRequest, companyId?: string) {
+  async updateUser(
+    userId: string,
+    updateData: UpdateUserRequest,
+    companyId?: string,
+  ) {
     try {
       if (!Types.ObjectId.isValid(userId)) {
         throw new Error('Invalid user ID format');
@@ -220,10 +232,7 @@ export class UserManagementService {
       if (companyId) {
         company = await Company.findOne({
           _id: companyId,
-          $or: [
-            { owner: user.id },
-            { 'members.user': user.id },
-          ],
+          $or: [{ owner: user.id }, { 'members.user': user.id }],
           isActive: true,
         });
 
@@ -238,7 +247,10 @@ export class UserManagementService {
           throw new Error('Invalid role ID format');
         }
 
-        const role = await Role.findOne({ _id: updateData.role, isActive: true });
+        const role = await Role.findOne({
+          _id: updateData.role,
+          isActive: true,
+        });
         if (!role) {
           throw new Error('Role not found');
         }
@@ -246,7 +258,11 @@ export class UserManagementService {
 
       // Validate operate site IDs if provided
       let validatedOperateSiteIds: Types.ObjectId[] = [];
-      if (updateData.operateSiteIds && updateData.operateSiteIds.length > 0 && companyId) {
+      if (
+        updateData.operateSiteIds &&
+        updateData.operateSiteIds.length > 0 &&
+        companyId
+      ) {
         // Check if all operate site IDs are valid ObjectIds
         for (const siteId of updateData.operateSiteIds) {
           if (!Types.ObjectId.isValid(siteId)) {
@@ -262,10 +278,14 @@ export class UserManagementService {
         });
 
         if (operateSites.length !== updateData.operateSiteIds.length) {
-          throw new Error('One or more operate sites not found or not accessible for this company');
+          throw new Error(
+            'One or more operate sites not found or not accessible for this company',
+          );
         }
 
-        validatedOperateSiteIds = updateData.operateSiteIds.map((id: string) => new Types.ObjectId(id));
+        validatedOperateSiteIds = updateData.operateSiteIds.map(
+          (id: string) => new Types.ObjectId(id),
+        );
       }
 
       // Prepare update object for user
@@ -273,15 +293,16 @@ export class UserManagementService {
       if (updateData.role) userUpdateData.role = updateData.role;
       if (updateData.firstName) userUpdateData.firstName = updateData.firstName;
       if (updateData.lastName) userUpdateData.lastName = updateData.lastName;
-      if (updateData.phoneNumber !== undefined) userUpdateData.phoneNumber = updateData.phoneNumber;
-      if (updateData.jobTitle !== undefined) userUpdateData.jobTitle = updateData.jobTitle;
+      if (updateData.phoneNumber !== undefined)
+        userUpdateData.phoneNumber = updateData.phoneNumber;
+      if (updateData.jobTitle !== undefined)
+        userUpdateData.jobTitle = updateData.jobTitle;
 
       // Update user information
-      const updatedUser = await User.findByIdAndUpdate(
-        userId,
-        userUpdateData,
-        { new: true, runValidators: true },
-      )
+      const updatedUser = await User.findByIdAndUpdate(userId, userUpdateData, {
+        new: true,
+        runValidators: true,
+      })
         .populate('role', 'name description permissions')
         .select('-password -refreshToken -activeCode');
 
@@ -340,7 +361,9 @@ export class UserManagementService {
       };
     } catch (error) {
       winstonLogger.error(`Get all roles error: ${error}`);
-      throw new Error(error instanceof Error ? error.message : 'Failed to retrieve roles');
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to retrieve roles',
+      );
     }
   }
 
@@ -361,10 +384,7 @@ export class UserManagementService {
       if (companyId) {
         const userInCompany = await Company.findOne({
           _id: companyId,
-          $or: [
-            { owner: user.id },
-            { 'members.user': user.id },
-          ],
+          $or: [{ owner: user.id }, { 'members.user': user.id }],
           isActive: true,
         });
 

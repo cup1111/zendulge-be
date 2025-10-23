@@ -1,4 +1,8 @@
-import mongoose, { CallbackWithoutResultAndOptionalError, Schema, Types } from 'mongoose';
+import mongoose, {
+  CallbackWithoutResultAndOptionalError,
+  Schema,
+  Types,
+} from 'mongoose';
 import * as jwt from 'jsonwebtoken';
 import config from '../config/app';
 import * as bcrypt from 'bcrypt';
@@ -30,8 +34,6 @@ export interface IUser {
   userName?: string;
 }
 
-
-
 export interface IUserDocument extends IUser, mongoose.Document {
   generateAuthToken(): Promise<{ token: string; refreshToken: string }>;
   activeAccount(): void;
@@ -39,8 +41,16 @@ export interface IUserDocument extends IUser, mongoose.Document {
 }
 
 export interface IUserModel extends mongoose.Model<IUserDocument> {
-  findByCredentials(email: string, password: string): Promise<IUserDocument | null | undefined>;
-  saveInfo(email: string, firstName: string, lastName: string, password: string): Promise<IUserDocument>;
+  findByCredentials(
+    email: string,
+    password: string,
+  ): Promise<IUserDocument | null | undefined>;
+  saveInfo(
+    email: string,
+    firstName: string,
+    lastName: string,
+    password: string,
+  ): Promise<IUserDocument>;
   findByEmail(email: string): Promise<IUserDocument | null>;
 }
 
@@ -48,7 +58,10 @@ const userSchema = new Schema<IUserDocument>(
   {
     email: {
       type: String,
-      match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address'],
+      match: [
+        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+        'Please fill a valid email address',
+      ],
       required: true,
       unique: true,
       lowercase: true,
@@ -100,7 +113,10 @@ const userSchema = new Schema<IUserDocument>(
   { timestamps: true },
 );
 //limitation for 16MB //AWS 16KB
-userSchema.statics.findByCredentials = async function (email: string, password: string) {
+userSchema.statics.findByCredentials = async function (
+  email: string,
+  password: string,
+) {
   const user = await this.findOne({ email }).exec();
   if (!user) {
     return null;
@@ -117,10 +133,20 @@ userSchema.statics.findByCredentials = async function (email: string, password: 
   return user;
 };
 
-userSchema.statics.saveInfo = async function (email: string, firstName: string, lastName: string, password: string) {
+userSchema.statics.saveInfo = async function (
+  email: string,
+  firstName: string,
+  lastName: string,
+  password: string,
+) {
   const user = await this.findOneAndUpdate(
     { email },
-    { password: await bcrypt.hash(password, 8), firstName, lastName, activeCode: '' },
+    {
+      password: await bcrypt.hash(password, 8),
+      firstName,
+      lastName,
+      activeCode: '',
+    },
     { new: true },
   ).exec();
   if (!user) throw new Error('Cannot find user');
@@ -131,13 +157,16 @@ userSchema.statics.findByEmail = async function (email: string) {
   return this.findOne({ email: email.toLowerCase() }).exec();
 };
 
-userSchema.pre('save', async function (this: any, next: CallbackWithoutResultAndOptionalError) {
-  const user = this;
-  if (user.isModified('password')) {
-    user.password = await bcrypt.hash(user.password, 8);
-  }
-  next();
-});
+userSchema.pre(
+  'save',
+  async function (this: any, next: CallbackWithoutResultAndOptionalError) {
+    const user = this;
+    if (user.isModified('password')) {
+      user.password = await bcrypt.hash(user.password, 8);
+    }
+    next();
+  },
+);
 
 userSchema.methods.toJSON = function () {
   const user = this;
@@ -152,19 +181,18 @@ userSchema.methods.toJSON = function () {
 
 userSchema.methods.generateAuthToken = async function () {
   const user = this;
-  
+
   // Populate role to include basic role info in JWT
   await user.populate('role');
-  
+
   // Get companies this user has access to (owner or member)
   const Company = mongoose.model('companies');
   const userCompanies = await Company.find({
-    $or: [
-      { owner: user.id },
-      { 'members.user': user.id },
-    ],
+    $or: [{ owner: user.id }, { 'members.user': user.id }],
     isActive: true,
-  }).select('_id name').lean();
+  })
+    .select('_id name')
+    .lean();
 
   // Transform lean results to ensure consistent id field
   const transformedCompanies = transformLeanResult(userCompanies);
@@ -175,17 +203,19 @@ userSchema.methods.generateAuthToken = async function () {
     lastName: user.lastName || null,
     userName: user.userName || null,
     avatarIcon: user.avatarIcon || null,
-    companies: transformedCompanies.map((c: any) => ({ 
-      id: c.id, 
+    companies: transformedCompanies.map((c: any) => ({
+      id: c.id,
       name: c.name,
     })),
   };
-  
+
   const token = jwt.sign(payload, config.accessSecret, {
     expiresIn: '48h',
   });
 
-  const refreshToken = jwt.sign({ id: user.id }, config.accessSecret, { expiresIn: '360h' });
+  const refreshToken = jwt.sign({ id: user.id }, config.accessSecret, {
+    expiresIn: '360h',
+  });
   user.refreshToken = refreshToken;
   await user.save();
 

@@ -6,23 +6,25 @@ export const businessRegistrationValidation = [
     .isEmail()
     .normalizeEmail()
     .withMessage('Please provide a valid email address'),
-    
+
   body('password')
     .isLength({ min: 8 })
     .withMessage('Password must be at least 8 characters long')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .withMessage('Password must contain at least one lowercase letter, one uppercase letter, and one number'),
-    
+    .withMessage(
+      'Password must contain at least one lowercase letter, one uppercase letter, and one number',
+    ),
+
   body('firstName')
     .trim()
     .isLength({ min: 2 })
     .withMessage('First name must be at least 2 characters long'),
-    
+
   body('lastName')
     .trim()
     .isLength({ min: 2 })
     .withMessage('Last name must be at least 2 characters long'),
-    
+
   body('jobTitle')
     .optional()
     .trim()
@@ -39,12 +41,14 @@ export const businessRegistrationValidation = [
     .isEmail()
     .normalizeEmail()
     .withMessage('Please provide a valid company email address'),
-    
+
   body('companyDescription')
     .optional()
     .trim()
     .isLength({ min: 10, max: 500 })
-    .withMessage('Company description must be between 10 and 500 characters if provided'),
+    .withMessage(
+      'Company description must be between 10 and 500 characters if provided',
+    ),
 
   body('serviceCategory')
     .trim()
@@ -56,7 +60,9 @@ export const businessRegistrationValidation = [
     .trim()
     .notEmpty()
     .isLength({ max: 200 })
-    .withMessage('Street address is required and must be less than 200 characters'),
+    .withMessage(
+      'Street address is required and must be less than 200 characters',
+    ),
 
   body('businessAddress.city')
     .trim()

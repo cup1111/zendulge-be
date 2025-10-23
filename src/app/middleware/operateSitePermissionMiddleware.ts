@@ -39,29 +39,27 @@ export const requireCompanyUserAccess = async (
 
       // Find the company that contains the target user
       const targetUserCompany = await Company.findOne({
-        $or: [
-          { owner: targetUser.id },
-          { 'members.user': targetUser.id },
-        ],
+        $or: [{ owner: targetUser.id }, { 'members.user': targetUser.id }],
         isActive: true,
       });
 
       if (!targetUserCompany) {
-        throw new AuthorizationException('Target user is not associated with any company');
+        throw new AuthorizationException(
+          'Target user is not associated with any company',
+        );
       }
 
       // Check if current user has access to that company
       const hasCompanyAccess = await Company.findOne({
         _id: targetUserCompany.id,
-        $or: [
-          { owner: user.id },
-          { 'members.user': user.id },
-        ],
+        $or: [{ owner: user.id }, { 'members.user': user.id }],
         isActive: true,
       });
 
       if (!hasCompanyAccess) {
-        throw new AuthorizationException('Access denied: You do not have permission to manage users in this company');
+        throw new AuthorizationException(
+          'Access denied: You do not have permission to manage users in this company',
+        );
       }
 
       req.company = hasCompanyAccess;
@@ -71,15 +69,14 @@ export const requireCompanyUserAccess = async (
     if (req.method === 'POST' && requestedCompanyId) {
       const targetCompany = await Company.findOne({
         _id: requestedCompanyId,
-        $or: [
-          { owner: user.id },
-          { 'members.user': user.id },
-        ],
+        $or: [{ owner: user.id }, { 'members.user': user.id }],
         isActive: true,
       });
 
       if (!targetCompany) {
-        throw new AuthorizationException('Access denied: You do not have permission to add users to this company');
+        throw new AuthorizationException(
+          'Access denied: You do not have permission to add users to this company',
+        );
       }
 
       req.company = targetCompany;

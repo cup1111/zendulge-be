@@ -2,26 +2,26 @@
 export { BaseException } from './baseException';
 
 // Authentication exceptions (401)
-export { 
-  AuthenticationException, 
+export {
+  AuthenticationException,
   InvalidActivationTokenException,
 } from './authenticationException';
 
 // Authorization exceptions (403)
-export { 
-  AuthorizationException, 
+export {
+  AuthorizationException,
   InsufficientPermissionsException,
 } from './authorizationException';
 
 // Not found exceptions (404)
-export { 
-  NotFoundException, 
-  UserNotFoundException, 
+export {
+  NotFoundException,
+  UserNotFoundException,
   CompanyNotFoundException,
 } from './notFoundException';
 
 // Conflict exceptions (409)
-export { 
+export {
   ConflictException,
   EmailAlreadyExistsException,
   CompanyAlreadyExistsException,
@@ -35,7 +35,7 @@ export { BadRequestException } from './badRequestException';
 export { ValidationException } from './validationException';
 
 // Server exceptions (500)
-export { 
+export {
   InternalServerException,
   DatabaseException,
   ExternalServiceException,

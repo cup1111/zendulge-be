@@ -14,7 +14,11 @@ export abstract class BaseException extends Error {
   }
 
   // Method to convert exception to response format
-  public toResponse(): { success: boolean; message: string; statusCode: number } {
+  public toResponse(): {
+    success: boolean;
+    message: string;
+    statusCode: number;
+  } {
     return {
       success: false,
       message: this.message,

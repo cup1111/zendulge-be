@@ -3,13 +3,18 @@ import { winstonLogger } from '../logger';
 import { BaseException } from '../../app/exceptions';
 
 // Async wrapper that passes errors to Express error handler
-const asyncMiddleware = (fn: any) => (req: Request, res: Response, next: NextFunction) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
-};
+const asyncMiddleware =
+  (fn: any) => (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
 
 // Global error handling middleware - Express best practices
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const globalErrorHandler = (error: any, req: Request, res: Response, _next: NextFunction) => {
+export const globalErrorHandler = (
+  error: any,
+  req: Request,
+  res: Response,
+) => {
   // Extract error details
   const errorName = error?.name || 'UnknownError';
   const errorMessage = error?.message || 'An unknown error occurred';
@@ -17,8 +22,9 @@ export const globalErrorHandler = (error: any, req: Request, res: Response, _nex
   const requestUrl = req?.url || req?.originalUrl || 'Unknown URL';
   const requestMethod = req?.method || 'Unknown method';
   const userAgent = req?.get('User-Agent') || 'Unknown user agent';
-  const requestId = (req as any)?.id || req?.headers['x-request-id'] || 'No request ID';
-  
+  const requestId =
+    (req as any)?.id || req?.headers['x-request-id'] || 'No request ID';
+
   // Create comprehensive error context
   const errorContext = {
     error: {
@@ -42,10 +48,9 @@ export const globalErrorHandler = (error: any, req: Request, res: Response, _nex
   // Log error with full context and stack trace
   try {
     winstonLogger.error(`${errorName}: ${errorMessage}`, errorContext);
-    
+
     // Also log a formatted version with stack trace for readability
     winstonLogger.error(`STACK TRACE FOR ${errorName}:\n${errorStack}`);
-    
   } catch (loggingError) {
     // Fallback logging if winston fails - only in development
     if (process.env.NODE_ENV === 'development') {
@@ -67,7 +72,7 @@ export const globalErrorHandler = (error: any, req: Request, res: Response, _nex
   // Handle common HTTP errors
   let statusCode = 500;
   let message = 'An internal server error occurred';
-  
+
   if (error.name === 'ValidationError') {
     statusCode = 400;
     message = 'Validation error';
@@ -91,7 +96,7 @@ export const globalErrorHandler = (error: any, req: Request, res: Response, _nex
     message,
     statusCode,
     timestamp: new Date().toISOString(),
-    ...(process.env.NODE_ENV === 'development' && { 
+    ...(process.env.NODE_ENV === 'development' && {
       error: {
         name: errorName,
         message: errorMessage,

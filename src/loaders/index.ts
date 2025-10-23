@@ -6,7 +6,7 @@ import { createServer } from 'http';
 const init = () => {
   // Initialize database settings first
   databaseLoader();
-  
+
   const app = expressLoader();
   const server = createServer(app);
   serverLoader(server);

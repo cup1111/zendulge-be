@@ -15,15 +15,14 @@
     "seed-roles": "node dist/src/app/console/seedRoles.js",
     "seed-business-setup": "node dist/src/app/console/seedCompleteBusinessSetup.js",
     "verify-business-setup": "node dist/src/app/console/verifyBusinessSetup.js",
-
     "loggly": "node --inspect dist/loggly.js",
     "start": "cross-env NODE_OPTIONS=\"--no-deprecation\" node dist/index.js",
     "dev": "cross-env NODE_OPTIONS=\"--no-deprecation\" concurrently \"npx tsc --watch\" \"nodemon\"",
     "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "prettier": "prettier --write \"src/**/*.{ts,js,json}\"",
     "prepare": "husky install",
-    "postinstall": "node -e \"try { require('husky').install() } catch (e) {if (e.code !== 'MODULE_NOT_FOUND') throw e}\"",
-    "load-test": "artillery run artilleryio-load-test.yml --output .artilleryio/test.json",
-    "load-test-report": "artillery report --output .artilleryio/report.html .artilleryio/test.json"
+    "postinstall": "node -e \"try { require('husky').install() } catch (e) {if (e.code !== 'MODULE_NOT_FOUND') throw e}\""
   },
   "repository": {
     "type": "git",
@@ -78,7 +77,6 @@
     "@types/whois-json": "^2.0.4",
     "@typescript-eslint/eslint-plugin": "^5.13.0",
     "@typescript-eslint/parser": "^5.0.0",
-    "artillery": "^2.0.0-23",
     "babel-jest": "^29.6.4",
     "concurrently": "^7.1.0",
     "cross-env": "^10.1.0",

@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import userService from '../../services/userService';
-import registerServices, { IBusinessRegistration, ICustomerRegistration } from '../../services/registerServices';
+import registerServices, {
+  IBusinessRegistration,
+  ICustomerRegistration,
+} from '../../services/registerServices';
 
 export const registerBusiness = async (req: Request, res: Response) => {
   const registrationData: IBusinessRegistration = req.body;
@@ -36,4 +39,3 @@ export const activateAccount = async (req: Request, res: Response) => {
     },
   });
 };
-

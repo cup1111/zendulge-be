@@ -24,10 +24,10 @@ const createExpressApp = () => {
     app.use(limiter);
   }
   app.use(helmet());
-  
+
   // Routes
   app.use(`${config.api.prefix}/v1`, globalAsyncErrorHandler(apiRouterV1));
-  
+
   // Global error handling middleware (must be last)
   app.use(globalErrorHandler);
 

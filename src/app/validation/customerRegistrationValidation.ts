@@ -13,22 +13,6 @@ export const customerRegistrationValidation = [
     .withMessage(
       'Password must contain at least one lowercase letter, one uppercase letter, and one number',
     ),
-
-  body('firstName')
-    .trim()
-    .isLength({ min: 2 })
-    .withMessage('First name must be at least 2 characters long'),
-
-  body('lastName')
-    .trim()
-    .isLength({ min: 2 })
-    .withMessage('Last name must be at least 2 characters long'),
-
-  body('jobTitle')
-    .optional()
-    .trim()
-    .isLength({ max: 100 })
-    .withMessage('Job title must be less than 100 characters'),
 ];
 
 export const loginValidation = [

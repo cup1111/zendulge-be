@@ -24,11 +24,7 @@ async function loginAndGetToken(email, password) {
 }
 
 describe('Company Users Endpoint Integration', () => {
-  beforeAll(async () => {
-    await app.loadApp();
-  });
-
-  beforeEach(async () => {
+  it('should return company users with their operate sites', async () => {
     // Clean up collections
     // Fetch already-seeded employee role
     testRole = await Role.findOne({ name: RoleName.EMPLOYEE });
@@ -75,9 +71,8 @@ describe('Company Users Endpoint Integration', () => {
     });
     // Login as owner
     ownerToken = await loginAndGetToken('owner@test.com', 'OwnerPass123');
-  });
-
-  it('should return company users with their operate sites', async () => {
+ 
+   
     const response = await request(app.getApp())
       .get(`/api/v1/company/${testCompany._id}/users`)
       .set('Authorization', `Bearer ${ownerToken}`);

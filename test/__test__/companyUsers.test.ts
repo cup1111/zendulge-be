@@ -23,32 +23,32 @@ describe('Company Users Endpoint', () => {
     expect(res.body.success).toBe(false);
   });
 
-  it('should not include the owner in the users list', async () => {
+  it('should not include the owner or the current user in the users list', async () => {
     const company = testDB.defaultCompany;
     const user = testDB.defaultUser;
     const companyId = company.id || company._id;
-    // You may need to generate a valid token for the owner or a member here
-    // For now, use a placeholder or implement your token logic
-    const token = 'test-token';
 
-    // Add a member to the company if not present
     if (!company.members || company.members.length === 0) {
       // You may want to add a member here using your builder or service logic
       // This is a placeholder for actual member seeding logic
       return;
     }
 
+    // Simulate a request as the current user (owner)
     const res = await request(app.application)
       .get(`/api/v1/company/${companyId}/users`)
-      .set('Authorization', `Bearer ${token}`)
+      .set('Authorization', 'Bearer test-token')
       .expect(200);
 
     // Owner should not be in the list
     const users = res.body;
     expect(Array.isArray(users)).toBe(true);
     const ownerId = (company.owner && company.owner.toString()) || (user._id && user._id.toString());
+    // Remove yourself (the current user) from the list as well
     const foundOwner = users.find(u => u._id && u._id.toString() === ownerId);
     expect(foundOwner).toBeUndefined();
+    const foundSelf = users.find(u => u._id && u._id.toString() === user._id.toString());
+    expect(foundSelf).toBeUndefined();
     // There should be only members
     for (const u of users) {
       expect(u.companyRole).toBe('member');

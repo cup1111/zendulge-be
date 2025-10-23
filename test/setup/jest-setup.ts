@@ -26,6 +26,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await db.clearDatabase();
   await db.createDefaultData();
+  jest.clearAllMocks();
 });
 
 afterAll(async () => {

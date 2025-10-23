@@ -66,6 +66,7 @@ export const getOperateSites = async (req: AuthenticatedRequest, res: Response):
   const skip = (Number(page) - 1) * Number(limit);
   
   const operateSites = await OperateSite.find(filter)
+    .populate('members', 'firstName lastName email phoneNumber active')
     .skip(skip)
     .limit(Number(limit))
     .sort({ createdAt: -1 });
@@ -94,7 +95,8 @@ export const getOperateSiteById = async (req: AuthenticatedRequest, res: Respons
     throw new ValidationException('Company ID and Operate Site ID are required');
   }
 
-  const operateSite = await OperateSite.findOne({ _id: operateSiteId, company: companyId });
+  const operateSite = await OperateSite.findOne({ _id: operateSiteId, company: companyId })
+    .populate('members', 'firstName lastName email phoneNumber active');
   
   if (!operateSite) {
     throw new NotFoundException('Operate site not found');

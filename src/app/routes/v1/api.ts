@@ -1,6 +1,6 @@
 import express from 'express';
 import { registerCustomer, registerBusiness, activateAccount } from '../../controllers/v1/registerController';
-import { login, logout, getProfile, refreshToken } from '../../controllers/v1/authController';
+import { login, logout, getProfile, refreshToken, getRole } from '../../controllers/v1/authController';
 import { 
   createOperateSite, 
   getOperateSites, 
@@ -66,6 +66,11 @@ router.post('/logout',
 router.get('/me', 
   authenticationTokenMiddleware,
   getProfile,
+);
+
+router.get('/company/:companyId/me/role', 
+  authenticationTokenMiddleware,
+  getRole,
 );
 
 router.post('/refresh-token',

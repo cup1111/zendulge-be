@@ -1,37 +1,80 @@
 import request from 'supertest';
 import app from '../setup/app';
+import UserBuilder from './builders/userBuilder';
+import CompanyBuilder from './builders/companyBuilder';
+import OperateSiteBuilder from './builders/operateSiteBuilder';
+import { RoleName } from '../../src/app/enum/roles';
+import Role from '../../src/app/model/role';
+
+let ownerUser: any;
+let memberUser: any;
+let company: any;
+let ownerRole: any;
+let employeeRole: any;
+let ownerToken: string;
+let outsiderToken: string;
+let operateSite1: any;
+let operateSite2: any;
+
+async function loginAndGetToken(email: string, password: string) {
+  const res = await request(app.getApp())
+    .post('/api/v1/login')
+    .send({ email, password });
+  return res.body.data.accessToken;
+}
 
 describe('User Management Endpoints', () => {
-  const TEST_USER_ID = '507f1f77bcf86cd799439011';
-  const TEST_ROLE_ID = '507f1f77bcf86cd799439012';
-  const TEST_COMPANY_ID = '507f1f77bcf86cd799439013';
-
-  beforeAll(async () => {
-    await app.loadApp();
+  beforeEach(async () => {
+    // Fetch already-seeded roles
+    ownerRole = await Role.findOne({ name: RoleName.OWNER });
+    employeeRole = await Role.findOne({ name: RoleName.EMPLOYEE });
+    // Create users
+    ownerUser = await new UserBuilder()
+      .withEmail('owner@example.com')
+      .withPassword('OwnerPass123')
+      .withActive(true)
+      .save();
+    memberUser = await new UserBuilder()
+      .withEmail('member@example.com')
+      .withPassword('MemberPass123')
+      .withActive(true)
+      .save();
+    await new UserBuilder()
+      .withEmail('outsider@example.com')
+      .withPassword('OutsiderPass123')
+      .withActive(true)
+      .save();
+    // Create company with owner and member
+    company = await new CompanyBuilder()
+      .withOwner(ownerUser._id)
+      .withContact(ownerUser._id)
+      .withMember(ownerUser._id, ownerRole._id)
+      .withMember(memberUser._id, employeeRole._id)
+      .save();
+    // Create operate sites for this company
+    operateSite1 = await new OperateSiteBuilder().withCompany(company._id).withName('Site 1').save();
+    operateSite2 = await new OperateSiteBuilder().withCompany(company._id).withName('Site 2').save();
+    // Login users
+    ownerToken = await loginAndGetToken('owner@example.com', 'OwnerPass123');
+    outsiderToken = await loginAndGetToken('outsider@example.com', 'OutsiderPass123');
   });
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-
 
   describe('POST /api/v1/company/:id/invite', () => {
     it('should return 401 without authentication', async () => {
       await request(app.getApp())
-        .post(`/api/v1/company/${TEST_COMPANY_ID}/invite`)
+        .post(`/api/v1/company/${company._id}/invite`)
         .send({
           email: 'test@example.com',
           firstName: 'Test',
-          lastName: 'User',     
+          lastName: 'User',
         })
         .expect(401);
     });
 
     it('should return 403 for users without company access', async () => {
       await request(app.getApp())
-        .post(`/api/v1/company/${TEST_COMPANY_ID}/invite`)
-        .set('Authorization', 'Bearer regular-token')
+        .post(`/api/v1/company/${company._id}/invite`)
+        .set('Authorization', `Bearer ${outsiderToken}`)
         .send({
           email: 'test@example.com',
           firstName: 'Test',
@@ -42,17 +85,20 @@ describe('User Management Endpoints', () => {
 
     it('should accept operate site IDs in the request', async () => {
       const response = await request(app.getApp())
-        .post(`/api/v1/company/${TEST_COMPANY_ID}/invite`)
-        .set('Authorization', 'Bearer valid-token')
+        .post(`/api/v1/company/${company._id}/invite`)
+        .set('Authorization', `Bearer ${ownerToken}`)
         .send({
-          email: 'test@example.com',
+          email: 'unique-invitee@example.com',
           firstName: 'Test',
           lastName: 'User',
-          role: TEST_ROLE_ID,
-          operateSiteIds: ['507f1f77bcf86cd799439020', '507f1f77bcf86cd799439021'],
+          role: employeeRole._id,
+          operateSiteIds: [operateSite1._id.toString(), operateSite2._id.toString()],
         });
-      
-      // Should not return validation error for operateSiteIds
+      // Log response for debugging
+      if (response.status === 400) {
+        // eslint-disable-next-line no-console
+        console.log('Invite validation error:', response.body);
+      }
       expect(response.status).not.toBe(400);
     });
   });
@@ -60,14 +106,14 @@ describe('User Management Endpoints', () => {
   describe('GET /api/v1/company/:id/users/:userId', () => {
     it('should return 401 without authentication', async () => {
       await request(app.getApp())
-        .get(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
+        .get(`/api/v1/company/${company._id}/users/${memberUser._id}`)
         .expect(401);
     });
 
     it('should return 403 for users without company access', async () => {
       await request(app.getApp())
-        .get(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
-        .set('Authorization', 'Bearer regular-token')
+        .get(`/api/v1/company/${company._id}/users/${memberUser._id}`)
+        .set('Authorization', `Bearer ${outsiderToken}`)
         .expect(403);
     });
   });
@@ -75,33 +121,31 @@ describe('User Management Endpoints', () => {
   describe('PATCH /api/v1/company/:id/users/:userId', () => {
     it('should return 401 without authentication', async () => {
       await request(app.getApp())
-        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
-        .send({ role: TEST_ROLE_ID })
+        .patch(`/api/v1/company/${company._id}/users/${memberUser._id}`)
+        .send({ role: employeeRole._id })
         .expect(401);
     });
 
     it('should return 403 for users without company access', async () => {
       await request(app.getApp())
-        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
-        .set('Authorization', 'Bearer regular-token')
-        .send({ role: TEST_ROLE_ID })
+        .patch(`/api/v1/company/${company._id}/users/${memberUser._id}`)
+        .set('Authorization', `Bearer ${outsiderToken}`)
+        .send({ role: employeeRole._id })
         .expect(403);
     });
 
     it('should accept comprehensive user update data', async () => {
       const response = await request(app.getApp())
-        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
-        .set('Authorization', 'Bearer valid-token')
+        .patch(`/api/v1/company/${company._id}/users/${memberUser._id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
         .send({
-          role: TEST_ROLE_ID,
+          role: employeeRole._id,
           firstName: 'Updated',
           lastName: 'User',
           phoneNumber: '+1234567890',
           jobTitle: 'Senior Developer',
-          operateSiteIds: ['507f1f77bcf86cd799439020'],
+          operateSiteIds: [operateSite1._id.toString()],
         });
-      
-      // Should not return validation error for the comprehensive update
       expect(response.status).not.toBe(400);
     });
   });
@@ -109,14 +153,14 @@ describe('User Management Endpoints', () => {
   describe('DELETE /api/v1/company/:id/users/:userId', () => {
     it('should return 401 without authentication', async () => {
       await request(app.getApp())
-        .delete(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
+        .delete(`/api/v1/company/${company._id}/users/${memberUser._id}`)
         .expect(401);
     });
 
     it('should return 403 for users without company access', async () => {
       await request(app.getApp())
-        .delete(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
-        .set('Authorization', 'Bearer regular-token')
+        .delete(`/api/v1/company/${company._id}/users/${memberUser._id}`)
+        .set('Authorization', `Bearer ${outsiderToken}`)
         .expect(403);
     });
   });
@@ -124,108 +168,22 @@ describe('User Management Endpoints', () => {
   describe('GET /api/v1/company/:id/roles', () => {
     it('should return 401 without authentication', async () => {
       await request(app.getApp())
-        .get(`/api/v1/company/${TEST_COMPANY_ID}/roles`)
+        .get(`/api/v1/company/${company._id}/roles`)
         .expect(401);
     });
 
     it('should return 403 for users without company access', async () => {
       await request(app.getApp())
-        .get(`/api/v1/company/${TEST_COMPANY_ID}/roles`)
-        .set('Authorization', 'Bearer regular-token')
+        .get(`/api/v1/company/${company._id}/roles`)
+        .set('Authorization', `Bearer ${outsiderToken}`)
         .expect(403);
     });
 
     it('should return roles for company owners', async () => {
-      // First, let's create some test roles
-      const Role = require('../../src/app/model/role').default;
-      const { RoleName } = require('../../src/app/enum/roles');
-      
-      // Create test roles
-      await Role.deleteMany({}); // Clean up first
-      const testRoles = [
-        {
-          name: RoleName.OWNER,
-          description: 'Business owner',
-          isActive: true,
-        },
-        {
-          name: RoleName.EMPLOYEE,
-          description: 'Employee',
-          isActive: true,
-        },
-        {
-          name: RoleName.CUSTOMER,
-          description: 'Customer role',
-          isActive: true,
-        },
-      ];
-      
-      await Role.insertMany(testRoles);
-
       const response = await request(app.getApp())
-        .get(`/api/v1/company/${TEST_COMPANY_ID}/roles`)
-        .set('Authorization', 'Bearer owner-token')
+        .get(`/api/v1/company/${company._id}/roles`)
+        .set('Authorization', `Bearer ${ownerToken}`)
         .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toBeDefined();
-      expect(Array.isArray(response.body.data)).toBe(true);
-      expect(response.body.data.length).toBe(3);
-      expect(response.body.data[0]).toHaveProperty('name');
-      expect(response.body.data[0]).toHaveProperty('description');
-    });
-  });
-
-
-
-  describe('GET /api/v1/company/:id/roles', () => {
-    it('should return 401 without authentication', async () => {
-      await request(app.getApp())
-        .get(`/api/v1/company/${TEST_COMPANY_ID}/roles`)
-        .expect(401);
-    });
-
-    it('should return 403 for users without company access', async () => {
-      await request(app.getApp())
-        .get(`/api/v1/company/${TEST_COMPANY_ID}/roles`)
-        .set('Authorization', 'Bearer regular-token')
-        .expect(403);
-    });
-
-    it('should return roles for company owner', async () => {
-      // Mock the models
-      const Role = require('../../src/app/model/role').default;
-      const { RoleName } = require('../../src/app/enum/roles');
-      
-      // Create test roles if they don't exist
-      const existingRoles = await Role.find({ isActive: true });
-      if (existingRoles.length === 0) {
-        const testRoles = [
-          {
-            name: RoleName.OWNER,
-            description: 'Owner role',
-            isActive: true,
-          },
-          {
-            name: RoleName.EMPLOYEE,
-            description: 'Employee role',
-            isActive: true,
-          },
-          {
-            name: RoleName.CUSTOMER,
-            description: 'Customer role',
-            isActive: true,
-          },
-        ];
-        
-        await Role.insertMany(testRoles);
-      }
-
-      const response = await request(app.getApp())
-        .get(`/api/v1/company/${TEST_COMPANY_ID}/roles`)
-        .set('Authorization', 'Bearer owner-token')
-        .expect(200);
-
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
       expect(Array.isArray(response.body.data)).toBe(true);
@@ -238,53 +196,45 @@ describe('User Management Endpoints', () => {
   describe('Operate Sites Assignment', () => {
     it('should validate operateSiteIds field in PATCH request', async () => {
       const response = await request(app.getApp())
-        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
-        .set('Authorization', 'Bearer valid-token')
+        .patch(`/api/v1/company/${company._id}/users/${memberUser._id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
         .send({
-          operateSiteIds: ['507f1f77bcf86cd799439020', '507f1f77bcf86cd799439021'],
+          operateSiteIds: [operateSite1._id.toString(), operateSite2._id.toString()],
         });
-      
-      // Should accept operateSiteIds without validation errors
       expect(response.status).not.toBe(400);
     });
 
     it('should reject invalid operateSiteIds format', async () => {
       const response = await request(app.getApp())
-        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
-        .set('Authorization', 'Bearer valid-token')
+        .patch(`/api/v1/company/${company._id}/users/${memberUser._id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
         .send({
           operateSiteIds: ['invalid-id', 'another-invalid-id'],
         });
-      
-      // Should return validation error for invalid MongoDB ObjectIds (422 is the validation error status)
       expect(response.status).toBe(422);
     });
 
     it('should accept empty operateSiteIds array', async () => {
       const response = await request(app.getApp())
-        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
-        .set('Authorization', 'Bearer valid-token')
+        .patch(`/api/v1/company/${company._id}/users/${memberUser._id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
         .send({
           operateSiteIds: [],
         });
-      
-      // Should accept empty array without errors
       expect(response.status).not.toBe(400);
     });
 
     it('should validate operateSiteIds in POST /invite request', async () => {
       const response = await request(app.getApp())
-        .post(`/api/v1/company/${TEST_COMPANY_ID}/invite`)
-        .set('Authorization', 'Bearer valid-token')
+        .post(`/api/v1/company/${company._id}/invite`)
+        .set('Authorization', `Bearer ${ownerToken}`)
         .send({
           email: 'newuser@example.com',
           firstName: 'New',
           lastName: 'User',
-          role: TEST_ROLE_ID,
-          operateSiteIds: ['507f1f77bcf86cd799439020'],
+          role: employeeRole._id,
+          operateSiteIds: [operateSite1._id.toString()],
         });
-      
-      // Should accept operateSiteIds without validation errors
       expect(response.status).not.toBe(400);
     });
   });

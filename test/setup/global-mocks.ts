@@ -16,48 +16,6 @@ jest.mock('../../src/app/services/emailService', () => ({
   },
 }));
 
-// Mock User model
-jest.mock('../../src/app/model/user', () => ({
-  __esModule: true,
-  default: {
-    findByEmail: jest.fn().mockResolvedValue(null),
-    create: jest.fn(),
-    findById: jest.fn(),
-  },
-}));
-
-// Mock Company model
-const mockCompanyConstructor = jest.fn().mockImplementation((data) => ({
-  ...data,
-  _id: 'company123',
-  save: jest.fn().mockResolvedValue({
-    _id: 'company123',
-    name: data.name,
-  }),
-}));
-
-// Add static methods to the constructor
-(mockCompanyConstructor as any).isNameTaken = jest.fn().mockResolvedValue(null);
-
-jest.mock('../../src/app/model/company', () => ({
-  __esModule: true,
-  default: mockCompanyConstructor,
-}));
-
-// Mock userService
-jest.mock('../../src/app/services/userService', () => ({
-  __esModule: true,
-  default: {
-    store: jest.fn().mockResolvedValue({
-      _id: 'user123',
-      email: 'test@example.com',
-      name: 'Test User',
-    }),
-    updateActivationCode: jest.fn().mockResolvedValue(true),
-    activateUser: jest.fn(),
-  },
-}));
-
 // Mock custom exceptions
 jest.mock('../../src/app/exceptions', () => {
   const originalModule = jest.requireActual('../../src/app/exceptions');
@@ -81,12 +39,6 @@ jest.mock('compression', () => {
 jest.mock('express-rate-limit', () => {
   return jest.fn(() => (req: any, res: any, next: any) => next());
 });
-
-// Mock jsonwebtoken
-jest.mock('jsonwebtoken', () => ({
-  sign: jest.fn().mockReturnValue('mock-jwt-token'),
-  verify: jest.fn().mockReturnValue({ id: 'user123' }),
-}));
 
 // Mock authentication middleware
 jest.mock('../../src/app/middleware/authMiddleware', () => ({
@@ -122,40 +74,4 @@ jest.mock('../../src/app/middleware/authMiddleware', () => ({
   }),
   optionalAuthenticate: jest.fn((req: any, res: any, next: any) => next()),
   authorize: jest.fn(() => (req: any, res: any, next: any) => next()),
-}));
-
-// Mock company access middleware
-jest.mock('../../src/app/middleware/companyAccessMiddleware', () => ({
-  validateCompanyAccess: jest.fn((req: any, res: any, next: any) => {
-    const authHeader = req.header('Authorization');
-    const companyId = req.params.id;
-    
-    // If no authentication header, let the auth middleware handle it
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return next();
-    }
-
-    const token = authHeader.substring(7);
-    
-    // Simulate unauthorized access for regular tokens
-    if (token === 'regular-token') {
-      const { AuthorizationException } = require('../../src/app/exceptions');
-      return next(new AuthorizationException('Access denied: You do not have permission to access this company'));
-    }
-
-    // For owner tokens or valid company access, attach mock company
-    req.company = {
-      _id: companyId,
-      name: 'Test Company',
-      owner: 'user123',
-      isActive: true,
-    };
-    
-    next();
-  }),
-}));
-
-// Mock permission middleware
-jest.mock('../../src/app/middleware/operateSitePermissionMiddleware', () => ({
-  requireCompanyUserAccess: jest.fn((req: any, res: any, next: any) => next()),
 }));

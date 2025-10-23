@@ -149,7 +149,7 @@ const seedCompleteBusinessSetup = async () => {
       jobTitle: 'Business Manager',
       userName: 'sjohnson',
       active: true,
-      role: ownerRole.id, // Give them owner role for the business
+      role: employeeRole.id, // Give them employee role for the business
     };
 
     let invitedUser = await User.findByEmail(invitedUserData.email);

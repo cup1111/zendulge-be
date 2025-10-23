@@ -55,6 +55,11 @@ export default class UserBuilder extends BaseBuilder<IUserDocument> {
     return this;
   }
 
+  withActiveCode(activeCode: string): UserBuilder {
+    this.properties.activeCode = activeCode;
+    return this;
+  }
+
   build(): Record<string, any> {
     return this.properties;
   }

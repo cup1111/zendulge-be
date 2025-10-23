@@ -1,5 +1,7 @@
 import User from '../model/user';
 import Role from '../model/role';
+import Company from '../model/company';
+import OperateSite from '../model/operateSite';
 import { winstonLogger } from '../../loaders/logger';
 import { Types } from 'mongoose';
 
@@ -63,7 +65,6 @@ export class UserManagementService {
 
       // If companyId is provided, validate that user belongs to that company
       if (companyId) {
-        const Company = (await import('../model/company')).default;
         const userInCompany = await Company.findOne({
           _id: companyId,
           $or: [
@@ -117,7 +118,6 @@ export class UserManagementService {
           throw new Error('Invalid company ID format');
         }
 
-        const Company = (await import('../model/company')).default;
         company = await Company.findOne({ _id: userData.companyId, isActive: true });
         if (!company) {
           throw new Error('Company not found');
@@ -133,7 +133,6 @@ export class UserManagementService {
           }
 
           // Check if all operate sites belong to the company and are active
-          const OperateSite = (await import('../model/operateSite')).default;
           const operateSites = await OperateSite.find({
             _id: { $in: userData.operateSiteIds },
             company: userData.companyId,
@@ -176,7 +175,6 @@ export class UserManagementService {
 
         // Add user to the specified operate sites
         if (validatedOperateSiteIds.length > 0) {
-          const OperateSite = (await import('../model/operateSite')).default;
           await OperateSite.updateMany(
             { _id: { $in: validatedOperateSiteIds } },
             { $addToSet: { members: newUser._id } },
@@ -220,7 +218,6 @@ export class UserManagementService {
       // If companyId is provided, validate that user belongs to that company
       let company = null;
       if (companyId) {
-        const Company = (await import('../model/company')).default;
         company = await Company.findOne({
           _id: companyId,
           $or: [
@@ -258,7 +255,6 @@ export class UserManagementService {
         }
 
         // Check if all operate sites belong to the company and are active
-        const OperateSite = (await import('../model/operateSite')).default;
         const operateSites = await OperateSite.find({
           _id: { $in: updateData.operateSiteIds },
           company: companyId,
@@ -291,7 +287,6 @@ export class UserManagementService {
 
       // Update company member role if needed
       if (company && updateData.role) {
-        const Company = (await import('../model/company')).default;
         await Company.updateOne(
           {
             _id: companyId,
@@ -305,8 +300,6 @@ export class UserManagementService {
 
       // Update operate site access if specified
       if (updateData.operateSiteIds !== undefined && companyId) {
-        const OperateSite = (await import('../model/operateSite')).default;
-        
         // Remove user from all operate sites in this company first
         await OperateSite.updateMany(
           { company: companyId },
@@ -366,7 +359,6 @@ export class UserManagementService {
 
       // If companyId is provided, validate that user belongs to that company
       if (companyId) {
-        const Company = (await import('../model/company')).default;
         const userInCompany = await Company.findOne({
           _id: companyId,
           $or: [

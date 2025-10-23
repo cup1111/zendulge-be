@@ -16,33 +16,9 @@ jest.mock('../../src/app/services/emailService', () => ({
   },
 }));
 
-// Mock User model
-jest.mock('../../src/app/model/user', () => ({
-  __esModule: true,
-  default: {
-    findByEmail: jest.fn().mockResolvedValue(null),
-    create: jest.fn(),
-    findById: jest.fn(),
-  },
-}));
 
-// Mock Company model
-const mockCompanyConstructor = jest.fn().mockImplementation((data) => ({
-  ...data,
-  _id: 'company123',
-  save: jest.fn().mockResolvedValue({
-    _id: 'company123',
-    name: data.name,
-  }),
-}));
 
-// Add static methods to the constructor
-(mockCompanyConstructor as any).isNameTaken = jest.fn().mockResolvedValue(null);
 
-jest.mock('../../src/app/model/company', () => ({
-  __esModule: true,
-  default: mockCompanyConstructor,
-}));
 
 // Mock userService
 jest.mock('../../src/app/services/userService', () => ({

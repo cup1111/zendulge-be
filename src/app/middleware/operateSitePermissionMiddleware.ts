@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthorizationException, NotFoundException } from '../exceptions';
+import Company from '../model/company';
+import User from '../model/user';
 
 interface AuthenticatedRequest extends Request {
   user?: import('../model/user').IUserDocument;
@@ -8,12 +10,8 @@ interface AuthenticatedRequest extends Request {
   userType?: 'company_member';
 }
 
-
-
-
-
 /**
- * Middleware for user management endpoints that allows company owners/members 
+ * Middleware for user management endpoints that allows company owners/members
  * access only to their company's users
  */
 export const requireCompanyUserAccess = async (
@@ -31,10 +29,6 @@ export const requireCompanyUserAccess = async (
     // Validate company access - user ID in the route should belong to their company
     const targetUserId = req.params.id;
     const requestedCompanyId = req.body?.companyId || req.query?.companyId;
-    
-    // Import Company model dynamically to avoid circular dependencies
-    const Company = (await import('../model/company')).default;
-    const User = (await import('../model/user')).default;
 
     // Check if the current user has access to the target user's company
     if (targetUserId) {

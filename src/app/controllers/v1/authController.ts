@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import User, { IUserDocument } from '../../model/user';
 import Role from '../../model/role';
-import { AuthenticationException, ValidationException } from '../../exceptions';
+import Company from '../../model/company';
+import { AuthenticationException, ValidationException, CompanyNotFoundException } from '../../exceptions';
 import { winstonLogger } from '../../../loaders/logger';
 import { RoleName } from '../../enum/roles';
 import { config } from '../../config/app';
@@ -97,6 +98,58 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
     message: 'Profile retrieved successfully',
     user: user.toJSON(),
   });
+};
+
+export const getRole = async (req: AuthenticatedRequest, res: Response) => {
+  const user = req.user;
+  const { companyId } = req.params;
+
+  if (!user) {
+    throw new AuthenticationException('User not found');
+  }
+
+  // Find the company
+  const company = await Company.findById(companyId).lean();
+  if (!company) {
+    throw new CompanyNotFoundException('Company not found');
+  }
+
+  // If user is owner
+  if (company.owner && company.owner.toString() === user._id.toString()) {
+    const ownerRoleDoc = await Role.findOne({ name: RoleName.OWNER }).lean();
+    if (!ownerRoleDoc) {
+      throw new ValidationException('Owner role not found');
+    }
+    return res.status(200).json({
+      success: true,
+      role: {
+        id: ownerRoleDoc._id,
+        name: ownerRoleDoc.name,
+        slug: ownerRoleDoc.name, // Use name as slug
+      },
+    });
+  }
+
+  // If user is a member, find their role
+  const member = company.members?.find((m: any) => m.user.toString() === user._id.toString());
+  if (member) {
+    // Populate role name
+    const roleDoc = await Role.findById(member.role).lean();
+    if (!roleDoc) {
+      throw new ValidationException('Role not found');
+    }
+    return res.status(200).json({
+      success: true,
+      role: {
+        id: roleDoc._id,
+        name: roleDoc.name,
+        slug: roleDoc.name, // Use name as slug
+      },
+    });
+  }
+
+  // Not a member or owner
+  throw new AuthenticationException('User does not have a role in this company');
 };
 
 // Refresh token controller

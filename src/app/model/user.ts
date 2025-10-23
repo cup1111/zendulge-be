@@ -172,7 +172,6 @@ userSchema.methods.generateAuthToken = async function () {
     lastName: user.lastName || null,
     userName: user.userName || null,
     avatarIcon: user.avatarIcon || null,
-    role: user.role?.slug || null, // Include role slug for frontend decisions
     companies: transformedCompanies.map((c: any) => ({ 
       id: c.id, 
       name: c.name,

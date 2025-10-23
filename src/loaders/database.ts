@@ -4,7 +4,7 @@ import config from '../app/config/app';
 const initializeDatabase = async () => {
   // Fix mongoose strictQuery deprecation warning
   mongoose.set('strictQuery', false);
-  
+
   // Set other mongoose options to suppress warnings
   mongoose.set('strictPopulate', false);
 

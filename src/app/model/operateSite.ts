@@ -32,112 +32,123 @@ export interface IOperateSiteDocument extends IOperateSite, Document {
   getCurrentStatus(): string;
 }
 
-const openingHoursSchema = new Schema({
-  monday: {
-    open: { type: String, default: '09:00' },
-    close: { type: String, default: '17:00' },
-    isClosed: { type: Boolean, default: false },
+const openingHoursSchema = new Schema(
+  {
+    monday: {
+      open: { type: String, default: '09:00' },
+      close: { type: String, default: '17:00' },
+      isClosed: { type: Boolean, default: false },
+    },
+    tuesday: {
+      open: { type: String, default: '09:00' },
+      close: { type: String, default: '17:00' },
+      isClosed: { type: Boolean, default: false },
+    },
+    wednesday: {
+      open: { type: String, default: '09:00' },
+      close: { type: String, default: '17:00' },
+      isClosed: { type: Boolean, default: false },
+    },
+    thursday: {
+      open: { type: String, default: '09:00' },
+      close: { type: String, default: '17:00' },
+      isClosed: { type: Boolean, default: false },
+    },
+    friday: {
+      open: { type: String, default: '09:00' },
+      close: { type: String, default: '17:00' },
+      isClosed: { type: Boolean, default: false },
+    },
+    saturday: {
+      open: { type: String, default: '10:00' },
+      close: { type: String, default: '16:00' },
+      isClosed: { type: Boolean, default: false },
+    },
+    sunday: {
+      open: { type: String, default: '10:00' },
+      close: { type: String, default: '16:00' },
+      isClosed: { type: Boolean, default: true },
+    },
   },
-  tuesday: {
-    open: { type: String, default: '09:00' },
-    close: { type: String, default: '17:00' },
-    isClosed: { type: Boolean, default: false },
-  },
-  wednesday: {
-    open: { type: String, default: '09:00' },
-    close: { type: String, default: '17:00' },
-    isClosed: { type: Boolean, default: false },
-  },
-  thursday: {
-    open: { type: String, default: '09:00' },
-    close: { type: String, default: '17:00' },
-    isClosed: { type: Boolean, default: false },
-  },
-  friday: {
-    open: { type: String, default: '09:00' },
-    close: { type: String, default: '17:00' },
-    isClosed: { type: Boolean, default: false },
-  },
-  saturday: {
-    open: { type: String, default: '10:00' },
-    close: { type: String, default: '16:00' },
-    isClosed: { type: Boolean, default: false },
-  },
-  sunday: {
-    open: { type: String, default: '10:00' },
-    close: { type: String, default: '16:00' },
-    isClosed: { type: Boolean, default: true },
-  },
-}, { _id: false });
+  { _id: false },
+);
 
-const operateSiteSchema = new Schema<IOperateSiteDocument>({
-  name: {
-    type: String,
-    required: [true, 'Name is required'],
-    trim: true,
-    maxlength: [100, 'Name cannot exceed 100 characters'],
+const operateSiteSchema = new Schema<IOperateSiteDocument>(
+  {
+    name: {
+      type: String,
+      required: [true, 'Name is required'],
+      trim: true,
+      maxlength: [100, 'Name cannot exceed 100 characters'],
+    },
+    address: {
+      type: String,
+      required: [true, 'Address is required'],
+      trim: true,
+      maxlength: [255, 'Address cannot exceed 255 characters'],
+    },
+    phoneNumber: {
+      type: String,
+      required: [true, 'Phone number is required'],
+      trim: true,
+      maxlength: [20, 'Phone number cannot exceed 20 characters'],
+    },
+    emailAddress: {
+      type: String,
+      required: [true, 'Email address is required'],
+      trim: true,
+      lowercase: true,
+      match: [
+        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+        'Please enter a valid email address',
+      ],
+    },
+    operatingHours: {
+      type: openingHoursSchema,
+      required: true,
+      default: () => ({}),
+    },
+    specialInstruction: {
+      type: String,
+      trim: true,
+      maxlength: [500, 'Special instruction cannot exceed 500 characters'],
+      default: '',
+    },
+    company: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Company ID is required'],
+      index: true,
+    },
+    members: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'users',
+      },
+    ],
+    latitude: {
+      type: Number,
+      required: [true, 'Latitude is required'],
+      min: [-90, 'Latitude must be between -90 and 90'],
+      max: [90, 'Latitude must be between -90 and 90'],
+    },
+    longitude: {
+      type: Number,
+      required: [true, 'Longitude is required'],
+      min: [-180, 'Longitude must be between -180 and 180'],
+      max: [180, 'Longitude must be between -180 and 180'],
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
   },
-  address: {
-    type: String,
-    required: [true, 'Address is required'],
-    trim: true,
-    maxlength: [255, 'Address cannot exceed 255 characters'],
+  {
+    timestamps: true,
+    collection: 'operateSites',
   },
-  phoneNumber: {
-    type: String,
-    required: [true, 'Phone number is required'],
-    trim: true,
-    maxlength: [20, 'Phone number cannot exceed 20 characters'],
-  },
-  emailAddress: {
-    type: String,
-    required: [true, 'Email address is required'],
-    trim: true,
-    lowercase: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email address'],
-  },
-  operatingHours: {
-    type: openingHoursSchema,
-    required: true,
-    default: () => ({}),
-  },
-  specialInstruction: {
-    type: String,
-    trim: true,
-    maxlength: [500, 'Special instruction cannot exceed 500 characters'],
-    default: '',
-  },
-  company: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'Company ID is required'],
-    index: true,
-  },
-  members: [{
-    type: Schema.Types.ObjectId,
-    ref: 'users',
-  }],
-  latitude: {
-    type: Number,
-    required: [true, 'Latitude is required'],
-    min: [-90, 'Latitude must be between -90 and 90'],
-    max: [90, 'Latitude must be between -90 and 90'],
-  },
-  longitude: {
-    type: Number,
-    required: [true, 'Longitude is required'],
-    min: [-180, 'Longitude must be between -180 and 180'],
-    max: [180, 'Longitude must be between -180 and 180'],
-  },
-  isActive: {
-    type: Boolean,
-    default: true,
-    index: true,
-  },
-}, {
-  timestamps: true,
-  collection: 'operateSites',
-});
+);
 
 // Indexes for better query performance
 operateSiteSchema.index({ company: 1, isActive: 1 });
@@ -148,30 +159,42 @@ operateSiteSchema.index({ name: 'text', address: 'text' }); // For text search
 operateSiteSchema.index({ location: '2dsphere' });
 
 // Virtual for location (GeoJSON format)
-operateSiteSchema.virtual('location').get(function (this: IOperateSiteDocument) {
-  return {
-    type: 'Point',
-    coordinates: [this.longitude, this.latitude],
-  };
-});
+operateSiteSchema
+  .virtual('location')
+  .get(function (this: IOperateSiteDocument) {
+    return {
+      type: 'Point',
+      coordinates: [this.longitude, this.latitude],
+    };
+  });
 
 // Ensure virtual fields are serialized
 operateSiteSchema.set('toJSON', { virtuals: true });
 operateSiteSchema.set('toObject', { virtuals: true });
 
 // Pre-save middleware to validate coordinates
-operateSiteSchema.pre('save', function (this: IOperateSiteDocument, next: mongoose.CallbackWithoutResultAndOptionalError) {
-  if (this.longitude < -180 || this.longitude > 180) {
-    return next(new Error('Longitude must be between -180 and 180'));
-  }
-  if (this.latitude < -90 || this.latitude > 90) {
-    return next(new Error('Latitude must be between -90 and 90'));
-  }
-  next();
-});
+operateSiteSchema.pre(
+  'save',
+  function (
+    this: IOperateSiteDocument,
+    next: mongoose.CallbackWithoutResultAndOptionalError,
+  ) {
+    if (this.longitude < -180 || this.longitude > 180) {
+      return next(new Error('Longitude must be between -180 and 180'));
+    }
+    if (this.latitude < -90 || this.latitude > 90) {
+      return next(new Error('Latitude must be between -90 and 90'));
+    }
+    next();
+  },
+);
 
 // Static method to find operate sites near a location
-operateSiteSchema.statics.findNearby = function (longitude: number, latitude: number, maxDistance: number = 10000) {
+operateSiteSchema.statics.findNearby = function (
+  longitude: number,
+  latitude: number,
+  maxDistance: number = 10000,
+) {
   return this.aggregate([
     {
       $geoNear: {
@@ -189,32 +212,43 @@ operateSiteSchema.statics.findNearby = function (longitude: number, latitude: nu
 };
 
 // Instance method to check if operate site is open at a specific time
-operateSiteSchema.methods.isOpenAt = function (this: IOperateSiteDocument, day: string, time: string): boolean {
+operateSiteSchema.methods.isOpenAt = function (
+  this: IOperateSiteDocument,
+  day: string,
+  time: string,
+): boolean {
   const dayLower = day.toLowerCase() as keyof IOperatingHours;
   const dayHours = this.operatingHours[dayLower];
-  
+
   if (dayHours.isClosed) {
     return false;
   }
-  
+
   const openTime = dayHours.open;
   const closeTime = dayHours.close;
-  
+
   return time >= openTime && time <= closeTime;
 };
 
 // Instance method to get current status
-operateSiteSchema.methods.getCurrentStatus = function (this: IOperateSiteDocument): string {
+operateSiteSchema.methods.getCurrentStatus = function (
+  this: IOperateSiteDocument,
+): string {
   const now = new Date();
-  const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+  const currentDay = now
+    .toLocaleDateString('en-US', { weekday: 'long' })
+    .toLowerCase();
   const currentTime = now.toTimeString().substring(0, 5); // HH:MM format
-  
+
   if (this.isOpenAt(currentDay, currentTime)) {
     return 'Open';
   }
   return 'Closed';
 };
 
-const OperateSite = mongoose.model<IOperateSiteDocument>('operateSites', operateSiteSchema);
+const OperateSite = mongoose.model<IOperateSiteDocument>(
+  'operateSites',
+  operateSiteSchema,
+);
 
 export default OperateSite;

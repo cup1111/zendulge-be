@@ -92,7 +92,8 @@ const seedCompleteBusinessSetup = async () => {
         saturday: { open: '09:00', close: '17:00', isClosed: false },
         sunday: { open: '10:00', close: '16:00', isClosed: false },
       },
-      specialInstruction: 'Main headquarters with full service availability. Meeting rooms available by appointment.',
+      specialInstruction:
+        'Main headquarters with full service availability. Meeting rooms available by appointment.',
       company: company.id,
       latitude: -37.8136,
       longitude: 144.9631,
@@ -113,7 +114,8 @@ const seedCompleteBusinessSetup = async () => {
         saturday: { open: '10:00', close: '16:00', isClosed: false },
         sunday: { open: '12:00', close: '15:00', isClosed: true },
       },
-      specialInstruction: 'Boutique location specializing in premium consultations. Valet parking available.',
+      specialInstruction:
+        'Boutique location specializing in premium consultations. Valet parking available.',
       company: company.id,
       latitude: -37.8394,
       longitude: 144.9944,
@@ -121,7 +123,9 @@ const seedCompleteBusinessSetup = async () => {
     };
 
     // Create operate sites
-    let operateSite1 = await OperateSite.findOne({ name: operateSite1Data.name });
+    let operateSite1 = await OperateSite.findOne({
+      name: operateSite1Data.name,
+    });
     if (!operateSite1) {
       operateSite1 = new OperateSite(operateSite1Data);
       await operateSite1.save();
@@ -130,7 +134,9 @@ const seedCompleteBusinessSetup = async () => {
       console.log('ℹ️  Operate site already exists: Melbourne CBD');
     }
 
-    let operateSite2 = await OperateSite.findOne({ name: operateSite2Data.name });
+    let operateSite2 = await OperateSite.findOne({
+      name: operateSite2Data.name,
+    });
     if (!operateSite2) {
       operateSite2 = new OperateSite(operateSite2Data);
       await operateSite2.save();
@@ -162,7 +168,9 @@ const seedCompleteBusinessSetup = async () => {
     }
 
     // Add the invited user as a member of the company
-    const isAlreadyMember = company.members?.some(member => member.user.equals(invitedUser!.id));
+    const isAlreadyMember = company.members?.some((member) =>
+      member.user.equals(invitedUser!.id),
+    );
     if (!isAlreadyMember) {
       if (!company.members) {
         company.members = [];
@@ -180,20 +188,26 @@ const seedCompleteBusinessSetup = async () => {
 
     // Add Sarah Johnson to operate sites as a member
     // Add her to operateSite1 (Melbourne CBD)
-    if (!operateSite1.members || !operateSite1.members.includes(invitedUser!.id)) {
+    if (
+      !operateSite1.members ||
+      !operateSite1.members.includes(invitedUser!.id)
+    ) {
       operateSite1.members = operateSite1.members || [];
       operateSite1.members.push(invitedUser!.id);
       await operateSite1.save();
       console.log('✅ Added Sarah Johnson to Melbourne CBD operate site');
     } else {
-      console.log('ℹ️  Sarah Johnson is already a member of Melbourne CBD operate site');
+      console.log(
+        'ℹ️  Sarah Johnson is already a member of Melbourne CBD operate site',
+      );
     }
 
     // Create sample services data (as simple objects since no Service model exists yet)
     const servicesData = [
       {
         name: 'Premium Business Consultation',
-        description: 'Comprehensive business strategy and optimization consultation',
+        description:
+          'Comprehensive business strategy and optimization consultation',
         category: 'Business Services',
         price: 299.99,
         duration: '2 hours',
@@ -202,7 +216,8 @@ const seedCompleteBusinessSetup = async () => {
       },
       {
         name: 'Technology Integration Services',
-        description: 'Full-stack technology integration and digital transformation',
+        description:
+          'Full-stack technology integration and digital transformation',
         category: 'Technology Services',
         price: 499.99,
         duration: '4 hours',
@@ -214,7 +229,9 @@ const seedCompleteBusinessSetup = async () => {
     console.log('📊 Sample Services Configuration:');
     servicesData.forEach((service, index) => {
       console.log(`   ${index + 1}. ${service.name} - $${service.price}`);
-      console.log(`      Available at: ${service.operateSites.length} location(s)`);
+      console.log(
+        `      Available at: ${service.operateSites.length} location(s)`,
+      );
     });
 
     // Summary
@@ -225,7 +242,7 @@ const seedCompleteBusinessSetup = async () => {
     console.log('   📍 Operate Sites: 2 locations');
     console.log(`   👥 Team Members: 1 invited user (${invitedUser.email})`);
     console.log(`   🛠️  Services: ${servicesData.length} service offerings`);
-    
+
     console.log('\n🔐 Login Credentials:');
     console.log(`   Company Owner: ${companyOwner.email} / Owner123!`);
     console.log(`   Manager: ${invitedUser.email} / Manager123!`);

@@ -9,27 +9,33 @@ interface AuthenticatedRequest extends Request {
   token?: string;
 }
 
-export const authenticationTokenMiddleware = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+export const authenticationTokenMiddleware = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+) => {
   // Get token from Authorization header
   const authHeader = req.header('Authorization');
-  
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new AuthenticationException('Access token is required');
   }
 
   const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-  
+
   if (!token) {
     throw new AuthenticationException('Access token is required');
   }
 
   try {
     // Verify token
-    const decoded = jwt.verify(token, config.accessSecret) as jwt.JwtPayload & { id: string };
-    
+    const decoded = jwt.verify(token, config.accessSecret) as jwt.JwtPayload & {
+      id: string;
+    };
+
     // Find user by id from token
     const user = await User.findById(decoded.id);
-    
+
     if (!user) {
       throw new AuthenticationException('Invalid access token');
     }
@@ -41,7 +47,7 @@ export const authenticationTokenMiddleware = async (req: AuthenticatedRequest, r
     // Attach user and token to request object
     req.user = user;
     req.token = token;
-    
+
     next();
   } catch (error: unknown) {
     if (error instanceof jwt.TokenExpiredError) {

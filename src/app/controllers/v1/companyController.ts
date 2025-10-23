@@ -16,7 +16,10 @@ export interface AuthenticatedRequest extends Request {
  * Get all users associated with a company
  * This includes only company members, NOT the owner
  */
-export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) => {
+export const getCompanyUsers = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
   try {
     const companyId = req.params.id;
     const company = req.company; // Provided by validateCompanyAccess middleware
@@ -39,7 +42,9 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
     if (company.members && company.members.length > 0) {
       for (const member of company.members) {
         const memberUserRaw = await User.findById(member.user)
-          .select('firstName lastName email phoneNumber jobTitle active createdAt role')
+          .select(
+            'firstName lastName email phoneNumber jobTitle active createdAt role',
+          )
           .populate('role', 'name description permissions')
           .lean();
 
@@ -58,18 +63,22 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
 
           // Get assigned operate sites for this member
           let memberOperateSites: any[] = [];
-          const memberOperateSitesRaw = await OperateSite.find({ 
+          const memberOperateSitesRaw = await OperateSite.find({
             company: companyId,
             members: member.user,
           })
             .select('name address isActive')
             .lean();
-          memberOperateSites = memberOperateSitesRaw.map(site => transformLeanResult(site));
+          memberOperateSites = memberOperateSitesRaw.map((site) =>
+            transformLeanResult(site),
+          );
 
           users.push({
             ...memberUser,
             companyRole: 'member',
-            fullName: `${memberUser.firstName || ''} ${memberUser.lastName || ''}`.trim(),
+            fullName: `${memberUser.firstName || ''} ${
+              memberUser.lastName || ''
+            }`.trim(),
             joinedAt: member.joinedAt,
             operatingSites: memberOperateSites,
           });
@@ -77,15 +86,17 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
       }
     }
 
-    winstonLogger.info(`Retrieved ${users.length} users for company ${companyId}`, {
-      companyId,
-      companyName: company.name,
-      userCount: users.length,
-      requestedBy: req.user?.email,
-    });
+    winstonLogger.info(
+      `Retrieved ${users.length} users for company ${companyId}`,
+      {
+        companyId,
+        companyName: company.name,
+        userCount: users.length,
+        requestedBy: req.user?.email,
+      },
+    );
 
     res.status(200).json(users);
-
   } catch (error: any) {
     winstonLogger.error('Error retrieving company users:', {
       error: error.message,
@@ -101,6 +112,8 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
       });
     }
 
-    throw new InternalServerException('An error occurred while retrieving company users');
+    throw new InternalServerException(
+      'An error occurred while retrieving company users',
+    );
   }
 };

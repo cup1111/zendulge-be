@@ -15,11 +15,12 @@
     "seed-roles": "node dist/src/app/console/seedRoles.js",
     "seed-business-setup": "node dist/src/app/console/seedCompleteBusinessSetup.js",
     "verify-business-setup": "node dist/src/app/console/verifyBusinessSetup.js",
-
     "loggly": "node --inspect dist/loggly.js",
     "start": "cross-env NODE_OPTIONS=\"--no-deprecation\" node dist/index.js",
     "dev": "cross-env NODE_OPTIONS=\"--no-deprecation\" concurrently \"npx tsc --watch\" \"nodemon\"",
     "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "prettier": "prettier --write \"src/**/*.{ts,js,json}\"",
     "prepare": "husky install",
     "postinstall": "node -e \"try { require('husky').install() } catch (e) {if (e.code !== 'MODULE_NOT_FOUND') throw e}\""
   },

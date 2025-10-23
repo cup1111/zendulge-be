@@ -2,7 +2,11 @@ import { Request, Response } from 'express';
 import User, { IUserDocument } from '../../model/user';
 import Role from '../../model/role';
 import Company from '../../model/company';
-import { AuthenticationException, ValidationException, CompanyNotFoundException } from '../../exceptions';
+import {
+  AuthenticationException,
+  ValidationException,
+  CompanyNotFoundException,
+} from '../../exceptions';
 import { winstonLogger } from '../../../loaders/logger';
 import { RoleName } from '../../enum/roles';
 import { config } from '../../config/app';
@@ -20,7 +24,7 @@ export const login = async (req: Request, res: Response) => {
   // Check if EMAIL_BYPASS is enabled (development only)
   if (config.emailBypass && process.env.NODE_ENV === 'development') {
     winstonLogger.info('EMAIL_BYPASS enabled - finding first owner user');
-    
+
     // Find the owner role
     const ownerRole = await Role.findOne({ name: RoleName.OWNER });
     if (!ownerRole) {
@@ -29,24 +33,26 @@ export const login = async (req: Request, res: Response) => {
 
     // Find the first owner user
     user = await User.findOne({ role: ownerRole.id, active: true });
-    
+
     if (!user) {
       throw new AuthenticationException('No owner user found in database');
     }
-    
+
     winstonLogger.info(`EMAIL_BYPASS: Auto-login as owner user: ${user.email}`);
   } else {
     // Normal authentication flow
     user = await User.findByCredentials(email, password);
-    
+
     if (user === null) {
       // Invalid credentials
       throw new AuthenticationException('Invalid email or password');
     }
-    
+
     if (user === undefined) {
       // Account not activated
-      throw new AuthenticationException('Account not activated. Please check your email for activation instructions.');
+      throw new AuthenticationException(
+        'Account not activated. Please check your email for activation instructions.',
+      );
     }
 
     winstonLogger.info(`User logged in successfully: ${email}`);
@@ -70,12 +76,12 @@ export const login = async (req: Request, res: Response) => {
 // Logout controller
 export const logout = async (req: AuthenticatedRequest, res: Response) => {
   const user = req.user;
-  
+
   if (user) {
     // Clear refresh token
     user.refreshToken = '';
     await user.save();
-    
+
     winstonLogger.info(`User logged out successfully: ${user.email}`);
   }
 
@@ -88,11 +94,11 @@ export const logout = async (req: AuthenticatedRequest, res: Response) => {
 // Get current user profile
 export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
   const user = req.user;
-  
+
   if (!user) {
     throw new AuthenticationException('User not found');
   }
-  
+
   res.status(200).json({
     success: true,
     message: 'Profile retrieved successfully',
@@ -131,7 +137,9 @@ export const getRole = async (req: AuthenticatedRequest, res: Response) => {
   }
 
   // If user is a member, find their role
-  const member = company.members?.find((m: any) => m.user.toString() === user._id.toString());
+  const member = company.members?.find(
+    (m: any) => m.user.toString() === user._id.toString(),
+  );
   if (member) {
     // Populate role name
     const roleDoc = await Role.findById(member.role).lean();
@@ -149,20 +157,22 @@ export const getRole = async (req: AuthenticatedRequest, res: Response) => {
   }
 
   // Not a member or owner
-  throw new AuthenticationException('User does not have a role in this company');
+  throw new AuthenticationException(
+    'User does not have a role in this company',
+  );
 };
 
 // Refresh token controller
 export const refreshToken = async (req: Request, res: Response) => {
   const { refreshToken: clientRefreshToken } = req.body;
-  
+
   if (!clientRefreshToken) {
     throw new ValidationException('Refresh token is required');
   }
 
   // Find user by refresh token
   const user = await User.findOne({ refreshToken: clientRefreshToken });
-  
+
   if (!user) {
     throw new AuthenticationException('Invalid refresh token');
   }

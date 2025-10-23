@@ -1,14 +1,30 @@
 import { Request, Response } from 'express';
 import OperateSite from '../../model/operateSite';
-import { ValidationException, NotFoundException, BadRequestException } from '../../exceptions';
+import {
+  ValidationException,
+  NotFoundException,
+  BadRequestException,
+} from '../../exceptions';
 
 interface AuthenticatedRequest extends Request {
   user?: import('../../model/user').IUserDocument;
   token?: string;
 }
 
-export const createOperateSite = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
-  const { name, address, phoneNumber, emailAddress, longitude, latitude, operatingHours, specialInstruction } = req.body;
+export const createOperateSite = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
+  const {
+    name,
+    address,
+    phoneNumber,
+    emailAddress,
+    longitude,
+    latitude,
+    operatingHours,
+    specialInstruction,
+  } = req.body;
   const { id: companyId } = req.params;
 
   if (!companyId) {
@@ -16,8 +32,17 @@ export const createOperateSite = async (req: AuthenticatedRequest, res: Response
   }
 
   // Validate required fields
-  if (!name || !address || !phoneNumber || !emailAddress || longitude === undefined || latitude === undefined) {
-    throw new ValidationException('Missing required fields: name, address, phoneNumber, emailAddress, longitude, latitude');
+  if (
+    !name ||
+    !address ||
+    !phoneNumber ||
+    !emailAddress ||
+    longitude === undefined ||
+    latitude === undefined
+  ) {
+    throw new ValidationException(
+      'Missing required fields: name, address, phoneNumber, emailAddress, longitude, latitude',
+    );
   }
 
   // Validate coordinates
@@ -50,7 +75,10 @@ export const createOperateSite = async (req: AuthenticatedRequest, res: Response
   });
 };
 
-export const getOperateSites = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const getOperateSites = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   const { id: companyId } = req.params;
   const { isActive, page = 1, limit = 10 } = req.query;
 
@@ -64,7 +92,7 @@ export const getOperateSites = async (req: AuthenticatedRequest, res: Response):
   }
 
   const skip = (Number(page) - 1) * Number(limit);
-  
+
   const operateSites = await OperateSite.find(filter)
     .populate('members', 'firstName lastName email phoneNumber active')
     .skip(skip)
@@ -88,16 +116,23 @@ export const getOperateSites = async (req: AuthenticatedRequest, res: Response):
   });
 };
 
-export const getOperateSiteById = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const getOperateSiteById = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   const { id: companyId, operateSiteId } = req.params;
 
   if (!companyId || !operateSiteId) {
-    throw new ValidationException('Company ID and Operate Site ID are required');
+    throw new ValidationException(
+      'Company ID and Operate Site ID are required',
+    );
   }
 
-  const operateSite = await OperateSite.findOne({ _id: operateSiteId, company: companyId })
-    .populate('members', 'firstName lastName email phoneNumber active');
-  
+  const operateSite = await OperateSite.findOne({
+    _id: operateSiteId,
+    company: companyId,
+  }).populate('members', 'firstName lastName email phoneNumber active');
+
   if (!operateSite) {
     throw new NotFoundException('Operate site not found');
   }
@@ -108,19 +143,30 @@ export const getOperateSiteById = async (req: AuthenticatedRequest, res: Respons
   });
 };
 
-export const updateOperateSite = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const updateOperateSite = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   const { id: companyId, operateSiteId } = req.params;
   const updateData = req.body;
 
   if (!companyId || !operateSiteId) {
-    throw new ValidationException('Company ID and Operate Site ID are required');
+    throw new ValidationException(
+      'Company ID and Operate Site ID are required',
+    );
   }
 
   // Validate coordinates if provided
-  if (updateData.longitude !== undefined && (updateData.longitude < -180 || updateData.longitude > 180)) {
+  if (
+    updateData.longitude !== undefined &&
+    (updateData.longitude < -180 || updateData.longitude > 180)
+  ) {
     throw new BadRequestException('Longitude must be between -180 and 180');
   }
-  if (updateData.latitude !== undefined && (updateData.latitude < -90 || updateData.latitude > 90)) {
+  if (
+    updateData.latitude !== undefined &&
+    (updateData.latitude < -90 || updateData.latitude > 90)
+  ) {
     throw new BadRequestException('Latitude must be between -90 and 90');
   }
 
@@ -141,14 +187,22 @@ export const updateOperateSite = async (req: AuthenticatedRequest, res: Response
   });
 };
 
-export const deleteOperateSite = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const deleteOperateSite = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   const { id: companyId, operateSiteId } = req.params;
 
   if (!companyId || !operateSiteId) {
-    throw new ValidationException('Company ID and Operate Site ID are required');
+    throw new ValidationException(
+      'Company ID and Operate Site ID are required',
+    );
   }
 
-  const operateSite = await OperateSite.findOneAndDelete({ _id: operateSiteId, company: companyId });
+  const operateSite = await OperateSite.findOneAndDelete({
+    _id: operateSiteId,
+    company: companyId,
+  });
 
   if (!operateSite) {
     throw new NotFoundException('Operate site not found');
@@ -160,14 +214,22 @@ export const deleteOperateSite = async (req: AuthenticatedRequest, res: Response
   });
 };
 
-export const toggleOperateSiteStatus = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const toggleOperateSiteStatus = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   const { id: companyId, operateSiteId } = req.params;
 
   if (!companyId || !operateSiteId) {
-    throw new ValidationException('Company ID and Operate Site ID are required');
+    throw new ValidationException(
+      'Company ID and Operate Site ID are required',
+    );
   }
 
-  const operateSite = await OperateSite.findOne({ _id: operateSiteId, company: companyId });
+  const operateSite = await OperateSite.findOne({
+    _id: operateSiteId,
+    company: companyId,
+  });
 
   if (!operateSite) {
     throw new NotFoundException('Operate site not found');
@@ -178,12 +240,17 @@ export const toggleOperateSiteStatus = async (req: AuthenticatedRequest, res: Re
 
   res.status(200).json({
     success: true,
-    message: `Operate site ${operateSite.isActive ? 'activated' : 'deactivated'} successfully`,
+    message: `Operate site ${
+      operateSite.isActive ? 'activated' : 'deactivated'
+    } successfully`,
     data: { isActive: operateSite.isActive },
   });
 };
 
-export const findNearbyOperateSites = async (req: Request, res: Response): Promise<void> => {
+export const findNearbyOperateSites = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   const { longitude, latitude, maxDistance = 10000 } = req.query;
 
   if (!longitude || !latitude) {
@@ -210,14 +277,22 @@ export const findNearbyOperateSites = async (req: Request, res: Response): Promi
   });
 };
 
-export const getOperateSiteStatus = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+export const getOperateSiteStatus = async (
+  req: AuthenticatedRequest,
+  res: Response,
+): Promise<void> => {
   const { id: companyId, operateSiteId } = req.params;
 
   if (!companyId || !operateSiteId) {
-    throw new ValidationException('Company ID and Operate Site ID are required');
+    throw new ValidationException(
+      'Company ID and Operate Site ID are required',
+    );
   }
 
-  const operateSite = await OperateSite.findOne({ _id: operateSiteId, company: companyId });
+  const operateSite = await OperateSite.findOne({
+    _id: operateSiteId,
+    company: companyId,
+  });
 
   if (!operateSite) {
     throw new NotFoundException('Operate site not found');

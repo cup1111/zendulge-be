@@ -126,7 +126,7 @@ jest.mock('../../src/app/middleware/authMiddleware', () => ({
 
 // Mock company access middleware
 jest.mock('../../src/app/middleware/companyAccessMiddleware', () => ({
-  requireCompanyAccess: jest.fn((req: any, res: any, next: any) => {
+  validateCompanyAccess: jest.fn((req: any, res: any, next: any) => {
     const authHeader = req.header('Authorization');
     const companyId = req.params.id;
     
@@ -153,11 +153,9 @@ jest.mock('../../src/app/middleware/companyAccessMiddleware', () => ({
     
     next();
   }),
-  validateCompanyAccess: jest.fn((req: any, res: any, next: any) => next()),
 }));
 
 // Mock permission middleware
 jest.mock('../../src/app/middleware/operateSitePermissionMiddleware', () => ({
-  operateSiteOwnershipOrOwnerMiddleware: jest.fn((req: any, res: any, next: any) => next()),
   requireCompanyUserAccess: jest.fn((req: any, res: any, next: any) => next()),
 }));

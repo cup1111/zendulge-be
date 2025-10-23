@@ -8,12 +8,6 @@ export const createUserWithRoleValidation = [
     .normalizeEmail()
     .toLowerCase(),
   
-  body('password')
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters long')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
-    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
-  
   body('firstName')
     .trim()
     .isLength({ min: 2, max: 50 })
@@ -54,17 +48,65 @@ export const createUserWithRoleValidation = [
   body('role')
     .isMongoId()
     .withMessage('Please provide a valid role ID'),
+  
+  body('operateSiteIds')
+    .optional()
+    .isArray()
+    .withMessage('Operate site IDs must be an array'),
+  
+  body('operateSiteIds.*')
+    .optional()
+    .isMongoId()
+    .withMessage('Each operate site ID must be a valid MongoDB ObjectId'),
 ];
 
-// Validation for updating user role
-export const updateUserRoleValidation = [
+// Validation for updating user information
+export const updateUserValidation = [
   param('userId')
     .isMongoId()
     .withMessage('Please provide a valid user ID'),
   
   body('role')
+    .optional()
     .isMongoId()
     .withMessage('Please provide a valid role ID'),
+
+  body('firstName')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('First name must be between 2 and 50 characters')
+    .matches(/^[a-zA-Z\s]+$/)
+    .withMessage('First name can only contain letters and spaces'),
+  
+  body('lastName')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Last name must be between 2 and 50 characters')
+    .matches(/^[a-zA-Z\s]+$/)
+    .withMessage('Last name can only contain letters and spaces'),
+  
+  body('phoneNumber')
+    .optional()
+    .isMobilePhone('any')
+    .withMessage('Please enter a valid phone number'),
+  
+  body('jobTitle')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Job title cannot exceed 100 characters'),
+  
+  body('operateSiteIds')
+    .optional()
+    .isArray()
+    .withMessage('Operate site IDs must be an array'),
+  
+  body('operateSiteIds.*')
+    .optional()
+    .isMongoId()
+    .withMessage('Each operate site ID must be a valid MongoDB ObjectId'),
 ];
 
 // Validation for removing user role

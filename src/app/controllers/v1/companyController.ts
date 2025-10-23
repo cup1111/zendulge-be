@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import User from '../../model/user';
 import Role from '../../model/role';
+import OperateSite from '../../model/operateSite';
 import { winstonLogger } from '../../../loaders/logger';
 import { BadRequestException } from '../../exceptions/badRequestException';
 import { InternalServerException } from '../../exceptions/serverException';
@@ -18,7 +19,7 @@ export interface AuthenticatedRequest extends Request {
 export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const companyId = req.params.id;
-    const company = req.company; // Provided by requireCompanyAccess middleware
+    const company = req.company; // Provided by validateCompanyAccess middleware
 
     if (!company) {
       throw new BadRequestException('Company not found or access denied');
@@ -27,6 +28,12 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
     // Get the company owner and members
     let users = [];
     
+    // Get all operate sites for this company
+    const allOperateSites = await OperateSite.find({ company: companyId })
+      .select('name address isActive')
+      .lean();
+    const transformedOperateSites = allOperateSites.map(site => transformLeanResult(site));
+
     // Add company owner
     if (company.owner) {
       const ownerRaw = await User.findById(company.owner)
@@ -51,6 +58,7 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
           ...owner,
           companyRole: 'owner',
           fullName: `${owner.firstName || ''} ${owner.lastName || ''}`.trim(),
+          operatingSites: transformedOperateSites, // Owner has access to all operate sites
         });
       }
     }
@@ -75,12 +83,23 @@ export const getCompanyUsers = async (req: AuthenticatedRequest, res: Response) 
               (memberUser as any).role = transformLeanResult(roleData);
             }
           }
+
+          // Get assigned operate sites for this member
+          let memberOperateSites: any[] = [];
+          const memberOperateSitesRaw = await OperateSite.find({ 
+            company: companyId,
+            members: member.user,
+          })
+            .select('name address isActive')
+            .lean();
+          memberOperateSites = memberOperateSitesRaw.map(site => transformLeanResult(site));
           
           users.push({
             ...memberUser,
             companyRole: 'member',
             fullName: `${memberUser.firstName || ''} ${memberUser.lastName || ''}`.trim(),
             joinedAt: member.joinedAt,
+            operatingSites: memberOperateSites,
           });
         }
       }

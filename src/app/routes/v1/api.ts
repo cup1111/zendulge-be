@@ -15,7 +15,7 @@ import { getCompanyUsers } from '../../controllers/v1/companyController';
 import {
   getUserById,
   createUserWithRole,
-  updateUserRole,
+  updateUser,
   getAllRoles,
   deleteUser,
 } from '../../controllers/v1/userManagementController';
@@ -25,14 +25,11 @@ import { loginValidation, refreshTokenValidation } from '../../validation/authVa
 import {
   createUserWithRoleValidation,
   companyAndUserIdValidation,
-  companyUserRoleValidation,
+  updateUserValidation,
 } from '../../validation/userManagementValidation';
 import { handleValidationErrors } from '../../validation/validationHandler';
 import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
-import { 
-  operateSiteOwnershipOrOwnerMiddleware,
-} from '../../middleware/operateSitePermissionMiddleware';
-import { requireCompanyAccess } from '../../middleware/companyAccessMiddleware';
+import { validateCompanyAccess } from '../../middleware/companyAccessMiddleware';
 
 const router = express.Router();
 
@@ -82,13 +79,13 @@ router.get('/verify/:token', activateAccount);
 // Operate Site routes (protected)
 router.post('/company/:id/operate-sites', 
   authenticationTokenMiddleware,
-  requireCompanyAccess, // Validates company access + provides req.company
+  validateCompanyAccess, // Validates company access + provides req.company
   createOperateSite,
 );
 
 router.get('/company/:id/operate-sites', 
   authenticationTokenMiddleware,
-  requireCompanyAccess, // Validates company access
+  validateCompanyAccess, // Validates company access
   getOperateSites,
 );
 
@@ -98,41 +95,38 @@ router.get('/operate-sites/nearby',
 
 router.get('/company/:id/operate-sites/:operateSiteId', 
   authenticationTokenMiddleware,
-  requireCompanyAccess, // Validates company access
+  validateCompanyAccess, // Validates company access
   getOperateSiteById,
 );
 
 router.put('/company/:id/operate-sites/:operateSiteId', 
   authenticationTokenMiddleware,
-  requireCompanyAccess, // Validates company access first
-  operateSiteOwnershipOrOwnerMiddleware, // Then validates operate site permissions
+  validateCompanyAccess, // Validates company access
   updateOperateSite,
 );
 
 router.delete('/company/:id/operate-sites/:operateSiteId', 
   authenticationTokenMiddleware,
-  requireCompanyAccess,
-  operateSiteOwnershipOrOwnerMiddleware,
+  validateCompanyAccess,
   deleteOperateSite,
 );
 
 router.patch('/company/:id/operate-sites/:operateSiteId/toggle-status', 
   authenticationTokenMiddleware,
-  requireCompanyAccess,
-  operateSiteOwnershipOrOwnerMiddleware,
+  validateCompanyAccess,
   toggleOperateSiteStatus,
 );
 
 router.get('/company/:id/operate-sites/:operateSiteId/status', 
   authenticationTokenMiddleware,
-  requireCompanyAccess,
+  validateCompanyAccess,
   getOperateSiteStatus,
 );
 
 // Company users route - get all users associated with a company
 router.get('/company/:id/users', 
   authenticationTokenMiddleware,
-  requireCompanyAccess, // Validates company access and provides req.company
+  validateCompanyAccess, // Validates company access and provides req.company
   getCompanyUsers,
 );
 
@@ -143,7 +137,7 @@ router.get('/company/:id/users',
 // Business access route - company members can access their company's analytics
 router.get('/company/:id/operate-sites/:operateSiteId/analytics', 
   authenticationTokenMiddleware,
-  requireCompanyAccess, // Validates company access and provides req.company
+  validateCompanyAccess, // Validates company access and provides req.company
   getOperateSiteById, // This would show analytics for company members
 );
 
@@ -151,31 +145,31 @@ router.get('/company/:id/operate-sites/:operateSiteId/analytics',
 // Company-scoped user management (business owners manage their company users)
 router.get('/company/:id/users/:userId', 
   authenticationTokenMiddleware,
-  requireCompanyAccess, // Validates company access and provides req.company
+  validateCompanyAccess, // Validates company access and provides req.company
   companyAndUserIdValidation,
   handleValidationErrors,
   getUserById,
 );
 
-router.post('/company/:id/users', 
+router.post('/company/:id/invite', 
   authenticationTokenMiddleware,
-  requireCompanyAccess, // Validates company access and provides req.company
+  validateCompanyAccess, // Validates company access and provides req.company
   createUserWithRoleValidation,
   handleValidationErrors,
   createUserWithRole,
 );
 
-router.patch('/company/:id/users/:userId/role', 
+router.patch('/company/:id/users/:userId', 
   authenticationTokenMiddleware,
-  requireCompanyAccess, // Validates company access and provides req.company
-  companyUserRoleValidation,
+  validateCompanyAccess, // Validates company access and provides req.company
+  updateUserValidation,
   handleValidationErrors,
-  updateUserRole,
+  updateUser,
 );
 
 router.delete('/company/:id/users/:userId', 
   authenticationTokenMiddleware,
-  requireCompanyAccess, // Validates company access and provides req.company
+  validateCompanyAccess, // Validates company access and provides req.company
   companyAndUserIdValidation,
   handleValidationErrors,
   deleteUser,
@@ -184,7 +178,7 @@ router.delete('/company/:id/users/:userId',
 // Get all roles (for company owner to assign roles to users)
 router.get('/company/:id/roles', 
   authenticationTokenMiddleware,
-  requireCompanyAccess,
+  validateCompanyAccess,
   getAllRoles,
 );
 

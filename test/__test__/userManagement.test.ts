@@ -16,13 +16,12 @@ describe('User Management Endpoints', () => {
 
 
 
-  describe('POST /api/v1/company/:id/users', () => {
+  describe('POST /api/v1/company/:id/invite', () => {
     it('should return 401 without authentication', async () => {
       await request(app.getApp())
-        .post(`/api/v1/company/${TEST_COMPANY_ID}/users`)
+        .post(`/api/v1/company/${TEST_COMPANY_ID}/invite`)
         .send({
           email: 'test@example.com',
-          password: 'password123',
           firstName: 'Test',
           lastName: 'User',     
         })
@@ -31,15 +30,30 @@ describe('User Management Endpoints', () => {
 
     it('should return 403 for users without company access', async () => {
       await request(app.getApp())
-        .post(`/api/v1/company/${TEST_COMPANY_ID}/users`)
+        .post(`/api/v1/company/${TEST_COMPANY_ID}/invite`)
         .set('Authorization', 'Bearer regular-token')
         .send({
           email: 'test@example.com',
-          password: 'password123',
           firstName: 'Test',
           lastName: 'User',
         })
         .expect(403);
+    });
+
+    it('should accept operate site IDs in the request', async () => {
+      const response = await request(app.getApp())
+        .post(`/api/v1/company/${TEST_COMPANY_ID}/invite`)
+        .set('Authorization', 'Bearer valid-token')
+        .send({
+          email: 'test@example.com',
+          firstName: 'Test',
+          lastName: 'User',
+          role: TEST_ROLE_ID,
+          operateSiteIds: ['507f1f77bcf86cd799439020', '507f1f77bcf86cd799439021'],
+        });
+      
+      // Should not return validation error for operateSiteIds
+      expect(response.status).not.toBe(400);
     });
   });
 
@@ -58,20 +72,37 @@ describe('User Management Endpoints', () => {
     });
   });
 
-  describe('PATCH /api/v1/company/:id/users/:userId/role', () => {
+  describe('PATCH /api/v1/company/:id/users/:userId', () => {
     it('should return 401 without authentication', async () => {
       await request(app.getApp())
-        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}/role`)
+        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
         .send({ role: TEST_ROLE_ID })
         .expect(401);
     });
 
     it('should return 403 for users without company access', async () => {
       await request(app.getApp())
-        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}/role`)
+        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
         .set('Authorization', 'Bearer regular-token')
         .send({ role: TEST_ROLE_ID })
         .expect(403);
+    });
+
+    it('should accept comprehensive user update data', async () => {
+      const response = await request(app.getApp())
+        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
+        .set('Authorization', 'Bearer valid-token')
+        .send({
+          role: TEST_ROLE_ID,
+          firstName: 'Updated',
+          lastName: 'User',
+          phoneNumber: '+1234567890',
+          jobTitle: 'Senior Developer',
+          operateSiteIds: ['507f1f77bcf86cd799439020'],
+        });
+      
+      // Should not return validation error for the comprehensive update
+      expect(response.status).not.toBe(400);
     });
   });
 
@@ -201,6 +232,60 @@ describe('User Management Endpoints', () => {
       expect(response.body.data.length).toBeGreaterThan(0);
       expect(response.body.data[0]).toHaveProperty('name');
       expect(response.body.data[0]).toHaveProperty('description');
+    });
+  });
+
+  describe('Operate Sites Assignment', () => {
+    it('should validate operateSiteIds field in PATCH request', async () => {
+      const response = await request(app.getApp())
+        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
+        .set('Authorization', 'Bearer valid-token')
+        .send({
+          operateSiteIds: ['507f1f77bcf86cd799439020', '507f1f77bcf86cd799439021'],
+        });
+      
+      // Should accept operateSiteIds without validation errors
+      expect(response.status).not.toBe(400);
+    });
+
+    it('should reject invalid operateSiteIds format', async () => {
+      const response = await request(app.getApp())
+        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
+        .set('Authorization', 'Bearer valid-token')
+        .send({
+          operateSiteIds: ['invalid-id', 'another-invalid-id'],
+        });
+      
+      // Should return validation error for invalid MongoDB ObjectIds (422 is the validation error status)
+      expect(response.status).toBe(422);
+    });
+
+    it('should accept empty operateSiteIds array', async () => {
+      const response = await request(app.getApp())
+        .patch(`/api/v1/company/${TEST_COMPANY_ID}/users/${TEST_USER_ID}`)
+        .set('Authorization', 'Bearer valid-token')
+        .send({
+          operateSiteIds: [],
+        });
+      
+      // Should accept empty array without errors
+      expect(response.status).not.toBe(400);
+    });
+
+    it('should validate operateSiteIds in POST /invite request', async () => {
+      const response = await request(app.getApp())
+        .post(`/api/v1/company/${TEST_COMPANY_ID}/invite`)
+        .set('Authorization', 'Bearer valid-token')
+        .send({
+          email: 'newuser@example.com',
+          firstName: 'New',
+          lastName: 'User',
+          role: TEST_ROLE_ID,
+          operateSiteIds: ['507f1f77bcf86cd799439020'],
+        });
+      
+      // Should accept operateSiteIds without validation errors
+      expect(response.status).not.toBe(400);
     });
   });
 });

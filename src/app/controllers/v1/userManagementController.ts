@@ -19,15 +19,8 @@ export const getUserById = async (req: UserManagementRequest, res: Response) => 
   } catch (error) {
     winstonLogger.error(`Get user by ID controller error: ${error}`);
     
-    const statusCode = error instanceof Error && (
-      error.message === 'User not found' || 
-      error.message === 'User not found in the specified company'
-    ) ? 404 : 500;
-    const message = error instanceof Error && (
-      error.message === 'User not found' || 
-      error.message === 'Invalid user ID format' ||
-      error.message === 'User not found in the specified company'
-    ) ? error.message : 'Internal server error';
+    const statusCode = error instanceof Error && error.message === 'Invalid user ID format' ? 400 : 500;
+    const message = error instanceof Error ? error.message : 'Internal server error';
 
     res.status(statusCode).json({
       success: false,
@@ -66,24 +59,20 @@ export const createUserWithRole = async (req: UserManagementRequest, res: Respon
   }
 };
 
-// Update user role
-export const updateUserRole = async (req: UserManagementRequest, res: Response) => {
+// Update user information (role, personal info, and operate site access)
+export const updateUser = async (req: UserManagementRequest, res: Response) => {
   try {
     const userId = req.params.userId || req.params.id; // Support both userId and id params
     const companyId = req.params.id || req.company?.id; // Company ID from URL path
     
-    const result = await userManagementService.updateUserRole(userId, req.body, companyId);
+    const result = await userManagementService.updateUser(userId, req.body, companyId);
     res.status(200).json(result.data);
   } catch (error) {
-    winstonLogger.error(`Update user role controller error: ${error}`);
+    winstonLogger.error(`Update user controller error: ${error}`);
     
     let statusCode = 500;
     if (error instanceof Error) {
-      if (error.message === 'User not found' || 
-          error.message === 'Role not found' ||
-          error.message === 'User not found in the specified company') {
-        statusCode = 404;
-      } else if (error.message.includes('Invalid')) {
+      if (error.message.includes('Invalid')) {
         statusCode = 400;
       }
     }
@@ -124,10 +113,7 @@ export const deleteUser = async (req: UserManagementRequest, res: Response) => {
     
     let statusCode = 500;
     if (error instanceof Error) {
-      if (error.message === 'User not found' ||
-          error.message === 'User not found in the specified company') {
-        statusCode = 404;
-      } else if (error.message.includes('Invalid') || error.message.includes('Cannot delete')) {
+      if (error.message.includes('Invalid') || error.message.includes('Cannot delete')) {
         statusCode = 400;
       }
     }

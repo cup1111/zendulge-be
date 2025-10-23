@@ -12,7 +12,7 @@ executors:
       IMAGE_NAME: zenduldge
     docker: # Each job requires specifying an executor
       # (either docker, macos, or machine), see
-      - image: cimg/node:22.13.0
+      - image: cimg/node:22.20.0
         auth:
           username: $DOCKERHUB_USERNAME
           password: $DOCKERHUB_PASSWORD
@@ -22,7 +22,7 @@ jobs:
   # Build and prepare application
   build:
     docker:
-      - image: cimg/node:22.13.0
+      - image: cimg/node:22.20.0
     working_directory: ~/repo
     steps:
       - checkout
@@ -52,7 +52,7 @@ jobs:
   # Security vulnerability scanning
   security_audit:
     docker:
-      - image: cimg/node:22.13.0
+      - image: cimg/node:22.20.0
     working_directory: ~/repo
     steps:
       - checkout
@@ -68,7 +68,7 @@ jobs:
   # Code quality and linting
   code_quality:
     docker:
-      - image: cimg/node:22.13.0
+      - image: cimg/node:22.20.0
     working_directory: ~/repo
     steps:
       - checkout
@@ -92,7 +92,7 @@ jobs:
   # Unit tests with coverage
   unit_tests:
     docker:
-      - image: cimg/node:22.13.0
+      - image: cimg/node:22.20.0
     working_directory: ~/repo
     steps:
       - checkout
@@ -116,7 +116,7 @@ jobs:
   # Integration tests
   integration_tests:
     docker:
-      - image: cimg/node:22.13.0
+      - image: cimg/node:22.20.0
       - image: cimg/mongo:7.0
         environment:
           MONGO_INITDB_ROOT_USERNAME: testuser

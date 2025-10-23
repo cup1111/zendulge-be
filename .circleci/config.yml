@@ -128,9 +128,6 @@ jobs:
       - attach_workspace:
           at: ~/repo
       - run:
-          name: Wait for MongoDB
-          command: dockerize -wait tcp://localhost:27017 -timeout 1m
-      - run:
           name: Run integration tests
           command: yarn test:integration || yarn test
       - store_test_results:

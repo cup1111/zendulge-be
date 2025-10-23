@@ -4,10 +4,6 @@ import UserBuilder from './builders/userBuilder';
 import { InvalidActivationTokenException } from '../../src/app/exceptions';
 
 describe('Account Activation', () => {
-  beforeEach(() => {
-    // Clear all mocks before each test
-    jest.clearAllMocks();
-  });
 
   it('should activate account with valid activation code', async () => {
     const activationCode = 'validactivationcode123';

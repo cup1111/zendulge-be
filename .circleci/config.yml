@@ -119,14 +119,10 @@ jobs:
   integration_tests:
     docker:
       - image: cimg/node:22.20.0
-      - image: cimg/mongo:7.0
         environment:
           MONGO_INITDB_ROOT_USERNAME: testuser
           MONGO_INITDB_ROOT_PASSWORD: testpass
     working_directory: ~/repo
-    environment:
-      NODE_ENV: test
-      MONGODB_URI: mongodb://testuser:testpass@localhost:27017/test
     steps:
       - checkout
       - attach_workspace:

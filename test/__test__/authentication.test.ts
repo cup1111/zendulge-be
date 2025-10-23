@@ -2,9 +2,9 @@ import request from 'supertest';
 import app from '../setup/app';
 import UserBuilder from './builders/userBuilder';
 import CompanyBuilder from './builders/companyBuilder';
+import { config } from '../../src/app/config/app';
 
 const jwt = require('jsonwebtoken');
-
 
 describe('Authentication', () => {
   const validUserCredentials = {
@@ -85,6 +85,7 @@ describe('Authentication', () => {
 
     // CRITICAL COMPANY ID BUG PREVENTION TESTS
     it('should return JWT with valid company ID strings (preventing company ID {} bug)', async () => {
+      process.env.JWT_SECRET = 'test_jwt_secret';
       // Create user and company in DB
       const user = await new UserBuilder()
         .withEmail(validUserCredentials.email)
@@ -93,7 +94,6 @@ describe('Authentication', () => {
         .withFirstName('Test')
         .withLastName('User')
         .save();
-      console.log('tt', user.id);
       await new CompanyBuilder()
         .withName('Test Company')
         .withOwner(user.id)
@@ -107,9 +107,8 @@ describe('Authentication', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.accessToken).toBeDefined();
-
       // Decode JWT token to verify company ID format
-      const decoded = jwt.verify(res.body.data.accessToken, process.env.JWT_SECRET);
+      const decoded = jwt.verify(res.body.data.accessToken, config.accessSecret);
       expect(decoded).toBeDefined();
       expect(decoded.companies).toBeDefined();
       expect(Array.isArray(decoded.companies)).toBe(true);
@@ -153,10 +152,8 @@ describe('Authentication', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.accessToken).toBeDefined();
-
       // Decode JWT token to verify all company ID formats
-      const decoded = jwt.verify(res.body.data.accessToken, process.env.JWT_SECRET);
-
+      const decoded = jwt.verify(res.body.data.accessToken, config.accessSecret);
       if (decoded.companies && decoded.companies.length > 0) {
         for (const company of decoded.companies) {
           expect(company.id).toBeDefined();

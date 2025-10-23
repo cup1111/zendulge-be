@@ -92,6 +92,10 @@ const userSchema = new Schema<IUserDocument>(
       ref: 'roles',
       index: true,
     },
+    activeCode: {
+      type: String,
+      trim: true,
+    },
   },
   { timestamps: true },
 );
@@ -164,7 +168,6 @@ userSchema.methods.generateAuthToken = async function () {
 
   // Transform lean results to ensure consistent id field
   const transformedCompanies = transformLeanResult(userCompanies);
-  
   const payload = {
     id: user.id,
     email: user.email,
@@ -181,6 +184,7 @@ userSchema.methods.generateAuthToken = async function () {
   const token = jwt.sign(payload, config.accessSecret, {
     expiresIn: '48h',
   });
+
   const refreshToken = jwt.sign({ id: user.id }, config.accessSecret, { expiresIn: '360h' });
   user.refreshToken = refreshToken;
   await user.save();

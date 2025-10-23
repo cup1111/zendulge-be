@@ -86,6 +86,14 @@ export default class CompanyBuilder extends BaseBuilder<ICompanyDocument> {
     return this;
   }
 
+  withMember(userId: any, roleId: any): CompanyBuilder {
+    if (!this.properties.members) {
+      this.properties.members = [];
+    }
+    this.properties.members.push({ user: userId, role: roleId });
+    return this;
+  }
+
   withInactive(): CompanyBuilder {
     this.properties.isActive = false;
     return this;

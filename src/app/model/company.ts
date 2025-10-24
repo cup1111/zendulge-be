@@ -36,6 +36,19 @@ export interface ICompany {
 export type ICompanyDocument = ICompany & Document & {
   _id: mongoose.Types.ObjectId;
   addMember: (userId: Types.ObjectId, roleId: Types.ObjectId) => Promise<ICompanyDocument>;
+  removeMember: (userId: Types.ObjectId) => Promise<ICompanyDocument>;
+  hasAccess: (userId: Types.ObjectId) => boolean;
+  transferOwnership: (
+    newOwnerId: Types.ObjectId,
+    oldOwnerRoleId: Types.ObjectId,
+  ) => Promise<ICompanyDocument>;
+  updateMemberRole: (
+    userId: Types.ObjectId,
+    newRoleId: Types.ObjectId,
+  ) => Promise<ICompanyDocument>;
+  getMemberRole: (userId: Types.ObjectId) => Types.ObjectId | null;
+  getMembersByRole: (roleId: Types.ObjectId) => ICompanyMember[];
+  isCompanyOwner: (userId: Types.ObjectId) => boolean;
 };
 export interface ICompanyModel extends mongoose.Model<ICompanyDocument> {
   findByOwner(
@@ -69,6 +82,7 @@ export interface ICompanyModel extends mongoose.Model<ICompanyDocument> {
   ) => Promise<ICompanyDocument>;
   getMemberRole: (userId: Types.ObjectId) => Types.ObjectId | null;
   getMembersByRole: (roleId: Types.ObjectId) => ICompanyMember[];
+  isCompanyOwner: (userId: Types.ObjectId) => boolean;
 }
 
 const companySchema = new Schema<ICompanyDocument>(
@@ -497,6 +511,10 @@ companySchema.methods.getMembersByRole = function (roleId: Types.ObjectId) {
   return this.members.filter((member: ICompanyMember) =>
     member.role.equals(roleId),
   );
+};
+
+companySchema.methods.isCompanyOwner = function (userId: Types.ObjectId) {
+  return this.owner.equals(userId);
 };
 
 const Company = mongoose.model<ICompanyDocument, ICompanyModel>(

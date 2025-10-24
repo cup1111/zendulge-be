@@ -156,7 +156,7 @@ const seedCompleteBusinessSetup = async () => {
     };
 
     // Create an invited user (Business Manager)
-    const invitedUserData = {
+    const invitedAllMangerData = {
       email: 'manager@zendulge.com',
       password: 'zxc123!',
       firstName: 'Sarah',
@@ -191,6 +191,18 @@ const seedCompleteBusinessSetup = async () => {
     };
 
 
+    const invitedSouthYarraManagerUserData = {
+      email: 'southYarraManager@zendulge.com',
+      password: 'zxc123!',
+      firstName: 'Paul',
+      lastName: 'Lee',
+      phoneNumber: '+61412345679',
+      jobTitle: 'Business Manager',
+      userName: 'paullee',
+      active: true,
+    };
+
+
     // Create an invited user (Business Manager)
     const invitedEmployee1Data = {
       email: 'employee1@zendulge.com',
@@ -214,29 +226,46 @@ const seedCompleteBusinessSetup = async () => {
       active: true,
     };
 
+    const invitedNotActiveEmployeeData = {
+      email: 'notActive@zendulge.com',
+      password: 'zxc123!',
+      firstName: 'No',
+      lastName: 'Active',
+      phoneNumber: '+61412345681',
+      jobTitle: 'Employee',
+      userName: 'jsmith',
+      active: false,
+    };
+
     // Check if company owner already exists
     const companyOwner = await createUserIfNotExists(companyOwnerData, 'Company Owner user');
-    const invitedManagerUser = await createUserIfNotExists(invitedUserData, 'invited user: Sarah Johnson');
+    const invitedAllManagerUser = await createUserIfNotExists(invitedAllMangerData, 'invited user: Sarah Johnson');
     const invitedEmployee1 = await createUserIfNotExists(invitedEmployee1Data, 'invited employee: John Doe');
     const invitedNoSiteEmployee2 = await createUserIfNotExists(invitedEmployee2Data, 'invited employee: Jane Smith');
     const invitedCBDOnlyManager1 = await createUserIfNotExists(invitedCBDOnlyManager1UserData, 'invited employee: Kit Kat');
     const invitedCBDOnlyManager2 = await createUserIfNotExists(invitedCBDOnlyManager2UserData, 'invited employee: Sam Williams');
+    const invitedSouthYarraManager = await createUserIfNotExists(invitedSouthYarraManagerUserData, 'invited employee: Paul Lee');
+    const invitedEmployeeNotActive = await createUserIfNotExists(invitedNotActiveEmployeeData, 'invited employee: Not Active');
 
     const company = await createCompanyIfNotExists(companyOwner);
     const [MelbourneCBDOperateSite, SouthYarraoperateSite2] = await createSitesIfNoExists(company);
 
     await company.addMember(new Types.ObjectId(companyOwner.id),  ownerRole.id);
-    await company.addMember(new Types.ObjectId(invitedManagerUser.id),  managerRole.id);
+    await company.addMember(new Types.ObjectId(invitedAllManagerUser.id),  managerRole.id);
     await company.addMember(new Types.ObjectId(invitedEmployee1.id),  employeeRole.id);
     await company.addMember(new Types.ObjectId(invitedNoSiteEmployee2.id),  employeeRole.id);
     await company.addMember(new Types.ObjectId(invitedCBDOnlyManager2.id),  managerRole.id);
     await company.addMember(new Types.ObjectId(invitedCBDOnlyManager1.id),  managerRole.id);
+    await company.addMember(new Types.ObjectId(invitedSouthYarraManager.id),  managerRole.id);
+    await company.addMember(new Types.ObjectId(invitedEmployeeNotActive.id),  employeeRole.id);
 
-    await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedManagerUser.id));
-    await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedManagerUser.id));
+    await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedAllManagerUser.id));
+    await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedAllManagerUser.id));
     await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedEmployee1.id));
     await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedCBDOnlyManager1.id));
     await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedCBDOnlyManager2.id));
+    await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedSouthYarraManager.id));
+    await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedEmployeeNotActive.id));
 
     process.exit(0);
   } catch (error) {

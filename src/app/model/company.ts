@@ -1,8 +1,10 @@
 import mongoose, { Schema, Types, Document } from 'mongoose';
+import { IUser } from './user';
+import { IRole } from './role';
 
 export interface ICompanyMember {
-  user: Types.ObjectId;
-  role: Types.ObjectId;
+  user: Types.ObjectId | Document & IUser;
+  role: Types.ObjectId | Document & IRole; 
   joinedAt?: Date;
 }
 
@@ -31,8 +33,10 @@ export interface ICompany {
   updatedAt?: Date;
 }
 
-export type ICompanyDocument = ICompany & Document;
-
+export type ICompanyDocument = ICompany & Document & {
+  _id: mongoose.Types.ObjectId;
+  addMember: (userId: Types.ObjectId, roleId: Types.ObjectId) => Promise<ICompanyDocument>;
+};
 export interface ICompanyModel extends mongoose.Model<ICompanyDocument> {
   findByOwner(
     ownerId: Types.ObjectId,
@@ -52,6 +56,19 @@ export interface ICompanyModel extends mongoose.Model<ICompanyDocument> {
     abn: string,
     excludeId?: Types.ObjectId,
   ): Promise<ICompanyDocument | null>;
+  addMember: (userId: Types.ObjectId, roleId: Types.ObjectId) => Promise<ICompanyDocument>;
+  removeMember: (userId: Types.ObjectId) => Promise<ICompanyDocument>;
+  hasAccess: (userId: Types.ObjectId) => boolean;
+  transferOwnership: (
+    newOwnerId: Types.ObjectId,
+    oldOwnerRoleId: Types.ObjectId,
+  ) => Promise<ICompanyDocument>;
+  updateMemberRole: (
+    userId: Types.ObjectId,
+    newRoleId: Types.ObjectId,
+  ) => Promise<ICompanyDocument>;
+  getMemberRole: (userId: Types.ObjectId) => Types.ObjectId | null;
+  getMembersByRole: (roleId: Types.ObjectId) => ICompanyMember[];
 }
 
 const companySchema = new Schema<ICompanyDocument>(
@@ -268,13 +285,6 @@ companySchema.pre('save', function (next) {
     this.abn = this.abn.replace(/\s/g, '').toUpperCase();
   }
 
-  // Ensure owner is not in members array
-  if (this.members && this.owner) {
-    this.members = this.members.filter(
-      (member: ICompanyMember) => !member.user.equals(this.owner),
-    );
-  }
-
   // Remove duplicate members (same user)
   if (this.members && this.members.length > 0) {
     const uniqueMembers = new Map();
@@ -388,10 +398,6 @@ companySchema.methods.addMember = function (
   userId: Types.ObjectId,
   roleId: Types.ObjectId,
 ) {
-  // Don't add owner as member
-  if (this.owner.equals(userId)) {
-    throw new Error('Owner cannot be added as a member');
-  }
 
   // Check if already a member
   const isAlreadyMember = this.members.some((member: ICompanyMember) =>

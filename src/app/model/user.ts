@@ -15,14 +15,13 @@ export interface IProjectRole {
 }
 
 export interface IUser {
+  id: string;
   email: string;
   password?: string;
   isSuperUser?: number;
-  role?: Types.ObjectId; // Reference to Role model
   refreshToken?: string;
   activeCode?: string;
   active: boolean;
-  projectsRoles?: IProjectRole[];
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
@@ -99,11 +98,6 @@ const userSchema = new Schema<IUserDocument>(
     userName: {
       type: String,
       trim: true,
-    },
-    role: {
-      type: Schema.Types.ObjectId,
-      ref: 'roles',
-      index: true,
     },
     activeCode: {
       type: String,

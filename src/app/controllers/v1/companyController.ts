@@ -1,11 +1,5 @@
 import { Request, Response } from 'express';
-import User from '../../model/user';
-import Role from '../../model/role';
-import OperateSite from '../../model/operateSite';
-import { winstonLogger } from '../../../loaders/logger';
-import { BadRequestException } from '../../exceptions/badRequestException';
-import { InternalServerException } from '../../exceptions/serverException';
-import { transformLeanResult } from '../../../lib/mongoUtils';
+import { userManagementService } from '../../services/userManagementService';
 
 export interface AuthenticatedRequest extends Request {
   user?: any;
@@ -20,100 +14,8 @@ export const getCompanyUsers = async (
   req: AuthenticatedRequest,
   res: Response,
 ) => {
-  try {
-    const companyId = req.params.id;
-    const company = req.company; // Provided by validateCompanyAccess middleware
-
-    if (!company) {
-      throw new BadRequestException('Company not found or access denied');
-    }
-
-    // Only add company members (not the owner)
-    let users = [];
-
-    // Get all operate sites for this company (no longer needed for filtering members)
-    // const allOperateSites = await OperateSite.find({ company: companyId })
-    //   .select('name address isActive')
-    //   .lean();
-
-    // Do NOT add company owner
-
-    // Add company members
-    if (company.members && company.members.length > 0) {
-      for (const member of company.members) {
-        const memberUserRaw = await User.findById(member.user)
-          .select(
-            'firstName lastName email phoneNumber jobTitle active createdAt role',
-          )
-          .populate('role', 'name description permissions')
-          .lean();
-
-        if (memberUserRaw) {
-          const memberUser = transformLeanResult(memberUserRaw);
-
-          // If role is still just an ID, fetch it manually
-          if (memberUser.role && typeof memberUser.role === 'string') {
-            const roleData = await Role.findById(memberUser.role)
-              .select('name description permissions')
-              .lean();
-            if (roleData) {
-              (memberUser as any).role = transformLeanResult(roleData);
-            }
-          }
-
-          // Get assigned operate sites for this member
-          let memberOperateSites: any[] = [];
-          const memberOperateSitesRaw = await OperateSite.find({
-            company: companyId,
-            members: member.user,
-          })
-            .select('name address isActive')
-            .lean();
-          memberOperateSites = memberOperateSitesRaw.map((site) =>
-            transformLeanResult(site),
-          );
-
-          users.push({
-            ...memberUser,
-            companyRole: 'member',
-            fullName: `${memberUser.firstName || ''} ${
-              memberUser.lastName || ''
-            }`.trim(),
-            joinedAt: member.joinedAt,
-            operatingSites: memberOperateSites,
-          });
-        }
-      }
-    }
-
-    winstonLogger.info(
-      `Retrieved ${users.length} users for company ${companyId}`,
-      {
-        companyId,
-        companyName: company.name,
-        userCount: users.length,
-        requestedBy: req.user?.email,
-      },
-    );
-
-    res.status(200).json(users);
-  } catch (error: any) {
-    winstonLogger.error('Error retrieving company users:', {
-      error: error.message,
-      stack: error.stack,
-      companyId: req.params.id,
-      requestedBy: req.user?.email,
-    });
-
-    if (error instanceof BadRequestException) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
-    }
-
-    throw new InternalServerException(
-      'An error occurred while retrieving company users',
-    );
-  }
+  const company = req.company; 
+  const users = await userManagementService.getUsersByCompanyAndSite(company, req.user);
+  return res.status(200).json(users);
+  
 };

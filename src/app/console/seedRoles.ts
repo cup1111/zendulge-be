@@ -23,8 +23,8 @@ const seedRoles = async () => {
         isActive: true,
       },
       {
-        name: RoleName.CUSTOMER,
-        description: 'Customer with basic access',
+        name: RoleName.MANAGER,
+        description: 'Manager with access to manage employees',
         isActive: true,
       },
     ];

@@ -15,7 +15,6 @@ export interface IProjectRole {
 }
 
 export interface IUser {
-  id: string;
   email: string;
   password?: string;
   isSuperUser?: number;

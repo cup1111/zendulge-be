@@ -1,6 +1,6 @@
 import User, { IUser } from '../model/user';
 import Role from '../model/role';
-import Company, {  ICompanyDocument } from '../model/company';
+import Company, { ICompanyDocument } from '../model/company';
 import OperateSite from '../model/operateSite';
 import { winstonLogger } from '../../loaders/logger';
 import { Types } from 'mongoose';
@@ -35,16 +35,16 @@ async function filterMembersBySiteAccess(
   currentUserId: string,
   companyId: Types.ObjectId,
 ): Promise<any[]> {
-  const currentUserRole = members.find(m => 
-    m.user && 
-      !(m.user instanceof Types.ObjectId) &&
-      m.user._id.toString() === currentUserId,
+  const currentUserRole = members.find(m =>
+    m.user &&
+    !(m.user instanceof Types.ObjectId) &&
+    m.user._id.toString() === currentUserId,
   );
 
-  const validMembers = members.filter(m => 
-    m.user && 
-      !(m.user instanceof Types.ObjectId) &&
-      m.user._id.toString() !== currentUserId,
+  const validMembers = members.filter(m =>
+    m.user &&
+    !(m.user instanceof Types.ObjectId) &&
+    m.user._id.toString() !== currentUserId,
   );
 
   if (currentUserRole.role.name === RoleName.OWNER) {
@@ -52,7 +52,7 @@ async function filterMembersBySiteAccess(
   }
 
   if (validMembers.length === 0) return [];
-    
+
 
   // Get current user's site access
   const userSiteIds = await OperateSite.find({
@@ -64,7 +64,7 @@ async function filterMembersBySiteAccess(
 
   // Find members who share sites with current user
   const memberUserIds = validMembers.map(m => m.user._id);
-    
+
   const accessibleMemberIds = await OperateSite.find({
     company: companyId,
     _id: { $in: userSiteIds },
@@ -75,12 +75,52 @@ async function filterMembersBySiteAccess(
     accessibleMemberIds.map(id => id.toString()),
   );
 
-  return validMembers.filter(m => 
+  return validMembers.filter(m =>
     accessibleIdSet.has(m.user._id.toString()),
   );
 }
 
 export class UserManagementService {
+  // Get user by ID with role information
+  async getUserById(userId: string, companyId?: string) {
+    try {
+      if (!Types.ObjectId.isValid(userId)) {
+        throw new Error('Invalid user ID format');
+      }
+
+      // Check if user exists
+      const user = await User.findOne({ _id: userId })
+        .populate('role', 'name description permissions')
+        .select('-password -refreshToken -activeCode');
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // If companyId is provided, validate that user belongs to that company
+      if (companyId) {
+        const userInCompany = await Company.findOne({
+          _id: companyId,
+          $or: [{ owner: (user as any)._id }, { 'members.user': (user as any)._id }],
+          isActive: true,
+        });
+
+        if (!userInCompany) {
+          throw new Error('User not found in the specified company');
+        }
+      }
+
+      return {
+        success: true,
+        message: 'User retrieved successfully',
+        data: user,
+      };
+    } catch (error) {
+      winstonLogger.error(`Get user by ID error: ${error}`);
+      throw error;
+    }
+  }
+
   // Get all users with their roles
   async getUsersByCompanyAndSite(company: ICompanyDocument, user: IUser) {
     const result = await company.populate([
@@ -90,7 +130,7 @@ export class UserManagementService {
 
     const filteredMembers = await filterMembersBySiteAccess(
       result?.members || [],
-      user.id,
+      (user as any)._id.toString(),
       company._id,
     );
 
@@ -215,9 +255,8 @@ export class UserManagementService {
 
       return {
         success: true,
-        message: `User created successfully${
-          company ? ' and added to company' : ''
-        }`,
+        message: `User created successfully${company ? ' and added to company' : ''
+          }`,
         data: userResponse,
       };
     } catch (error) {
@@ -248,7 +287,7 @@ export class UserManagementService {
       if (companyId) {
         company = await Company.findOne({
           _id: companyId,
-          $or: [{ owner: user.id }, { 'members.user': user.id }],
+          $or: [{ owner: (user as any)._id }, { 'members.user': (user as any)._id }],
           isActive: true,
         });
 
@@ -400,7 +439,7 @@ export class UserManagementService {
       if (companyId) {
         const userInCompany = await Company.findOne({
           _id: companyId,
-          $or: [{ owner: user.id }, { 'members.user': user.id }],
+          $or: [{ owner: (user as any)._id }, { 'members.user': (user as any)._id }],
           isActive: true,
         });
 

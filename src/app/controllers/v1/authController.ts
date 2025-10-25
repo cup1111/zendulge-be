@@ -10,6 +10,7 @@ import {
 import { winstonLogger } from '../../../loaders/logger';
 import { RoleName } from '../../enum/roles';
 import { config } from '../../config/app';
+import userService from '../../services/userService';
 
 interface AuthenticatedRequest extends Request {
   user?: IUserDocument;
@@ -187,6 +188,25 @@ export const refreshToken = async (req: Request, res: Response) => {
     tokens: {
       accessToken: token,
       refreshToken: newRefreshToken,
+    },
+  });
+};
+
+// Update user profile controller
+export const updateProfile = async (req: AuthenticatedRequest, res: Response) => {
+  const user = req.user;
+
+  if (!user) {
+    throw new AuthenticationException('User not found');
+  }
+  // Update user profile using service
+  const updatedUser = await userService.updateProfile(user._id.toString(), req.body);
+
+  res.status(200).json({
+    success: true,
+    message: 'Profile updated successfully',
+    data: {
+      user: updatedUser.toJSON(),
     },
   });
 };

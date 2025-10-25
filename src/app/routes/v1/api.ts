@@ -10,6 +10,7 @@ import {
   getProfile,
   refreshToken,
   getRole,
+  updateProfile,
 } from '../../controllers/v1/authController';
 import {
   createOperateSite,
@@ -34,6 +35,7 @@ import { customerRegistrationValidation } from '../../validation/customerRegistr
 import {
   loginValidation,
   refreshTokenValidation,
+  updateProfileValidation,
 } from '../../validation/authValidation';
 import {
   createUserWithRoleValidation,
@@ -72,6 +74,14 @@ router.post('/login', loginValidation, handleValidationErrors, login);
 router.post('/logout', authenticationTokenMiddleware, logout);
 
 router.get('/me', authenticationTokenMiddleware, getProfile);
+
+router.patch(
+  '/me',
+  authenticationTokenMiddleware,
+  updateProfileValidation,
+  handleValidationErrors,
+  updateProfile,
+);
 
 router.get(
   '/company/:companyId/me/role',

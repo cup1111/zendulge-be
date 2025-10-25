@@ -17,6 +17,13 @@ import {
   updateCompanyInfo,
 } from '../../controllers/v1/companyController';
 import {
+  getServices,
+  getServiceById,
+  createService,
+  updateService,
+  deleteService,
+} from '../../controllers/v1/serviceController';
+import {
   createOperateSite,
   getOperateSites,
   getOperateSiteById,
@@ -44,6 +51,10 @@ import {
 import {
   updateCompanyValidation,
 } from '../../validation/companyValidation';
+import {
+  createServiceValidation,
+  updateServiceValidation,
+} from '../../validation/serviceValidation';
 import {
   createUserWithRoleValidation,
   companyAndUserIdValidation,
@@ -118,6 +129,41 @@ router.patch(
   updateCompanyValidation,
   handleValidationErrors,
   updateCompanyInfo,
+);
+
+// Service routes (owner only)
+router.get(
+  '/company/:companyId/services',
+  authenticationTokenMiddleware,
+  getServices,
+);
+
+router.get(
+  '/company/:companyId/services/:serviceId',
+  authenticationTokenMiddleware,
+  getServiceById,
+);
+
+router.post(
+  '/company/:companyId/services',
+  authenticationTokenMiddleware,
+  createServiceValidation,
+  handleValidationErrors,
+  createService,
+);
+
+router.patch(
+  '/company/:companyId/services/:serviceId',
+  authenticationTokenMiddleware,
+  updateServiceValidation,
+  handleValidationErrors,
+  updateService,
+);
+
+router.delete(
+  '/company/:companyId/services/:serviceId',
+  authenticationTokenMiddleware,
+  deleteService,
 );
 
 // Operate Site routes (protected)

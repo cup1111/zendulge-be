@@ -2,6 +2,7 @@ import mongoose, { Types } from 'mongoose';
 import User from '../model/user';
 import Company from '../model/company';
 import OperateSite from '../model/operateSite';
+import Service from '../model/service';
 import Role from '../model/role';
 import config from '../config/app';
 import { RoleName } from '../enum/roles';
@@ -38,7 +39,7 @@ const createSitesIfNoExists = async (company: any) => {
       sunday: { open: '10:00', close: '16:00', isClosed: false },
     },
     specialInstruction:
-        'Main headquarters with full service availability. Meeting rooms available by appointment.',
+      'Main headquarters with full service availability. Meeting rooms available by appointment.',
     company: company.id,
     latitude: -37.8136,
     longitude: 144.9631,
@@ -60,7 +61,7 @@ const createSitesIfNoExists = async (company: any) => {
       sunday: { open: '12:00', close: '15:00', isClosed: true },
     },
     specialInstruction:
-        'Boutique location specializing in premium consultations. Valet parking available.',
+      'Boutique location specializing in premium consultations. Valet parking available.',
     company: company.id,
     latitude: -37.8394,
     longitude: 144.9944,
@@ -93,8 +94,76 @@ const createSitesIfNoExists = async (company: any) => {
   return [operateSite1, operateSite2];
 };
 
+const createServicesIfNotExists = async (company: any) => {
+  const servicesData = [
+    {
+      name: 'Basic Cleaning Service',
+      category: 'Cleaning',
+      duration: 60,
+      basePrice: 80.00,
+      description: 'Standard cleaning service for residential properties',
+      company: company.id,
+    },
+    {
+      name: 'Deep Cleaning Service',
+      category: 'Cleaning',
+      duration: 180,
+      basePrice: 200.00,
+      description: 'Comprehensive deep cleaning including all areas',
+      company: company.id,
+    },
+    {
+      name: 'Office Cleaning',
+      category: 'Commercial',
+      duration: 120,
+      basePrice: 150.00,
+      description: 'Professional office cleaning service',
+      company: company.id,
+    },
+    {
+      name: 'Carpet Cleaning',
+      category: 'Specialized',
+      duration: 90,
+      basePrice: 120.00,
+      description: 'Professional carpet and upholstery cleaning',
+      company: company.id,
+    },
+    {
+      name: 'Window Cleaning',
+      category: 'Specialized',
+      duration: 45,
+      basePrice: 60.00,
+      description: 'Interior and exterior window cleaning service',
+      company: company.id,
+    },
+    {
+      name: 'Post-Construction Cleanup',
+      category: 'Specialized',
+      duration: 240,
+      basePrice: 300.00,
+      description: 'Heavy-duty cleaning after construction or renovation',
+      company: company.id,
+    },
+  ];
+
+  for (const serviceData of servicesData) {
+    const existingService = await Service.findOne({
+      name: serviceData.name,
+      company: company.id,
+    });
+
+    if (!existingService) {
+      const service = new Service(serviceData);
+      await service.save();
+      console.log(`✅ Created service: ${serviceData.name}`);
+    } else {
+      console.log(`ℹ️  Service already exists: ${serviceData.name}`);
+    }
+  }
+};
+
 const createCompanyIfNotExists = async (companyOwner: any) => {
-// Create a Company for the Company Owner
+  // Create a Company for the Company Owner
   const companyData = {
     name: 'Zendulge Technologies Pty Ltd',
     email: 'info@zendulge.com',
@@ -249,15 +318,16 @@ const seedCompleteBusinessSetup = async () => {
 
     const company = await createCompanyIfNotExists(companyOwner);
     const [MelbourneCBDOperateSite, SouthYarraoperateSite2] = await createSitesIfNoExists(company);
+    await createServicesIfNotExists(company);
 
-    await company.addMember(new Types.ObjectId(companyOwner.id),  ownerRole.id);
-    await company.addMember(new Types.ObjectId(invitedAllManagerUser.id),  managerRole.id);
-    await company.addMember(new Types.ObjectId(invitedEmployee1.id),  employeeRole.id);
-    await company.addMember(new Types.ObjectId(invitedNoSiteEmployee2.id),  employeeRole.id);
-    await company.addMember(new Types.ObjectId(invitedCBDOnlyManager2.id),  managerRole.id);
-    await company.addMember(new Types.ObjectId(invitedCBDOnlyManager1.id),  managerRole.id);
-    await company.addMember(new Types.ObjectId(invitedSouthYarraManager.id),  managerRole.id);
-    await company.addMember(new Types.ObjectId(invitedEmployeeNotActive.id),  employeeRole.id);
+    await company.addMember(new Types.ObjectId(companyOwner.id), ownerRole.id);
+    await company.addMember(new Types.ObjectId(invitedAllManagerUser.id), managerRole.id);
+    await company.addMember(new Types.ObjectId(invitedEmployee1.id), employeeRole.id);
+    await company.addMember(new Types.ObjectId(invitedNoSiteEmployee2.id), employeeRole.id);
+    await company.addMember(new Types.ObjectId(invitedCBDOnlyManager2.id), managerRole.id);
+    await company.addMember(new Types.ObjectId(invitedCBDOnlyManager1.id), managerRole.id);
+    await company.addMember(new Types.ObjectId(invitedSouthYarraManager.id), managerRole.id);
+    await company.addMember(new Types.ObjectId(invitedEmployeeNotActive.id), employeeRole.id);
 
     await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedAllManagerUser.id));
     await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedAllManagerUser.id));

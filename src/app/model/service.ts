@@ -6,9 +6,10 @@ export interface IService {
   duration: number; // Duration in minutes
   basePrice: number;
   description?: string;
+  company: string; // Company ID reference
 }
 
-export interface IServiceDocument extends IService, Document {}
+export interface IServiceDocument extends IService, Document { }
 
 const serviceSchema = new Schema<IServiceDocument>({
   name: {
@@ -38,6 +39,11 @@ const serviceSchema = new Schema<IServiceDocument>({
     type: String,
     trim: true,
     maxlength: 500,
+  },
+  company: {
+    type: String,
+    required: true,
+    ref: 'companies',
   },
 }, {
   timestamps: true,

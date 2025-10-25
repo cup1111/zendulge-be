@@ -20,6 +20,7 @@ export interface IDeal {
     tags?: string[];
     company: string; // Company ID reference
     service: string; // Service ID reference (required)
+    createdBy: string; // User ID who created the deal
 }
 
 export interface IDealDocument extends IDeal, Document { }
@@ -111,12 +112,20 @@ const dealSchema = new Schema<IDealDocument>({
         required: true,
         ref: 'services',
     },
+    createdBy: {
+        type: String,
+        required: true,
+        ref: 'users',
+    },
 }, {
     timestamps: true,
 });
 
 // Index for better query performance
 dealSchema.index({ company: 1, status: 1 });
+dealSchema.index({ company: 1, operatingSite: 1 });
+dealSchema.index({ company: 1, service: 1 });
+dealSchema.index({ company: 1, createdBy: 1 });
 dealSchema.index({ category: 1 });
 dealSchema.index({ 'availability.startDate': 1, 'availability.endDate': 1 });
 

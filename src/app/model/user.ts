@@ -9,10 +9,6 @@ import * as bcrypt from 'bcrypt';
 import { winstonLogger } from '../../loaders/logger';
 import { transformLeanResult } from '../../lib/mongoUtils';
 
-export interface IProjectRole {
-  project: Types.ObjectId;
-  role: Types.ObjectId;
-}
 
 export interface IUser {
   email: string;
@@ -174,9 +170,6 @@ userSchema.methods.toJSON = function () {
 
 userSchema.methods.generateAuthToken = async function () {
   const user = this;
-
-  // Populate role to include basic role info in JWT
-  await user.populate('role');
 
   // Get companies this user has access to (owner or member)
   const Company = mongoose.model('companies');

@@ -1,7 +1,6 @@
 import mongoose, {
   CallbackWithoutResultAndOptionalError,
   Schema,
-  Types,
 } from 'mongoose';
 import * as jwt from 'jsonwebtoken';
 import config from '../config/app';

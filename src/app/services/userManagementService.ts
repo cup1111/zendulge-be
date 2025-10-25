@@ -134,7 +134,7 @@ export class UserManagementService {
       company._id,
     );
 
-    console.log('filteredMembers', filteredMembers);
+    // Filtered members based on site access
     const finalMembers = filteredMembers?.map((member) => {
       if (member.user && !(member.user instanceof Types.ObjectId)) {
         const userObj = member.user.toObject();

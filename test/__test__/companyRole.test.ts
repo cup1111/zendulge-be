@@ -77,6 +77,7 @@ describe('GET /api/v1/company/:companyId/me/role', () => {
 
   it('should return 404 for non-existent company', async () => {
     // Create and login a user
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const user = await new UserBuilder()
       .withEmail('ghost@example.com')
       .withPassword('GhostPass123')

@@ -1,6 +1,5 @@
 import Service from '../model/service';
 import Company from '../model/company';
-import { Types } from 'mongoose';
 
 const getServicesByCompany = async (companyId: string, userId: string) => {
   // Verify user has access to the company
@@ -8,8 +7,8 @@ const getServicesByCompany = async (companyId: string, userId: string) => {
     _id: companyId,
     $or: [
       { owner: userId },
-      { 'members.user': userId }
-    ]
+      { 'members.user': userId },
+    ],
   });
 
   if (!company) {
@@ -27,8 +26,8 @@ const getServiceById = async (companyId: string, serviceId: string, userId: stri
     _id: companyId,
     $or: [
       { owner: userId },
-      { 'members.user': userId }
-    ]
+      { 'members.user': userId },
+    ],
   });
 
   if (!company) {
@@ -37,7 +36,7 @@ const getServiceById = async (companyId: string, serviceId: string, userId: stri
 
   const service = await Service.findOne({
     _id: serviceId,
-    company: companyId
+    company: companyId,
   });
 
   if (!service) {
@@ -51,7 +50,7 @@ const createService = async (companyId: string, userId: string, serviceData: any
   // Verify user is owner of the company
   const company = await Company.findOne({
     _id: companyId,
-    owner: userId
+    owner: userId,
   });
 
   if (!company) {
@@ -70,7 +69,7 @@ const createService = async (companyId: string, userId: string, serviceData: any
 
   // Remove undefined values
   const filteredData = Object.fromEntries(
-    Object.entries(allowedFields).filter(([_, value]) => value !== undefined)
+    Object.entries(allowedFields).filter(([, value]) => value !== undefined),
   );
 
   const service = new Service(filteredData);
@@ -83,7 +82,7 @@ const updateService = async (companyId: string, serviceId: string, userId: strin
   // Verify user is owner of the company
   const company = await Company.findOne({
     _id: companyId,
-    owner: userId
+    owner: userId,
   });
 
   if (!company) {
@@ -101,16 +100,16 @@ const updateService = async (companyId: string, serviceId: string, userId: strin
 
   // Remove undefined values
   const filteredData = Object.fromEntries(
-    Object.entries(allowedFields).filter(([_, value]) => value !== undefined)
+    Object.entries(allowedFields).filter(([, value]) => value !== undefined),
   );
 
   const service = await Service.findOneAndUpdate(
     {
       _id: serviceId,
-      company: companyId
+      company: companyId,
     },
     filteredData,
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   if (!service) {
@@ -124,7 +123,7 @@ const deleteService = async (companyId: string, serviceId: string, userId: strin
   // Verify user is owner of the company
   const company = await Company.findOne({
     _id: companyId,
-    owner: userId
+    owner: userId,
   });
 
   if (!company) {
@@ -133,7 +132,7 @@ const deleteService = async (companyId: string, serviceId: string, userId: strin
 
   const service = await Service.findOneAndDelete({
     _id: serviceId,
-    company: companyId
+    company: companyId,
   });
 
   if (!service) {

@@ -47,13 +47,13 @@ const updateProfile = async (userId: string, updateData: any) => {
 
   // Remove undefined values
   const filteredData = Object.fromEntries(
-    Object.entries(allowedFields).filter(([_, value]) => value !== undefined)
+    Object.entries(allowedFields).filter(([, value]) => value !== undefined),
   );
 
   const user = await User.findByIdAndUpdate(
     userId,
     filteredData,
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   if (!user) {

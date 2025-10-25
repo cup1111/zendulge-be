@@ -2,8 +2,6 @@ import Deal, { IDealDocument } from '../model/deal';
 import Company from '../model/company';
 import Service from '../model/service';
 import OperateSite from '../model/operateSite';
-import User from '../model/user';
-import { Types } from 'mongoose';
 
 const getDealsByCompany = async (companyId: string, userId: string): Promise<IDealDocument[]> => {
     const company = await Company.findById(companyId);
@@ -23,7 +21,7 @@ const getDealsByCompany = async (companyId: string, userId: string): Promise<IDe
         const userOperatingSites = await OperateSite.find({
             company: companyId,
             members: userId,
-            isActive: true
+            isActive: true,
         }).select('_id');
 
         const operatingSiteIds = userOperatingSites.map(site => site._id);
@@ -92,7 +90,7 @@ const createDeal = async (companyId: string, userId: string, dealData: any): Pro
             _id: dealData.operatingSite,
             company: companyId,
             members: userId,
-            isActive: true
+            isActive: true,
         });
 
         if (!hasSiteAccess) {
@@ -126,7 +124,7 @@ const createDeal = async (companyId: string, userId: string, dealData: any): Pro
     const newDeal = new Deal({
         ...dealData,
         company: companyId,
-        createdBy: userId // Track who created the deal
+        createdBy: userId, // Track who created the deal
     });
     return newDeal.save();
 };
@@ -160,7 +158,7 @@ const updateDeal = async (companyId: string, dealId: string, userId: string, upd
                 _id: existingDeal.operatingSite,
                 company: companyId,
                 members: userId,
-                isActive: true
+                isActive: true,
             });
 
             if (!hasSiteAccess) {
@@ -206,7 +204,7 @@ const updateDeal = async (companyId: string, dealId: string, userId: string, upd
                 _id: updateData.operatingSite,
                 company: companyId,
                 members: userId,
-                isActive: true
+                isActive: true,
             });
 
             if (!hasSiteAccess) {
@@ -230,7 +228,7 @@ const updateDeal = async (companyId: string, dealId: string, userId: string, upd
     const deal = await Deal.findOneAndUpdate(
         { _id: dealId, company: companyId },
         updateData,
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
     )
         .populate('service', 'name category basePrice duration')
         .populate('operatingSite', 'name address')
@@ -268,7 +266,7 @@ const deleteDeal = async (companyId: string, dealId: string, userId: string): Pr
             _id: existingDeal.operatingSite,
             company: companyId,
             members: userId,
-            isActive: true
+            isActive: true,
         });
 
         if (!hasSiteAccess) {
@@ -318,7 +316,7 @@ const updateDealStatus = async (companyId: string, dealId: string, userId: strin
             _id: existingDeal.operatingSite,
             company: companyId,
             members: userId,
-            isActive: true
+            isActive: true,
         });
 
         if (!hasSiteAccess) {
@@ -339,7 +337,7 @@ const updateDealStatus = async (companyId: string, dealId: string, userId: strin
     const deal = await Deal.findOneAndUpdate(
         { _id: dealId, company: companyId },
         { status },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
     )
         .populate('service', 'name category basePrice duration')
         .populate('operatingSite', 'name address')

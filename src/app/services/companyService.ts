@@ -1,5 +1,4 @@
 import Company from '../model/company';
-import { Types } from 'mongoose';
 
 const store = async (companyData: any) => {
   const company = new Company(companyData);
@@ -18,8 +17,8 @@ const getCompanyById = async (companyId: string, userId: string) => {
     _id: companyId,
     $or: [
       { owner: userId },
-      { 'members.user': userId }
-    ]
+      { 'members.user': userId },
+    ],
   });
 
   if (!company) {
@@ -45,7 +44,7 @@ const updateCompany = async (companyId: string, userId: string, updateData: any)
 
   // Remove undefined values
   const filteredData = Object.fromEntries(
-    Object.entries(allowedFields).filter(([_, value]) => value !== undefined)
+    Object.entries(allowedFields).filter(([, value]) => value !== undefined),
   );
 
   const company = await Company.findOneAndUpdate(
@@ -54,7 +53,7 @@ const updateCompany = async (companyId: string, userId: string, updateData: any)
       owner: userId, // Only owner can update company info
     },
     filteredData,
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   if (!company) {

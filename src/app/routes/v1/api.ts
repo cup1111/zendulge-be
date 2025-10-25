@@ -13,6 +13,10 @@ import {
   updateProfile,
 } from '../../controllers/v1/authController';
 import {
+  getCompanyInfo,
+  updateCompanyInfo,
+} from '../../controllers/v1/companyController';
+import {
   createOperateSite,
   getOperateSites,
   getOperateSiteById,
@@ -37,6 +41,9 @@ import {
   refreshTokenValidation,
   updateProfileValidation,
 } from '../../validation/authValidation';
+import {
+  updateCompanyValidation,
+} from '../../validation/companyValidation';
 import {
   createUserWithRoleValidation,
   companyAndUserIdValidation,
@@ -97,6 +104,21 @@ router.post(
 );
 
 router.get('/verify/:token', activateAccount);
+
+// Company routes
+router.get(
+  '/company/:companyId',
+  authenticationTokenMiddleware,
+  getCompanyInfo,
+);
+
+router.patch(
+  '/company/:companyId',
+  authenticationTokenMiddleware,
+  updateCompanyValidation,
+  handleValidationErrors,
+  updateCompanyInfo,
+);
 
 // Operate Site routes (protected)
 router.post(

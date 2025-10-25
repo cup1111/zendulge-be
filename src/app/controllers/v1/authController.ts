@@ -12,7 +12,7 @@ import { RoleName } from '../../enum/roles';
 import { config } from '../../config/app';
 import userService from '../../services/userService';
 
-interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Request {
   user?: IUserDocument;
 }
 

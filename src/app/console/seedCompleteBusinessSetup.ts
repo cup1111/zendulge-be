@@ -3,6 +3,7 @@ import User from '../model/user';
 import Company from '../model/company';
 import OperateSite from '../model/operateSite';
 import Service from '../model/service';
+import Deal from '../model/deal';
 import Role from '../model/role';
 import config from '../config/app';
 import { RoleName } from '../enum/roles';
@@ -158,6 +159,148 @@ const createServicesIfNotExists = async (company: any) => {
       console.log(`✅ Created service: ${serviceData.name}`);
     } else {
       console.log(`ℹ️  Service already exists: ${serviceData.name}`);
+    }
+  }
+};
+
+const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any, SouthYarraoperateSite2: any) => {
+  // Get services to reference them
+  const basicCleaningService = await Service.findOne({ name: 'Basic Cleaning Service', company: company.id });
+  const deepCleaningService = await Service.findOne({ name: 'Deep Cleaning Service', company: company.id });
+  const officeCleaningService = await Service.findOne({ name: 'Office Cleaning', company: company.id });
+  const carpetCleaningService = await Service.findOne({ name: 'Carpet Cleaning', company: company.id });
+  const windowCleaningService = await Service.findOne({ name: 'Window Cleaning', company: company.id });
+  const postConstructionService = await Service.findOne({ name: 'Post-Construction Cleanup', company: company.id });
+
+  const dealsData = [
+    {
+      title: 'Spring Cleaning Special',
+      description: 'Get your home sparkling clean with our comprehensive spring cleaning service. Includes deep cleaning of all rooms, windows, and appliances.',
+      category: 'Cleaning',
+      price: 150.00,
+      originalPrice: 200.00,
+      duration: 180,
+      operatingSite: MelbourneCBDOperateSite.id,
+      service: deepCleaningService?.id,
+      availability: {
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        maxBookings: 50,
+        currentBookings: 12,
+      },
+      status: 'active',
+      tags: ['spring', 'cleaning', 'special'],
+      company: company.id,
+    },
+    {
+      title: 'Office Deep Clean',
+      description: 'Professional office cleaning service perfect for post-construction cleanup or quarterly deep cleaning. Includes carpet cleaning and sanitization.',
+      category: 'Commercial',
+      price: 300.00,
+      originalPrice: 400.00,
+      duration: 240,
+      operatingSite: SouthYarraoperateSite2.id,
+      service: officeCleaningService?.id,
+      availability: {
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
+        maxBookings: 20,
+        currentBookings: 5,
+      },
+      status: 'active',
+      tags: ['office', 'commercial', 'deep-clean'],
+      company: company.id,
+    },
+    {
+      title: 'Carpet Cleaning Package',
+      description: 'Professional carpet and upholstery cleaning for residential properties. Includes stain removal and deodorizing.',
+      category: 'Specialized',
+      price: 120.00,
+      originalPrice: 150.00,
+      duration: 90,
+      operatingSite: MelbourneCBDOperateSite.id,
+      service: carpetCleaningService?.id,
+      availability: {
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
+        maxBookings: 30,
+        currentBookings: 8,
+      },
+      status: 'active',
+      tags: ['carpet', 'upholstery', 'stain-removal'],
+      company: company.id,
+    },
+    {
+      title: 'Window Cleaning Service',
+      description: 'Crystal clear windows inside and out. Professional window cleaning service for residential and commercial properties.',
+      category: 'Specialized',
+      price: 80.00,
+      originalPrice: 100.00,
+      duration: 60,
+      operatingSite: SouthYarraoperateSite2.id,
+      service: windowCleaningService?.id,
+      availability: {
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000), // 20 days from now
+        maxBookings: 40,
+        currentBookings: 15,
+      },
+      status: 'active',
+      tags: ['windows', 'residential', 'commercial'],
+      company: company.id,
+    },
+    {
+      title: 'Post-Construction Cleanup',
+      description: 'Heavy-duty cleaning after construction or renovation. Includes debris removal, dust cleaning, and final touch-ups.',
+      category: 'Specialized',
+      price: 500.00,
+      originalPrice: 650.00,
+      duration: 360,
+      operatingSite: MelbourneCBDOperateSite.id,
+      service: postConstructionService?.id,
+      availability: {
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
+        maxBookings: 10,
+        currentBookings: 2,
+      },
+      status: 'active',
+      tags: ['construction', 'renovation', 'heavy-duty'],
+      company: company.id,
+    },
+    {
+      title: 'Monthly Maintenance Package',
+      description: 'Regular monthly cleaning service to keep your property in top condition. Includes all basic cleaning tasks plus minor maintenance.',
+      category: 'Cleaning',
+      price: 200.00,
+      originalPrice: 250.00,
+      duration: 120,
+      operatingSite: MelbourneCBDOperateSite.id,
+      service: basicCleaningService?.id,
+      availability: {
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+        maxBookings: 100,
+        currentBookings: 25,
+      },
+      status: 'active',
+      tags: ['monthly', 'maintenance', 'subscription'],
+      company: company.id,
+    },
+  ];
+
+  for (const dealData of dealsData) {
+    const existingDeal = await Deal.findOne({
+      title: dealData.title,
+      company: company.id,
+    });
+
+    if (!existingDeal) {
+      const deal = new Deal(dealData);
+      await deal.save();
+      console.log(`✅ Created deal: ${dealData.title}`);
+    } else {
+      console.log(`ℹ️  Deal already exists: ${dealData.title}`);
     }
   }
 };
@@ -319,6 +462,7 @@ const seedCompleteBusinessSetup = async () => {
     const company = await createCompanyIfNotExists(companyOwner);
     const [MelbourneCBDOperateSite, SouthYarraoperateSite2] = await createSitesIfNoExists(company);
     await createServicesIfNotExists(company);
+    await createDealsIfNotExists(company, MelbourneCBDOperateSite, SouthYarraoperateSite2);
 
     await company.addMember(new Types.ObjectId(companyOwner.id), ownerRole.id);
     await company.addMember(new Types.ObjectId(invitedAllManagerUser.id), managerRole.id);

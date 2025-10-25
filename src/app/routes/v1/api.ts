@@ -24,6 +24,14 @@ import {
   deleteService,
 } from '../../controllers/v1/serviceController';
 import {
+  getDeals,
+  getDealById,
+  createDeal,
+  updateDeal,
+  deleteDeal,
+  updateDealStatus,
+} from '../../controllers/v1/dealController';
+import {
   createOperateSite,
   getOperateSites,
   getOperateSiteById,
@@ -55,6 +63,11 @@ import {
   createServiceValidation,
   updateServiceValidation,
 } from '../../validation/serviceValidation';
+import {
+  createDealValidation,
+  updateDealValidation,
+  updateDealStatusValidation,
+} from '../../validation/dealValidation';
 import {
   createUserWithRoleValidation,
   companyAndUserIdValidation,
@@ -164,6 +177,49 @@ router.delete(
   '/company/:companyId/services/:serviceId',
   authenticationTokenMiddleware,
   deleteService,
+);
+
+// Deal routes (owner only)
+router.get(
+  '/company/:companyId/deals',
+  authenticationTokenMiddleware,
+  getDeals,
+);
+
+router.get(
+  '/company/:companyId/deals/:dealId',
+  authenticationTokenMiddleware,
+  getDealById,
+);
+
+router.post(
+  '/company/:companyId/deals',
+  authenticationTokenMiddleware,
+  createDealValidation,
+  handleValidationErrors,
+  createDeal,
+);
+
+router.patch(
+  '/company/:companyId/deals/:dealId',
+  authenticationTokenMiddleware,
+  updateDealValidation,
+  handleValidationErrors,
+  updateDeal,
+);
+
+router.delete(
+  '/company/:companyId/deals/:dealId',
+  authenticationTokenMiddleware,
+  deleteDeal,
+);
+
+router.patch(
+  '/company/:companyId/deals/:dealId/status',
+  authenticationTokenMiddleware,
+  updateDealStatusValidation,
+  handleValidationErrors,
+  updateDealStatus,
 );
 
 // Operate Site routes (protected)

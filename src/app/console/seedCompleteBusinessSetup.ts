@@ -449,6 +449,26 @@ const seedCompleteBusinessSetup = async () => {
       active: false,
     };
 
+    const customerWithCompanyUserData = {
+      email: 'customerWithCompany@zendulge.com',
+      password: 'zxc123!',
+      firstName: 'Customer',
+      lastName: 'With Company',
+      phoneNumber: '+61412345682',
+      userName: 'cwithcompany',
+      active: true,
+    };
+
+    const customerNoCompanyUserData = {
+      email: 'customerNoCompany@zendulge.com',
+      password: 'zxc123!',
+      firstName: 'Customer',
+      lastName: 'No Company',
+      phoneNumber: '+61412345682',
+      userName: 'cwithcompany',
+      active: true,
+    };
+
     // Check if company owner already exists
     const companyOwner = await createUserIfNotExists(companyOwnerData, 'Company Owner user');
     const invitedAllManagerUser = await createUserIfNotExists(invitedAllMangerData, 'invited user: Sarah Johnson');
@@ -458,6 +478,8 @@ const seedCompleteBusinessSetup = async () => {
     const invitedCBDOnlyManager2 = await createUserIfNotExists(invitedCBDOnlyManager2UserData, 'invited employee: Sam Williams');
     const invitedSouthYarraManager = await createUserIfNotExists(invitedSouthYarraManagerUserData, 'invited employee: Paul Lee');
     const invitedEmployeeNotActive = await createUserIfNotExists(invitedNotActiveEmployeeData, 'invited employee: Not Active');
+    const customerWithCompany = await createUserIfNotExists(customerWithCompanyUserData, 'customer: Customer With Company');
+    const createUserNoCompany = createUserIfNotExists(customerNoCompanyUserData, 'customer: Customer No Company');
 
     const company = await createCompanyIfNotExists(companyOwner);
     const [MelbourneCBDOperateSite, SouthYarraoperateSite2] = await createSitesIfNoExists(company);

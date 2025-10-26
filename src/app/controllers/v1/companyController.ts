@@ -3,6 +3,7 @@ import { winstonLogger } from '../../../loaders/logger';
 import { AuthenticationException } from '../../exceptions';
 import companyService from '../../services/companyService';
 import { userManagementService } from '../../services/userManagementService';
+import customerService from '../../services/customerService';
 
 export interface AuthenticatedRequest extends Request {
   user?: any;
@@ -75,4 +76,42 @@ export const getCompanyUsers = async (
   const users = await userManagementService.getUsersByCompanyAndSite(company, req.user);
   return res.status(200).json(users);
 
+};
+
+/**
+ * Get all customers associated with a company
+ * Only accessible by owners and managers
+ */
+export const getCompanyCustomers = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  const company = req.company;
+  const user = req.user;
+
+  if (!company) {
+    throw new AuthenticationException('Company not found');
+  }
+
+  if (!user) {
+    throw new AuthenticationException('User not found');
+  }
+
+  try {
+    const customers = await customerService.getCustomersByCompany(
+      company._id.toString(),
+      user._id.toString(),
+    );
+
+    winstonLogger.info(`Company customers retrieved successfully for company: ${company._id} by user: ${user.email}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Customers retrieved successfully',
+      data: customers,
+    });
+  } catch (error) {
+    winstonLogger.error(`Error retrieving company customers: ${error}`);
+    throw error;
+  }
 };

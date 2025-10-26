@@ -28,6 +28,7 @@ export interface ICompany {
   logo?: string;
   owner: Types.ObjectId; // Reference to User who created the company
   members?: ICompanyMember[]; // Other users who can access this company with their roles
+  customers?: Types.ObjectId[]; // Customers who have interacted with the company
   isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -278,6 +279,12 @@ const companySchema = new Schema<ICompanyDocument>(
           type: Date,
           default: Date.now,
         },
+      },
+    ],
+    customers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'users',
       },
     ],
     isActive: {

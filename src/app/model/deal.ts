@@ -8,7 +8,7 @@ export interface IDeal {
   originalPrice?: number;
   discount?: number;
   duration: number; // Duration in minutes
-  operatingSite: string; // Operating Site ID reference
+  operatingSite: string[]; // Array of Operating Site ID references
   availability: {
     startDate: Date;
     endDate: Date;
@@ -65,7 +65,7 @@ const dealSchema = new Schema<IDealDocument>({
     max: 1440, // up to 24 hours
   },
   operatingSite: {
-    type: String,
+    type: [String],
     required: true,
     ref: 'operateSites',
   },
@@ -123,7 +123,7 @@ const dealSchema = new Schema<IDealDocument>({
 
 // Index for better query performance
 dealSchema.index({ company: 1, status: 1 });
-dealSchema.index({ company: 1, operatingSite: 1 });
+dealSchema.index({ company: 1, 'operatingSite': 1 });
 dealSchema.index({ company: 1, service: 1 });
 dealSchema.index({ company: 1, createdBy: 1 });
 dealSchema.index({ category: 1 });

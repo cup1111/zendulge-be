@@ -36,8 +36,11 @@ export const createDealValidation = [
   body('operatingSite')
     .notEmpty()
     .withMessage('Operating site is required')
+    .isArray({ min: 1 })
+    .withMessage('At least one operating site is required'),
+  body('operatingSite.*')
     .isMongoId()
-    .withMessage('Operating site must be a valid MongoDB ObjectId'),
+    .withMessage('Each operating site must be a valid MongoDB ObjectId'),
   body('availability.startDate')
     .notEmpty()
     .withMessage('Start date is required')
@@ -110,8 +113,12 @@ export const updateDealValidation = [
     .withMessage('Duration must be an integer between 1 and 1440 minutes'),
   body('operatingSite')
     .optional()
+    .isArray({ min: 1 })
+    .withMessage('At least one operating site is required'),
+  body('operatingSite.*')
+    .optional()
     .isMongoId()
-    .withMessage('Operating site must be a valid MongoDB ObjectId'),
+    .withMessage('Each operating site must be a valid MongoDB ObjectId'),
   body('availability.startDate')
     .optional()
     .isISO8601()

@@ -24,13 +24,14 @@ const getDealsByCompany = async (companyId: string, userId: string): Promise<IDe
             isActive: true,
         }).select('_id');
 
-        const operatingSiteIds = userOperatingSites.map(site => site._id);
+        const operatingSiteIds = userOperatingSites.map(site => site._id.toString());
 
         if (operatingSiteIds.length === 0) {
             // User has no access to any operating sites, return empty array
             return [];
         }
 
+        // Find deals where at least one operating site matches user's accessible sites
         dealsQuery.operatingSite = { $in: operatingSiteIds };
     }
 
@@ -74,29 +75,43 @@ const createDeal = async (companyId: string, userId: string, dealData: any): Pro
         throw new Error('Service not found or does not belong to this company');
     }
 
-    // Validate operating site
-    if (!dealData.operatingSite) {
-        throw new Error('Operating site is required');
-    }
-    const operatingSite = await OperateSite.findOne({ _id: dealData.operatingSite, company: companyId });
-    if (!operatingSite) {
-        throw new Error('Operating site not found or does not belong to this company');
+    // Validate operating sites - should be an array
+    if (!dealData.operatingSite || !Array.isArray(dealData.operatingSite) || dealData.operatingSite.length === 0) {
+        throw new Error('At least one operating site is required');
     }
 
-    // Check if user has access to the operating site (for non-owners)
+    // Ensure operatingSite is an array (support backward compatibility)
+    const operatingSiteIds = Array.isArray(dealData.operatingSite)
+        ? dealData.operatingSite
+        : [dealData.operatingSite];
+
+    // Validate all operating sites exist and belong to the company
+    const operatingSites = await OperateSite.find({
+        _id: { $in: operatingSiteIds },
+        company: companyId,
+    });
+
+    if (operatingSites.length !== operatingSiteIds.length) {
+        throw new Error('One or more operating sites not found or do not belong to this company');
+    }
+
+    // Check if user has access to all operating sites (for non-owners)
     const isOwner = company.isCompanyOwner(userId as any);
     if (!isOwner) {
-        const hasSiteAccess = await OperateSite.findOne({
-            _id: dealData.operatingSite,
+        const accessibleSites = await OperateSite.find({
+            _id: { $in: operatingSiteIds },
             company: companyId,
             members: userId,
             isActive: true,
         });
 
-        if (!hasSiteAccess) {
-            throw new Error('You do not have access to this operating site');
+        if (accessibleSites.length !== operatingSiteIds.length) {
+            throw new Error('You do not have access to one or more of the selected operating sites');
         }
     }
+
+    // Update dealData to use array
+    dealData.operatingSite = operatingSiteIds;
 
     // Set original price from service if not provided
     if (!dealData.originalPrice) {
@@ -153,9 +168,13 @@ const updateDeal = async (companyId: string, dealId: string, userId: string, upd
     if (!isOwner) {
         // For non-owners, check if they can edit this deal
         if (userRole) {
-            // Check if user has access to the deal's operating site
+            // Check if user has access to at least one of the deal's operating sites
+            const operatingSiteIds = Array.isArray(existingDeal.operatingSite)
+                ? existingDeal.operatingSite
+                : [existingDeal.operatingSite];
+
             const hasSiteAccess = await OperateSite.findOne({
-                _id: existingDeal.operatingSite,
+                _id: { $in: operatingSiteIds },
                 company: companyId,
                 members: userId,
                 isActive: true,
@@ -191,26 +210,43 @@ const updateDeal = async (companyId: string, dealId: string, userId: string, upd
         }
     }
 
-    // Validate operating site if updated
+    // Validate operating sites if updated
     if (updateData.operatingSite) {
-        const operatingSite = await OperateSite.findOne({ _id: updateData.operatingSite, company: companyId });
-        if (!operatingSite) {
-            throw new Error('Operating site not found or does not belong to this company');
+        // Ensure operatingSite is an array
+        const operatingSiteIds = Array.isArray(updateData.operatingSite)
+            ? updateData.operatingSite
+            : [updateData.operatingSite];
+
+        if (operatingSiteIds.length === 0) {
+            throw new Error('At least one operating site is required');
         }
 
-        // Check if user has access to the new operating site (for non-owners)
+        // Validate all operating sites exist and belong to the company
+        const operatingSites = await OperateSite.find({
+            _id: { $in: operatingSiteIds },
+            company: companyId,
+        });
+
+        if (operatingSites.length !== operatingSiteIds.length) {
+            throw new Error('One or more operating sites not found or do not belong to this company');
+        }
+
+        // Check if user has access to all operating sites (for non-owners)
         if (!isOwner) {
-            const hasSiteAccess = await OperateSite.findOne({
-                _id: updateData.operatingSite,
+            const accessibleSites = await OperateSite.find({
+                _id: { $in: operatingSiteIds },
                 company: companyId,
                 members: userId,
                 isActive: true,
             });
 
-            if (!hasSiteAccess) {
-                throw new Error('You do not have access to this operating site');
+            if (accessibleSites.length !== operatingSiteIds.length) {
+                throw new Error('You do not have access to one or more of the selected operating sites');
             }
         }
+
+        // Update to use array
+        updateData.operatingSite = operatingSiteIds;
     }
 
     // Recalculate discount if price or originalPrice are updated
@@ -261,9 +297,13 @@ const deleteDeal = async (companyId: string, dealId: string, userId: string): Pr
     const isOwner = company.isCompanyOwner(userId as any);
 
     if (!isOwner) {
-        // Check if user has access to the deal's operating site
+        // Check if user has access to at least one of the deal's operating sites
+        const operatingSiteIds = Array.isArray(existingDeal.operatingSite)
+            ? existingDeal.operatingSite
+            : [existingDeal.operatingSite];
+
         const hasSiteAccess = await OperateSite.findOne({
-            _id: existingDeal.operatingSite,
+            _id: { $in: operatingSiteIds },
             company: companyId,
             members: userId,
             isActive: true,
@@ -311,9 +351,13 @@ const updateDealStatus = async (companyId: string, dealId: string, userId: strin
     const isOwner = company.isCompanyOwner(userId as any);
 
     if (!isOwner) {
-        // Check if user has access to the deal's operating site
+        // Check if user has access to at least one of the deal's operating sites
+        const operatingSiteIds = Array.isArray(existingDeal.operatingSite)
+            ? existingDeal.operatingSite
+            : [existingDeal.operatingSite];
+
         const hasSiteAccess = await OperateSite.findOne({
-            _id: existingDeal.operatingSite,
+            _id: { $in: operatingSiteIds },
             company: companyId,
             members: userId,
             isActive: true,

@@ -11,6 +11,7 @@ import { winstonLogger } from '../../../loaders/logger';
 import { RoleName } from '../../enum/roles';
 import { config } from '../../config/app';
 import userService from '../../services/userService';
+import { Types } from 'mongoose';
 
 export interface AuthenticatedRequest extends Request {
   user?: IUserDocument;
@@ -209,4 +210,75 @@ export const updateProfile = async (req: AuthenticatedRequest, res: Response) =>
       user: updatedUser.toJSON(),
     },
   });
+};
+
+// Delete account controller
+export const deleteAccount = async (req: AuthenticatedRequest, res: Response) => {
+  const user = req.user;
+
+  if (!user) {
+    throw new AuthenticationException('User not found');
+  }
+
+  try {
+    const userId = user._id.toString();
+
+    // Get all companies the user is owner or member of
+    const userCompanies = await Company.find({
+      $or: [
+        { owner: userId },
+        { 'members.user': userId },
+      ],
+      isActive: true,
+    });
+
+    // Check if user is owner of any companies
+    const ownedCompanies = userCompanies.filter(
+      (company) => company.owner.toString() === userId,
+    );
+
+    // If user is an owner, check if all businesses are deactivated
+    if (ownedCompanies.length > 0) {
+      const activeBusinesses = ownedCompanies.filter(
+        (company) => company.isActive === true,
+      );
+
+      if (activeBusinesses.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message:
+            'Cannot delete account. Please deactivate all your businesses first.',
+        });
+      }
+    }
+
+    // Remove user from all companies (as owner or member)
+    for (const company of userCompanies) {
+      if (company.owner.toString() === userId) {
+        // User is owner - already deactivated, just ensure it's set
+        company.isActive = false;
+      } else {
+        // User is member - remove from members
+        company.members = company.members?.filter(
+          (member: any) =>
+            (member.user as Types.ObjectId).toString() !== userId,
+        ) || [];
+      }
+      await company.save();
+    }
+
+    // Soft delete the user account
+    user.active = false;
+    await user.save();
+
+    winstonLogger.info(`Account deleted (soft delete) for user: ${user.email}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Account deleted successfully',
+    });
+  } catch (error) {
+    winstonLogger.error(`Error deleting account: ${error}`);
+    throw error;
+  }
 };

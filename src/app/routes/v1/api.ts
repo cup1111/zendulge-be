@@ -11,6 +11,7 @@ import {
   refreshToken,
   getRole,
   updateProfile,
+  deleteAccount,
 } from '../../controllers/v1/authController';
 import {
   getCompanyInfo,
@@ -112,6 +113,12 @@ router.patch(
   updateProfileValidation,
   handleValidationErrors,
   updateProfile,
+);
+
+router.delete(
+  '/me',
+  authenticationTokenMiddleware,
+  deleteAccount,
 );
 
 router.get(

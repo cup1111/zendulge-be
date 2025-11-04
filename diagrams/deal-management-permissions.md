@@ -73,7 +73,7 @@ flowchart TB
         B7 --> B8{User Role?}
         B8 -->|Owner| B9[Can Select ANY Site]
         B8 -->|Manager/Employee| B10[Can ONLY Select Assigned Sites]
-        B9 --> B11[User Selects Site(s)]
+        B9 --> B11[User Selects Sites]
         B10 --> B11
         B11 --> B12[Submit Deal]
         B12 --> B13{Backend Validates Site Access}
@@ -137,7 +137,7 @@ sequenceDiagram
     end
     
     Note over User,DB: Step 3: User Selects Sites
-    User->>UI: Select site(s) from dropdown
+    User->>UI: Select sites from dropdown
     alt Owner selects sites
         User->>UI: Select Site A, Site F, Site J<br/>(Any sites from all available)
     else Manager/Employee selects sites

@@ -163,7 +163,7 @@ const createServicesIfNotExists = async (company: any) => {
   }
 };
 
-const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any, SouthYarraoperateSite2: any) => {
+const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any, SouthYarraoperateSite2: any, companyOwner: any) => {
   // Get services to reference them
   const basicCleaningService = await Service.findOne({ name: 'Basic Cleaning Service', company: company.id });
   const deepCleaningService = await Service.findOne({ name: 'Deep Cleaning Service', company: company.id });
@@ -180,8 +180,9 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       price: 150.00,
       originalPrice: 200.00,
       duration: 180,
-      operatingSite: MelbourneCBDOperateSite.id,
+      operatingSite: [MelbourneCBDOperateSite.id],
       service: deepCleaningService?.id,
+      createdBy: companyOwner.id,
       availability: {
         startDate: new Date(),
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
@@ -199,8 +200,9 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       price: 300.00,
       originalPrice: 400.00,
       duration: 240,
-      operatingSite: SouthYarraoperateSite2.id,
+      operatingSite: [SouthYarraoperateSite2.id],
       service: officeCleaningService?.id,
+      createdBy: companyOwner.id,
       availability: {
         startDate: new Date(),
         endDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
@@ -218,8 +220,9 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       price: 120.00,
       originalPrice: 150.00,
       duration: 90,
-      operatingSite: MelbourneCBDOperateSite.id,
+      operatingSite: [MelbourneCBDOperateSite.id],
       service: carpetCleaningService?.id,
+      createdBy: companyOwner.id,
       availability: {
         startDate: new Date(),
         endDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
@@ -237,8 +240,9 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       price: 80.00,
       originalPrice: 100.00,
       duration: 60,
-      operatingSite: SouthYarraoperateSite2.id,
+      operatingSite: [SouthYarraoperateSite2.id],
       service: windowCleaningService?.id,
+      createdBy: companyOwner.id,
       availability: {
         startDate: new Date(),
         endDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000), // 20 days from now
@@ -256,8 +260,9 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       price: 500.00,
       originalPrice: 650.00,
       duration: 360,
-      operatingSite: MelbourneCBDOperateSite.id,
+      operatingSite: [MelbourneCBDOperateSite.id],
       service: postConstructionService?.id,
+      createdBy: companyOwner.id,
       availability: {
         startDate: new Date(),
         endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
@@ -275,8 +280,9 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       price: 200.00,
       originalPrice: 250.00,
       duration: 120,
-      operatingSite: MelbourneCBDOperateSite.id,
+      operatingSite: [MelbourneCBDOperateSite.id],
       service: basicCleaningService?.id,
+      createdBy: companyOwner.id,
       availability: {
         startDate: new Date(),
         endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
@@ -484,7 +490,7 @@ const seedCompleteBusinessSetup = async () => {
     const company = await createCompanyIfNotExists(companyOwner);
     const [MelbourneCBDOperateSite, SouthYarraoperateSite2] = await createSitesIfNoExists(company);
     await createServicesIfNotExists(company);
-    await createDealsIfNotExists(company, MelbourneCBDOperateSite, SouthYarraoperateSite2);
+    await createDealsIfNotExists(company, MelbourneCBDOperateSite, SouthYarraoperateSite2, companyOwner);
 
     await company.addMember(new Types.ObjectId(companyOwner.id), ownerRole.id);
     await company.addMember(new Types.ObjectId(invitedAllManagerUser.id), managerRole.id);

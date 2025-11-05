@@ -428,7 +428,7 @@ const seedCompleteBusinessSetup = async () => {
 
 
     // Create an invited user (Business Manager)
-    const invitedEmployee1Data = {
+    const invitedMelbourneCBDEmployee1Data = {
       email: 'employee1@zendulge.com',
       password: 'zxc123!',
       firstName: 'John',
@@ -439,7 +439,7 @@ const seedCompleteBusinessSetup = async () => {
       active: true,
     };
 
-    const invitedEmployee2Data = {
+    const invitedNoSiteEmployeeData = {
       email: 'noAccess@zendulge.com',
       password: 'zxc123!',
       firstName: 'No',
@@ -450,7 +450,7 @@ const seedCompleteBusinessSetup = async () => {
       active: true,
     };
 
-    const invitedNotActiveEmployeeData = {
+    const invitedSouthYarraNotActiveEmployeeData = {
       email: 'notActive@zendulge.com',
       password: 'zxc123!',
       firstName: 'No',
@@ -485,12 +485,12 @@ const seedCompleteBusinessSetup = async () => {
     // Check if company owner already exists
     const companyOwner = await createUserIfNotExists(companyOwnerData, 'Company Owner user');
     const invitedAllManagerUser = await createUserIfNotExists(invitedAllMangerData, 'invited user: Sarah Johnson');
-    const invitedEmployee1 = await createUserIfNotExists(invitedEmployee1Data, 'invited employee: John Doe');
-    const invitedNoSiteEmployee2 = await createUserIfNotExists(invitedEmployee2Data, 'invited employee: Jane Smith');
+    const invitedMelbourneCBDEmployee1 = await createUserIfNotExists(invitedMelbourneCBDEmployee1Data, 'invited employee: John Doe');
+    const invitedNoSiteEmployee2 = await createUserIfNotExists(invitedNoSiteEmployeeData, 'invited employee: Jane Smith');
     const invitedCBDOnlyManager1 = await createUserIfNotExists(invitedCBDOnlyManager1UserData, 'invited employee: Kit Kat');
     const invitedCBDOnlyManager2 = await createUserIfNotExists(invitedCBDOnlyManager2UserData, 'invited employee: Sam Williams');
     const invitedSouthYarraManager = await createUserIfNotExists(invitedSouthYarraManagerUserData, 'invited employee: Paul Lee');
-    const invitedEmployeeNotActive = await createUserIfNotExists(invitedNotActiveEmployeeData, 'invited employee: Not Active');
+    const invitedSouthYarraNotActiveEmployee = await createUserIfNotExists(invitedSouthYarraNotActiveEmployeeData, 'invited employee: Not Active');
     const customerWithCompany = await createUserIfNotExists(customerWithCompanyUserData, 'customer: Customer With Company');
     await createUserIfNotExists(customerNoCompanyUserData, 'customer: Customer No Company');
 
@@ -501,20 +501,20 @@ const seedCompleteBusinessSetup = async () => {
 
     await company.addMember(new Types.ObjectId(companyOwner.id), ownerRole.id);
     await company.addMember(new Types.ObjectId(invitedAllManagerUser.id), managerRole.id);
-    await company.addMember(new Types.ObjectId(invitedEmployee1.id), employeeRole.id);
+    await company.addMember(new Types.ObjectId(invitedMelbourneCBDEmployee1.id), employeeRole.id);
     await company.addMember(new Types.ObjectId(invitedNoSiteEmployee2.id), employeeRole.id);
     await company.addMember(new Types.ObjectId(invitedCBDOnlyManager2.id), managerRole.id);
     await company.addMember(new Types.ObjectId(invitedCBDOnlyManager1.id), managerRole.id);
     await company.addMember(new Types.ObjectId(invitedSouthYarraManager.id), managerRole.id);
-    await company.addMember(new Types.ObjectId(invitedEmployeeNotActive.id), employeeRole.id);
+    await company.addMember(new Types.ObjectId(invitedSouthYarraNotActiveEmployee.id), employeeRole.id);
 
     await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedAllManagerUser.id));
     await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedAllManagerUser.id));
-    await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedEmployee1.id));
+    await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedMelbourneCBDEmployee1.id));
     await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedCBDOnlyManager1.id));
     await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedCBDOnlyManager2.id));
     await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedSouthYarraManager.id));
-    await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedEmployeeNotActive.id));
+    await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedSouthYarraNotActiveEmployee.id));
 
     // Add customerWithCompany to company.customers array
     if (!company.customers) {

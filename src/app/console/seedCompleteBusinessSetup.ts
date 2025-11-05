@@ -128,6 +128,7 @@ const createServicesIfNotExists = async (company: any) => {
       basePrice: 120.00,
       description: 'Professional carpet and upholstery cleaning',
       company: company.id,
+      status: 'sold_out',
     },
     {
       name: 'Window Cleaning',
@@ -136,6 +137,7 @@ const createServicesIfNotExists = async (company: any) => {
       basePrice: 60.00,
       description: 'Interior and exterior window cleaning service',
       company: company.id,
+      status: 'expired',
     },
     {
       name: 'Post-Construction Cleanup',
@@ -144,6 +146,7 @@ const createServicesIfNotExists = async (company: any) => {
       basePrice: 300.00,
       description: 'Heavy-duty cleaning after construction or renovation',
       company: company.id,
+      status: 'inactive'
     },
   ];
 

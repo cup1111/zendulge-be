@@ -256,7 +256,7 @@ export class UserManagementService {
       return {
         success: true,
         message: `User created successfully${company ? ' and added to company' : ''
-          }`,
+        }`,
         data: userResponse,
       };
     } catch (error) {

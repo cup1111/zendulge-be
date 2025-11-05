@@ -4,400 +4,400 @@ import Service from '../model/service';
 import OperateSite from '../model/operateSite';
 
 const getDealsByCompany = async (companyId: string, userId: string): Promise<IDealDocument[]> => {
-    const company = await Company.findById(companyId);
-    if (!company || !company.hasAccess(userId as any)) {
-        throw new Error('Company not found or access denied');
+  const company = await Company.findById(companyId);
+  if (!company || !company.hasAccess(userId as any)) {
+    throw new Error('Company not found or access denied');
+  }
+
+  // Get user's role in the company
+  const userRole = company.getMemberRole(userId as any);
+  const isOwner = company.isCompanyOwner(userId as any);
+
+  let dealsQuery: any = { company: companyId };
+
+  // If not owner, filter by operating sites the user has access to
+  if (!isOwner && userRole) {
+    // Get operating sites the user has access to
+    const userOperatingSites = await OperateSite.find({
+      company: companyId,
+      members: userId,
+      isActive: true,
+    }).select('_id');
+
+    const operatingSiteIds = userOperatingSites.map(site => site._id.toString());
+
+    if (operatingSiteIds.length === 0) {
+      // User has no access to any operating sites, return empty array
+      return [];
     }
 
-    // Get user's role in the company
-    const userRole = company.getMemberRole(userId as any);
-    const isOwner = company.isCompanyOwner(userId as any);
+    // Find deals where at least one operating site matches user's accessible sites
+    dealsQuery.operatingSite = { $in: operatingSiteIds };
+  }
 
-    let dealsQuery: any = { company: companyId };
-
-    // If not owner, filter by operating sites the user has access to
-    if (!isOwner && userRole) {
-        // Get operating sites the user has access to
-        const userOperatingSites = await OperateSite.find({
-            company: companyId,
-            members: userId,
-            isActive: true,
-        }).select('_id');
-
-        const operatingSiteIds = userOperatingSites.map(site => site._id.toString());
-
-        if (operatingSiteIds.length === 0) {
-            // User has no access to any operating sites, return empty array
-            return [];
-        }
-
-        // Find deals where at least one operating site matches user's accessible sites
-        dealsQuery.operatingSite = { $in: operatingSiteIds };
-    }
-
-    return Deal.find(dealsQuery)
-        .populate('service', 'name category basePrice duration')
-        .populate('operatingSite', 'name address')
-        .populate('createdBy', 'firstName lastName email');
+  return Deal.find(dealsQuery)
+    .populate('service', 'name category basePrice duration')
+    .populate('operatingSite', 'name address')
+    .populate('createdBy', 'firstName lastName email');
 };
 
 const getDealById = async (companyId: string, dealId: string, userId: string): Promise<IDealDocument> => {
-    const company = await Company.findById(companyId);
-    if (!company || !company.hasAccess(userId as any)) {
-        throw new Error('Company not found or access denied');
-    }
-    const deal = await Deal.findOne({ _id: dealId, company: companyId })
-        .populate('service', 'name category basePrice duration')
-        .populate('operatingSite', 'name address');
-    if (!deal) {
-        throw new Error('Deal not found');
-    }
-    return deal;
+  const company = await Company.findById(companyId);
+  if (!company || !company.hasAccess(userId as any)) {
+    throw new Error('Company not found or access denied');
+  }
+  const deal = await Deal.findOne({ _id: dealId, company: companyId })
+    .populate('service', 'name category basePrice duration')
+    .populate('operatingSite', 'name address');
+  if (!deal) {
+    throw new Error('Deal not found');
+  }
+  return deal;
 };
 
 const createDeal = async (companyId: string, userId: string, dealData: any): Promise<IDealDocument> => {
-    const company = await Company.findById(companyId);
-    if (!company) {
-        throw new Error('Company not found');
-    }
+  const company = await Company.findById(companyId);
+  if (!company) {
+    throw new Error('Company not found');
+  }
 
-    // Check if the user has access to the company
-    if (!company.hasAccess(userId as any)) {
-        throw new Error('Access denied');
-    }
+  // Check if the user has access to the company
+  if (!company.hasAccess(userId as any)) {
+    throw new Error('Access denied');
+  }
 
-    // Validate service - it's now required
-    if (!dealData.service) {
-        throw new Error('Service is required');
-    }
-    const service = await Service.findOne({ _id: dealData.service, company: companyId });
-    if (!service) {
-        throw new Error('Service not found or does not belong to this company');
-    }
+  // Validate service - it's now required
+  if (!dealData.service) {
+    throw new Error('Service is required');
+  }
+  const service = await Service.findOne({ _id: dealData.service, company: companyId });
+  if (!service) {
+    throw new Error('Service not found or does not belong to this company');
+  }
 
-    // Validate operating sites - should be an array
-    if (!dealData.operatingSite || !Array.isArray(dealData.operatingSite) || dealData.operatingSite.length === 0) {
-        throw new Error('At least one operating site is required');
-    }
+  // Validate operating sites - should be an array
+  if (!dealData.operatingSite || !Array.isArray(dealData.operatingSite) || dealData.operatingSite.length === 0) {
+    throw new Error('At least one operating site is required');
+  }
 
-    // Ensure operatingSite is an array (support backward compatibility)
-    const operatingSiteIds = Array.isArray(dealData.operatingSite)
-        ? dealData.operatingSite
-        : [dealData.operatingSite];
+  // Ensure operatingSite is an array (support backward compatibility)
+  const operatingSiteIds = Array.isArray(dealData.operatingSite)
+    ? dealData.operatingSite
+    : [dealData.operatingSite];
 
-    // Validate all operating sites exist and belong to the company
-    const operatingSites = await OperateSite.find({
-        _id: { $in: operatingSiteIds },
-        company: companyId,
+  // Validate all operating sites exist and belong to the company
+  const operatingSites = await OperateSite.find({
+    _id: { $in: operatingSiteIds },
+    company: companyId,
+  });
+
+  if (operatingSites.length !== operatingSiteIds.length) {
+    throw new Error('One or more operating sites not found or do not belong to this company');
+  }
+
+  // Check if user has access to all operating sites (for non-owners)
+  const isOwner = company.isCompanyOwner(userId as any);
+  if (!isOwner) {
+    const accessibleSites = await OperateSite.find({
+      _id: { $in: operatingSiteIds },
+      company: companyId,
+      members: userId,
+      isActive: true,
     });
 
-    if (operatingSites.length !== operatingSiteIds.length) {
-        throw new Error('One or more operating sites not found or do not belong to this company');
+    if (accessibleSites.length !== operatingSiteIds.length) {
+      throw new Error('You do not have access to one or more of the selected operating sites');
     }
+  }
 
-    // Check if user has access to all operating sites (for non-owners)
-    const isOwner = company.isCompanyOwner(userId as any);
-    if (!isOwner) {
-        const accessibleSites = await OperateSite.find({
-            _id: { $in: operatingSiteIds },
-            company: companyId,
-            members: userId,
-            isActive: true,
-        });
+  // Update dealData to use array
+  dealData.operatingSite = operatingSiteIds;
 
-        if (accessibleSites.length !== operatingSiteIds.length) {
-            throw new Error('You do not have access to one or more of the selected operating sites');
-        }
-    }
+  // Set original price from service if not provided
+  if (!dealData.originalPrice) {
+    dealData.originalPrice = service.basePrice;
+  }
+  // Set duration from service if not provided
+  if (!dealData.duration) {
+    dealData.duration = service.duration;
+  }
 
-    // Update dealData to use array
-    dealData.operatingSite = operatingSiteIds;
+  // Calculate discount if originalPrice and price are provided
+  if (dealData.originalPrice && dealData.price) {
+    dealData.discount = Math.round(((dealData.originalPrice - dealData.price) / dealData.originalPrice) * 100);
+  }
 
-    // Set original price from service if not provided
-    if (!dealData.originalPrice) {
-        dealData.originalPrice = service.basePrice;
-    }
-    // Set duration from service if not provided
-    if (!dealData.duration) {
-        dealData.duration = service.duration;
-    }
+  // Set default availability if not provided
+  if (!dealData.availability) {
+    dealData.availability = {
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      currentBookings: 0,
+    };
+  }
 
-    // Calculate discount if originalPrice and price are provided
-    if (dealData.originalPrice && dealData.price) {
-        dealData.discount = Math.round(((dealData.originalPrice - dealData.price) / dealData.originalPrice) * 100);
-    }
-
-    // Set default availability if not provided
-    if (!dealData.availability) {
-        dealData.availability = {
-            startDate: new Date(),
-            endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-            currentBookings: 0,
-        };
-    }
-
-    const newDeal = new Deal({
-        ...dealData,
-        company: companyId,
-        createdBy: userId, // Track who created the deal
-    });
-    return newDeal.save();
+  const newDeal = new Deal({
+    ...dealData,
+    company: companyId,
+    createdBy: userId, // Track who created the deal
+  });
+  return newDeal.save();
 };
 
 const updateDeal = async (companyId: string, dealId: string, userId: string, updateData: any): Promise<IDealDocument> => {
-    const company = await Company.findById(companyId);
-    if (!company) {
-        throw new Error('Company not found');
+  const company = await Company.findById(companyId);
+  if (!company) {
+    throw new Error('Company not found');
+  }
+
+  // Check if the user has access to the company
+  if (!company.hasAccess(userId as any)) {
+    throw new Error('Access denied');
+  }
+
+  // Get the existing deal
+  const existingDeal = await Deal.findOne({ _id: dealId, company: companyId });
+  if (!existingDeal) {
+    throw new Error('Deal not found');
+  }
+
+  // Check permissions based on role
+  const isOwner = company.isCompanyOwner(userId as any);
+  const userRole = company.getMemberRole(userId as any);
+
+  if (!isOwner) {
+    // For non-owners, check if they can edit this deal
+    if (userRole) {
+      // Check if user has access to at least one of the deal's operating sites
+      const operatingSiteIds = Array.isArray(existingDeal.operatingSite)
+        ? existingDeal.operatingSite
+        : [existingDeal.operatingSite];
+
+      const hasSiteAccess = await OperateSite.findOne({
+        _id: { $in: operatingSiteIds },
+        company: companyId,
+        members: userId,
+        isActive: true,
+      });
+
+      if (!hasSiteAccess) {
+        throw new Error('You do not have access to this deal');
+      }
+
+      // For employees, they can only edit deals they created
+      const roleName = await company.populate('members.role').then(() => {
+        const member = company.members?.find(m => (m.user as any).equals(userId));
+        return member?.role && typeof member.role === 'object' ? (member.role as any).name : null;
+      });
+
+      if (roleName === 'employee' && existingDeal.createdBy?.toString() !== userId) {
+        throw new Error('You can only edit deals you created');
+      }
+    }
+  }
+
+  // If service is updated, re-validate and potentially update originalPrice/duration
+  if (updateData.service) {
+    const service = await Service.findOne({ _id: updateData.service, company: companyId });
+    if (!service) {
+      throw new Error('Service not found or does not belong to this company');
+    }
+    if (!updateData.originalPrice) {
+      updateData.originalPrice = service.basePrice;
+    }
+    if (!updateData.duration) {
+      updateData.duration = service.duration;
+    }
+  }
+
+  // Validate operating sites if updated
+  if (updateData.operatingSite) {
+    // Ensure operatingSite is an array
+    const operatingSiteIds = Array.isArray(updateData.operatingSite)
+      ? updateData.operatingSite
+      : [updateData.operatingSite];
+
+    if (operatingSiteIds.length === 0) {
+      throw new Error('At least one operating site is required');
     }
 
-    // Check if the user has access to the company
-    if (!company.hasAccess(userId as any)) {
-        throw new Error('Access denied');
+    // Validate all operating sites exist and belong to the company
+    const operatingSites = await OperateSite.find({
+      _id: { $in: operatingSiteIds },
+      company: companyId,
+    });
+
+    if (operatingSites.length !== operatingSiteIds.length) {
+      throw new Error('One or more operating sites not found or do not belong to this company');
     }
 
-    // Get the existing deal
-    const existingDeal = await Deal.findOne({ _id: dealId, company: companyId });
-    if (!existingDeal) {
-        throw new Error('Deal not found');
-    }
-
-    // Check permissions based on role
-    const isOwner = company.isCompanyOwner(userId as any);
-    const userRole = company.getMemberRole(userId as any);
-
+    // Check if user has access to all operating sites (for non-owners)
     if (!isOwner) {
-        // For non-owners, check if they can edit this deal
-        if (userRole) {
-            // Check if user has access to at least one of the deal's operating sites
-            const operatingSiteIds = Array.isArray(existingDeal.operatingSite)
-                ? existingDeal.operatingSite
-                : [existingDeal.operatingSite];
+      const accessibleSites = await OperateSite.find({
+        _id: { $in: operatingSiteIds },
+        company: companyId,
+        members: userId,
+        isActive: true,
+      });
 
-            const hasSiteAccess = await OperateSite.findOne({
-                _id: { $in: operatingSiteIds },
-                company: companyId,
-                members: userId,
-                isActive: true,
-            });
-
-            if (!hasSiteAccess) {
-                throw new Error('You do not have access to this deal');
-            }
-
-            // For employees, they can only edit deals they created
-            const roleName = await company.populate('members.role').then(() => {
-                const member = company.members?.find(m => (m.user as any).equals(userId));
-                return member?.role && typeof member.role === 'object' ? (member.role as any).name : null;
-            });
-
-            if (roleName === 'employee' && existingDeal.createdBy?.toString() !== userId) {
-                throw new Error('You can only edit deals you created');
-            }
-        }
+      if (accessibleSites.length !== operatingSiteIds.length) {
+        throw new Error('You do not have access to one or more of the selected operating sites');
+      }
     }
 
-    // If service is updated, re-validate and potentially update originalPrice/duration
-    if (updateData.service) {
-        const service = await Service.findOne({ _id: updateData.service, company: companyId });
-        if (!service) {
-            throw new Error('Service not found or does not belong to this company');
-        }
-        if (!updateData.originalPrice) {
-            updateData.originalPrice = service.basePrice;
-        }
-        if (!updateData.duration) {
-            updateData.duration = service.duration;
-        }
+    // Update to use array
+    updateData.operatingSite = operatingSiteIds;
+  }
+
+  // Recalculate discount if price or originalPrice are updated
+  if (updateData.originalPrice !== undefined || updateData.price !== undefined) {
+    const currentOriginalPrice = updateData.originalPrice !== undefined ? updateData.originalPrice : existingDeal.originalPrice;
+    const currentPrice = updateData.price !== undefined ? updateData.price : existingDeal.price;
+
+    if (currentOriginalPrice && currentPrice) {
+      updateData.discount = Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100);
+    } else {
+      updateData.discount = undefined; // Clear discount if prices are incomplete
     }
+  }
 
-    // Validate operating sites if updated
-    if (updateData.operatingSite) {
-        // Ensure operatingSite is an array
-        const operatingSiteIds = Array.isArray(updateData.operatingSite)
-            ? updateData.operatingSite
-            : [updateData.operatingSite];
+  const deal = await Deal.findOneAndUpdate(
+    { _id: dealId, company: companyId },
+    updateData,
+    { new: true, runValidators: true },
+  )
+    .populate('service', 'name category basePrice duration')
+    .populate('operatingSite', 'name address')
+    .populate('createdBy', 'firstName lastName email');
 
-        if (operatingSiteIds.length === 0) {
-            throw new Error('At least one operating site is required');
-        }
-
-        // Validate all operating sites exist and belong to the company
-        const operatingSites = await OperateSite.find({
-            _id: { $in: operatingSiteIds },
-            company: companyId,
-        });
-
-        if (operatingSites.length !== operatingSiteIds.length) {
-            throw new Error('One or more operating sites not found or do not belong to this company');
-        }
-
-        // Check if user has access to all operating sites (for non-owners)
-        if (!isOwner) {
-            const accessibleSites = await OperateSite.find({
-                _id: { $in: operatingSiteIds },
-                company: companyId,
-                members: userId,
-                isActive: true,
-            });
-
-            if (accessibleSites.length !== operatingSiteIds.length) {
-                throw new Error('You do not have access to one or more of the selected operating sites');
-            }
-        }
-
-        // Update to use array
-        updateData.operatingSite = operatingSiteIds;
-    }
-
-    // Recalculate discount if price or originalPrice are updated
-    if (updateData.originalPrice !== undefined || updateData.price !== undefined) {
-        const currentOriginalPrice = updateData.originalPrice !== undefined ? updateData.originalPrice : existingDeal.originalPrice;
-        const currentPrice = updateData.price !== undefined ? updateData.price : existingDeal.price;
-
-        if (currentOriginalPrice && currentPrice) {
-            updateData.discount = Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100);
-        } else {
-            updateData.discount = undefined; // Clear discount if prices are incomplete
-        }
-    }
-
-    const deal = await Deal.findOneAndUpdate(
-        { _id: dealId, company: companyId },
-        updateData,
-        { new: true, runValidators: true },
-    )
-        .populate('service', 'name category basePrice duration')
-        .populate('operatingSite', 'name address')
-        .populate('createdBy', 'firstName lastName email');
-
-    if (!deal) {
-        throw new Error('Deal not found');
-    }
-    return deal;
+  if (!deal) {
+    throw new Error('Deal not found');
+  }
+  return deal;
 };
 
 const deleteDeal = async (companyId: string, dealId: string, userId: string): Promise<void> => {
-    const company = await Company.findById(companyId);
-    if (!company) {
-        throw new Error('Company not found');
+  const company = await Company.findById(companyId);
+  if (!company) {
+    throw new Error('Company not found');
+  }
+
+  // Check if the user has access to the company
+  if (!company.hasAccess(userId as any)) {
+    throw new Error('Access denied');
+  }
+
+  // Get the existing deal
+  const existingDeal = await Deal.findOne({ _id: dealId, company: companyId });
+  if (!existingDeal) {
+    throw new Error('Deal not found');
+  }
+
+  // Check permissions based on role
+  const isOwner = company.isCompanyOwner(userId as any);
+
+  if (!isOwner) {
+    // Check if user has access to at least one of the deal's operating sites
+    const operatingSiteIds = Array.isArray(existingDeal.operatingSite)
+      ? existingDeal.operatingSite
+      : [existingDeal.operatingSite];
+
+    const hasSiteAccess = await OperateSite.findOne({
+      _id: { $in: operatingSiteIds },
+      company: companyId,
+      members: userId,
+      isActive: true,
+    });
+
+    if (!hasSiteAccess) {
+      throw new Error('You do not have access to this deal');
     }
 
-    // Check if the user has access to the company
-    if (!company.hasAccess(userId as any)) {
-        throw new Error('Access denied');
+    // For employees, they can only delete deals they created
+    const roleName = await company.populate('members.role').then(() => {
+      const member = company.members?.find(m => (m.user as any).equals(userId));
+      return member?.role && typeof member.role === 'object' ? (member.role as any).name : null;
+    });
+
+    if (roleName === 'employee' && existingDeal.createdBy?.toString() !== userId) {
+      throw new Error('You can only delete deals you created');
     }
+  }
 
-    // Get the existing deal
-    const existingDeal = await Deal.findOne({ _id: dealId, company: companyId });
-    if (!existingDeal) {
-        throw new Error('Deal not found');
-    }
-
-    // Check permissions based on role
-    const isOwner = company.isCompanyOwner(userId as any);
-
-    if (!isOwner) {
-        // Check if user has access to at least one of the deal's operating sites
-        const operatingSiteIds = Array.isArray(existingDeal.operatingSite)
-            ? existingDeal.operatingSite
-            : [existingDeal.operatingSite];
-
-        const hasSiteAccess = await OperateSite.findOne({
-            _id: { $in: operatingSiteIds },
-            company: companyId,
-            members: userId,
-            isActive: true,
-        });
-
-        if (!hasSiteAccess) {
-            throw new Error('You do not have access to this deal');
-        }
-
-        // For employees, they can only delete deals they created
-        const roleName = await company.populate('members.role').then(() => {
-            const member = company.members?.find(m => (m.user as any).equals(userId));
-            return member?.role && typeof member.role === 'object' ? (member.role as any).name : null;
-        });
-
-        if (roleName === 'employee' && existingDeal.createdBy?.toString() !== userId) {
-            throw new Error('You can only delete deals you created');
-        }
-    }
-
-    const result = await Deal.deleteOne({ _id: dealId, company: companyId });
-    if (result.deletedCount === 0) {
-        throw new Error('Deal not found');
-    }
+  const result = await Deal.deleteOne({ _id: dealId, company: companyId });
+  if (result.deletedCount === 0) {
+    throw new Error('Deal not found');
+  }
 };
 
 const updateDealStatus = async (companyId: string, dealId: string, userId: string, status: string): Promise<IDealDocument> => {
-    const company = await Company.findById(companyId);
-    if (!company) {
-        throw new Error('Company not found');
+  const company = await Company.findById(companyId);
+  if (!company) {
+    throw new Error('Company not found');
+  }
+
+  // Check if the user has access to the company
+  if (!company.hasAccess(userId as any)) {
+    throw new Error('Access denied');
+  }
+
+  // Get the existing deal
+  const existingDeal = await Deal.findOne({ _id: dealId, company: companyId });
+  if (!existingDeal) {
+    throw new Error('Deal not found');
+  }
+
+  // Check permissions based on role
+  const isOwner = company.isCompanyOwner(userId as any);
+
+  if (!isOwner) {
+    // Check if user has access to at least one of the deal's operating sites
+    const operatingSiteIds = Array.isArray(existingDeal.operatingSite)
+      ? existingDeal.operatingSite
+      : [existingDeal.operatingSite];
+
+    const hasSiteAccess = await OperateSite.findOne({
+      _id: { $in: operatingSiteIds },
+      company: companyId,
+      members: userId,
+      isActive: true,
+    });
+
+    if (!hasSiteAccess) {
+      throw new Error('You do not have access to this deal');
     }
 
-    // Check if the user has access to the company
-    if (!company.hasAccess(userId as any)) {
-        throw new Error('Access denied');
+    // For employees, they can only update status of deals they created
+    const roleName = await company.populate('members.role').then(() => {
+      const member = company.members?.find(m => (m.user as any).equals(userId));
+      return member?.role && typeof member.role === 'object' ? (member.role as any).name : null;
+    });
+
+    if (roleName === 'employee' && existingDeal.createdBy?.toString() !== userId) {
+      throw new Error('You can only update status of deals you created');
     }
+  }
 
-    // Get the existing deal
-    const existingDeal = await Deal.findOne({ _id: dealId, company: companyId });
-    if (!existingDeal) {
-        throw new Error('Deal not found');
-    }
+  const deal = await Deal.findOneAndUpdate(
+    { _id: dealId, company: companyId },
+    { status },
+    { new: true, runValidators: true },
+  )
+    .populate('service', 'name category basePrice duration')
+    .populate('operatingSite', 'name address')
+    .populate('createdBy', 'firstName lastName email');
 
-    // Check permissions based on role
-    const isOwner = company.isCompanyOwner(userId as any);
-
-    if (!isOwner) {
-        // Check if user has access to at least one of the deal's operating sites
-        const operatingSiteIds = Array.isArray(existingDeal.operatingSite)
-            ? existingDeal.operatingSite
-            : [existingDeal.operatingSite];
-
-        const hasSiteAccess = await OperateSite.findOne({
-            _id: { $in: operatingSiteIds },
-            company: companyId,
-            members: userId,
-            isActive: true,
-        });
-
-        if (!hasSiteAccess) {
-            throw new Error('You do not have access to this deal');
-        }
-
-        // For employees, they can only update status of deals they created
-        const roleName = await company.populate('members.role').then(() => {
-            const member = company.members?.find(m => (m.user as any).equals(userId));
-            return member?.role && typeof member.role === 'object' ? (member.role as any).name : null;
-        });
-
-        if (roleName === 'employee' && existingDeal.createdBy?.toString() !== userId) {
-            throw new Error('You can only update status of deals you created');
-        }
-    }
-
-    const deal = await Deal.findOneAndUpdate(
-        { _id: dealId, company: companyId },
-        { status },
-        { new: true, runValidators: true },
-    )
-        .populate('service', 'name category basePrice duration')
-        .populate('operatingSite', 'name address')
-        .populate('createdBy', 'firstName lastName email');
-
-    if (!deal) {
-        throw new Error('Deal not found');
-    }
-    return deal;
+  if (!deal) {
+    throw new Error('Deal not found');
+  }
+  return deal;
 };
 
 export default {
-    getDealsByCompany,
-    getDealById,
-    createDeal,
-    updateDeal,
-    deleteDeal,
-    updateDealStatus,
+  getDealsByCompany,
+  getDealById,
+  createDeal,
+  updateDeal,
+  deleteDeal,
+  updateDealStatus,
 };

@@ -149,7 +149,7 @@ const createServicesIfNotExists = async (company: any) => {
       basePrice: 300.00,
       description: 'Heavy-duty cleaning after construction or renovation',
       company: company.id,
-      status: 'inactive'
+      status: 'inactive',
     },
   ];
 
@@ -462,6 +462,7 @@ const seedCompleteBusinessSetup = async () => {
     };
 
     const customerWithCompanyUserData = {
+      // eslint-disable-next-line no-secrets/no-secrets
       email: 'customerWithCompany@zendulge.com',
       password: 'zxc123!',
       firstName: 'Customer',
@@ -491,7 +492,7 @@ const seedCompleteBusinessSetup = async () => {
     const invitedSouthYarraManager = await createUserIfNotExists(invitedSouthYarraManagerUserData, 'invited employee: Paul Lee');
     const invitedEmployeeNotActive = await createUserIfNotExists(invitedNotActiveEmployeeData, 'invited employee: Not Active');
     const customerWithCompany = await createUserIfNotExists(customerWithCompanyUserData, 'customer: Customer With Company');
-    const customerNoCompany = await createUserIfNotExists(customerNoCompanyUserData, 'customer: Customer No Company');
+    await createUserIfNotExists(customerNoCompanyUserData, 'customer: Customer No Company');
 
     const company = await createCompanyIfNotExists(companyOwner);
     const [MelbourneCBDOperateSite, SouthYarraoperateSite2] = await createSitesIfNoExists(company);

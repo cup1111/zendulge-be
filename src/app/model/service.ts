@@ -7,6 +7,7 @@ export interface IService {
   basePrice: number;
   description?: string;
   company: string; // Company ID reference
+  status: 'active' | 'inactive';
 }
 
 export interface IServiceDocument extends IService, Document { }
@@ -44,6 +45,11 @@ const serviceSchema = new Schema<IServiceDocument>({
     type: String,
     required: true,
     ref: 'companies',
+  },
+  status: {
+    type: String,
+    enum: ['active', 'inactive'],
+    default: 'active',
   },
 }, {
   timestamps: true,

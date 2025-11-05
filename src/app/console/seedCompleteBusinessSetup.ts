@@ -104,6 +104,7 @@ const createServicesIfNotExists = async (company: any) => {
       basePrice: 80.00,
       description: 'Standard cleaning service for residential properties',
       company: company.id,
+      status: 'active',
     },
     {
       name: 'Deep Cleaning Service',
@@ -112,6 +113,7 @@ const createServicesIfNotExists = async (company: any) => {
       basePrice: 200.00,
       description: 'Comprehensive deep cleaning including all areas',
       company: company.id,
+      status: 'active',
     },
     {
       name: 'Office Cleaning',
@@ -120,6 +122,7 @@ const createServicesIfNotExists = async (company: any) => {
       basePrice: 150.00,
       description: 'Professional office cleaning service',
       company: company.id,
+      status: 'active',
     },
     {
       name: 'Carpet Cleaning',
@@ -128,7 +131,7 @@ const createServicesIfNotExists = async (company: any) => {
       basePrice: 120.00,
       description: 'Professional carpet and upholstery cleaning',
       company: company.id,
-      status: 'sold_out',
+      status: 'active',
     },
     {
       name: 'Window Cleaning',
@@ -137,7 +140,7 @@ const createServicesIfNotExists = async (company: any) => {
       basePrice: 60.00,
       description: 'Interior and exterior window cleaning service',
       company: company.id,
-      status: 'expired',
+      status: 'active',
     },
     {
       name: 'Post-Construction Cleanup',
@@ -252,7 +255,7 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
         maxBookings: 40,
         currentBookings: 15,
       },
-      status: 'active',
+      status: 'sold_out',
       tags: ['windows', 'residential', 'commercial'],
       company: company.id,
     },
@@ -272,7 +275,7 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
         maxBookings: 10,
         currentBookings: 2,
       },
-      status: 'active',
+      status: 'expired',
       tags: ['construction', 'renovation', 'heavy-duty'],
       company: company.id,
     },
@@ -292,7 +295,7 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
         maxBookings: 100,
         currentBookings: 25,
       },
-      status: 'active',
+      status: 'inactive',
       tags: ['monthly', 'maintenance', 'subscription'],
       company: company.id,
     },
@@ -488,7 +491,7 @@ const seedCompleteBusinessSetup = async () => {
     const invitedSouthYarraManager = await createUserIfNotExists(invitedSouthYarraManagerUserData, 'invited employee: Paul Lee');
     const invitedEmployeeNotActive = await createUserIfNotExists(invitedNotActiveEmployeeData, 'invited employee: Not Active');
     const customerWithCompany = await createUserIfNotExists(customerWithCompanyUserData, 'customer: Customer With Company');
-    const createUserNoCompany = createUserIfNotExists(customerNoCompanyUserData, 'customer: Customer No Company');
+    const customerNoCompany = await createUserIfNotExists(customerNoCompanyUserData, 'customer: Customer No Company');
 
     const company = await createCompanyIfNotExists(companyOwner);
     const [MelbourneCBDOperateSite, SouthYarraoperateSite2] = await createSitesIfNoExists(company);
@@ -511,6 +514,19 @@ const seedCompleteBusinessSetup = async () => {
     await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedCBDOnlyManager2.id));
     await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedSouthYarraManager.id));
     await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedEmployeeNotActive.id));
+
+    // Add customerWithCompany to company.customers array
+    if (!company.customers) {
+      company.customers = [];
+    }
+    const customerId = new Types.ObjectId(customerWithCompany.id);
+    if (!company.customers.some((id: any) => id.toString() === customerId.toString())) {
+      company.customers.push(customerId);
+      await company.save();
+      console.log('✅ Added customerWithCompany to company.customers');
+    } else {
+      console.log('ℹ️  customerWithCompany already in company.customers');
+    }
 
     process.exit(0);
   } catch (error) {

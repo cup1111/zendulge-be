@@ -64,6 +64,7 @@ const createService = async (companyId: string, userId: string, serviceData: any
     duration: serviceData.duration,
     basePrice: serviceData.basePrice,
     description: serviceData.description,
+    status: serviceData.status || 'active',
     company: companyId,
   };
 
@@ -96,6 +97,7 @@ const updateService = async (companyId: string, serviceId: string, userId: strin
     duration: updateData.duration,
     basePrice: updateData.basePrice,
     description: updateData.description,
+    status: updateData.status,
   };
 
   // Remove undefined values

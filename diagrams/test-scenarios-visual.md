@@ -435,9 +435,11 @@ Alternative visual formats for demonstrating system permissions to business owne
 │ 4. Modify details → Save                    │
 ├─────────────────────────────────────────────┤
 │ EXPECTED:                                   │
-│ ✅ Can edit users from assigned locations   │
+│ ✅ Can edit employees from assigned locations│
 │ ✅ Can modify location assignments          │
 │ ❌ Cannot edit users from other locations   │
+│ ❌ Cannot edit other managers (same level)  │
+│ ❌ Cannot edit owners                       │
 └─────────────────────────────────────────────┘
 ```
 
@@ -456,7 +458,10 @@ Alternative visual formats for demonstrating system permissions to business owne
 ├─────────────────────────────────────────────┤
 │ EXPECTED:                                   │
 │ ✅ Can delete users from assigned locations │
+│ ✅ Can delete employees                     │
 │ ❌ Cannot delete users from other locations │
+│ ❌ Cannot delete other managers (same level)│
+│ ❌ Cannot delete owners                     │
 └─────────────────────────────────────────────┘
 ```
 

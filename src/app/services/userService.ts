@@ -36,9 +36,37 @@ const findByEmail = async (email: string) => {
   return User.findOne({ email: email.toLowerCase() });
 };
 
+const updateProfile = async (userId: string, updateData: any) => {
+  // Only allow updating specific fields for security
+  const allowedFields = {
+    firstName: updateData.firstName,
+    lastName: updateData.lastName,
+    phoneNumber: updateData.phoneNumber,
+    userName: updateData.userName,
+  };
+
+  // Remove undefined values
+  const filteredData = Object.fromEntries(
+    Object.entries(allowedFields).filter(([, value]) => value !== undefined),
+  );
+
+  const user = await User.findByIdAndUpdate(
+    userId,
+    filteredData,
+    { new: true, runValidators: true },
+  );
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  return user;
+};
+
 export default {
   store,
   updateActivationCode,
   activateUser,
   findByEmail,
+  updateProfile,
 };

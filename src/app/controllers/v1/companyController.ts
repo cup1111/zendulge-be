@@ -1,16 +1,68 @@
 import { Request, Response } from 'express';
-import User from '../../model/user';
-import Role from '../../model/role';
-import OperateSite from '../../model/operateSite';
 import { winstonLogger } from '../../../loaders/logger';
-import { BadRequestException } from '../../exceptions/badRequestException';
-import { InternalServerException } from '../../exceptions/serverException';
-import { transformLeanResult } from '../../../lib/mongoUtils';
+import { AuthenticationException } from '../../exceptions';
+import companyService from '../../services/companyService';
+import { userManagementService } from '../../services/userManagementService';
+import customerService from '../../services/customerService';
 
 export interface AuthenticatedRequest extends Request {
   user?: any;
   company?: any;
 }
+
+/**
+ * Get company information
+ */
+export const getCompanyInfo = async (req: AuthenticatedRequest, res: Response) => {
+  const user = req.user;
+  const { companyId } = req.params;
+
+  if (!user) {
+    throw new AuthenticationException('User not found');
+  }
+
+  try {
+    const company = await companyService.getCompanyById(companyId, user._id.toString());
+
+    winstonLogger.info(`Company info retrieved successfully: ${companyId} by user: ${user.email}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Company information retrieved successfully',
+      data: company.toJSON(),
+    });
+  } catch (error) {
+    winstonLogger.error(`Error retrieving company info: ${error}`);
+    throw error;
+  }
+};
+
+/**
+ * Update company information
+ */
+export const updateCompanyInfo = async (req: AuthenticatedRequest, res: Response) => {
+  const user = req.user;
+  const { companyId } = req.params;
+
+  if (!user) {
+    throw new AuthenticationException('User not found');
+  }
+
+  try {
+    const updatedCompany = await companyService.updateCompany(companyId, user._id.toString(), req.body);
+
+    winstonLogger.info(`Company updated successfully: ${companyId} by user: ${user.email}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Company information updated successfully',
+      data: updatedCompany.toJSON(),
+    });
+  } catch (error) {
+    winstonLogger.error(`Error updating company: ${error}`);
+    throw error;
+  }
+};
 
 /**
  * Get all users associated with a company
@@ -20,100 +72,46 @@ export const getCompanyUsers = async (
   req: AuthenticatedRequest,
   res: Response,
 ) => {
+  const company = req.company;
+  const users = await userManagementService.getUsersByCompanyAndSite(company, req.user);
+  return res.status(200).json(users);
+
+};
+
+/**
+ * Get all customers associated with a company
+ * Only accessible by owners and managers
+ */
+export const getCompanyCustomers = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
+  const company = req.company;
+  const user = req.user;
+
+  if (!company) {
+    throw new AuthenticationException('Company not found');
+  }
+
+  if (!user) {
+    throw new AuthenticationException('User not found');
+  }
+
   try {
-    const companyId = req.params.id;
-    const company = req.company; // Provided by validateCompanyAccess middleware
-
-    if (!company) {
-      throw new BadRequestException('Company not found or access denied');
-    }
-
-    // Only add company members (not the owner)
-    let users = [];
-
-    // Get all operate sites for this company (no longer needed for filtering members)
-    // const allOperateSites = await OperateSite.find({ company: companyId })
-    //   .select('name address isActive')
-    //   .lean();
-
-    // Do NOT add company owner
-
-    // Add company members
-    if (company.members && company.members.length > 0) {
-      for (const member of company.members) {
-        const memberUserRaw = await User.findById(member.user)
-          .select(
-            'firstName lastName email phoneNumber jobTitle active createdAt role',
-          )
-          .populate('role', 'name description permissions')
-          .lean();
-
-        if (memberUserRaw) {
-          const memberUser = transformLeanResult(memberUserRaw);
-
-          // If role is still just an ID, fetch it manually
-          if (memberUser.role && typeof memberUser.role === 'string') {
-            const roleData = await Role.findById(memberUser.role)
-              .select('name description permissions')
-              .lean();
-            if (roleData) {
-              (memberUser as any).role = transformLeanResult(roleData);
-            }
-          }
-
-          // Get assigned operate sites for this member
-          let memberOperateSites: any[] = [];
-          const memberOperateSitesRaw = await OperateSite.find({
-            company: companyId,
-            members: member.user,
-          })
-            .select('name address isActive')
-            .lean();
-          memberOperateSites = memberOperateSitesRaw.map((site) =>
-            transformLeanResult(site),
-          );
-
-          users.push({
-            ...memberUser,
-            companyRole: 'member',
-            fullName: `${memberUser.firstName || ''} ${
-              memberUser.lastName || ''
-            }`.trim(),
-            joinedAt: member.joinedAt,
-            operatingSites: memberOperateSites,
-          });
-        }
-      }
-    }
-
-    winstonLogger.info(
-      `Retrieved ${users.length} users for company ${companyId}`,
-      {
-        companyId,
-        companyName: company.name,
-        userCount: users.length,
-        requestedBy: req.user?.email,
-      },
+    const customers = await customerService.getCustomersByCompany(
+      company._id.toString(),
+      user._id.toString(),
     );
 
-    res.status(200).json(users);
-  } catch (error: any) {
-    winstonLogger.error('Error retrieving company users:', {
-      error: error.message,
-      stack: error.stack,
-      companyId: req.params.id,
-      requestedBy: req.user?.email,
+    winstonLogger.info(`Company customers retrieved successfully for company: ${company._id} by user: ${user.email}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Customers retrieved successfully',
+      data: customers,
     });
-
-    if (error instanceof BadRequestException) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
-    }
-
-    throw new InternalServerException(
-      'An error occurred while retrieving company users',
-    );
+  } catch (error) {
+    winstonLogger.error(`Error retrieving company customers: ${error}`);
+    throw error;
   }
 };

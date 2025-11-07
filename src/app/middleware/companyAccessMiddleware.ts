@@ -31,23 +31,22 @@ export const validateCompanyAccess = async (
     }
 
     // Check if user has access to this company via database
-    const hasAccess = await Company.findOne({
+    const company = await Company.findOne({
       _id: companyId,
       $or: [
         { owner: user._id }, // User is owner
         { 'members.user': user._id }, // User is member
       ],
-      isActive: true,
     });
 
-    if (!hasAccess) {
+    if (!company) {
       throw new AuthorizationException(
-        'Access denied: You do not have permission to access this company',
+        'Cannot access this company or company does not exist',
       );
     }
 
     // Attach company to request for use in controllers
-    req.company = hasAccess;
+    req.company = company;
 
     next();
   } catch (error) {

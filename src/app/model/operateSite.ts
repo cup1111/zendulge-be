@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export interface IOperatingHours {
   monday: { open: string; close: string; isClosed: boolean };
@@ -30,6 +30,7 @@ export interface IOperateSiteDocument extends IOperateSite, Document {
   _id: mongoose.Types.ObjectId;
   isOpenAt(day: string, time: string): boolean;
   getCurrentStatus(): string;
+  addMember(userId: Types.ObjectId): Promise<IOperateSiteDocument>;
 }
 
 const openingHoursSchema = new Schema(
@@ -209,6 +210,26 @@ operateSiteSchema.statics.findNearby = function (
       },
     },
   ]);
+};
+
+operateSiteSchema.methods.addMember = function (
+  userId: Types.ObjectId,
+) {
+  // Check if already a member
+  const isAlreadyMember = this.members.some((member:string) =>
+    member.toString() === userId.toString(),
+  );
+
+  if (!isAlreadyMember) {
+    // Check member limit
+    if (this.members.length >= 100) {
+      throw new Error('Company has reached maximum member limit (100)');
+    }
+
+    this.members.push(userId);
+    return this.save();
+  }
+  return Promise.resolve(this);
 };
 
 // Instance method to check if operate site is open at a specific time

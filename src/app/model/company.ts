@@ -1,8 +1,10 @@
 import mongoose, { Schema, Types, Document } from 'mongoose';
+import { IUser } from './user';
+import { IRole } from './role';
 
 export interface ICompanyMember {
-  user: Types.ObjectId;
-  role: Types.ObjectId;
+  user: Types.ObjectId | Document & IUser;
+  role: Types.ObjectId | Document & IRole;
   joinedAt?: Date;
 }
 
@@ -26,13 +28,29 @@ export interface ICompany {
   logo?: string;
   owner: Types.ObjectId; // Reference to User who created the company
   members?: ICompanyMember[]; // Other users who can access this company with their roles
+  customers?: Types.ObjectId[]; // Customers who have interacted with the company
   isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export type ICompanyDocument = ICompany & Document;
-
+export type ICompanyDocument = ICompany & Document & {
+  _id: mongoose.Types.ObjectId;
+  addMember: (userId: Types.ObjectId, roleId: Types.ObjectId) => Promise<ICompanyDocument>;
+  removeMember: (userId: Types.ObjectId) => Promise<ICompanyDocument>;
+  hasAccess: (userId: Types.ObjectId) => boolean;
+  transferOwnership: (
+    newOwnerId: Types.ObjectId,
+    oldOwnerRoleId: Types.ObjectId,
+  ) => Promise<ICompanyDocument>;
+  updateMemberRole: (
+    userId: Types.ObjectId,
+    newRoleId: Types.ObjectId,
+  ) => Promise<ICompanyDocument>;
+  getMemberRole: (userId: Types.ObjectId) => Types.ObjectId | null;
+  getMembersByRole: (roleId: Types.ObjectId) => ICompanyMember[];
+  isCompanyOwner: (userId: Types.ObjectId) => boolean;
+};
 export interface ICompanyModel extends mongoose.Model<ICompanyDocument> {
   findByOwner(
     ownerId: Types.ObjectId,
@@ -52,6 +70,20 @@ export interface ICompanyModel extends mongoose.Model<ICompanyDocument> {
     abn: string,
     excludeId?: Types.ObjectId,
   ): Promise<ICompanyDocument | null>;
+  addMember: (userId: Types.ObjectId, roleId: Types.ObjectId) => Promise<ICompanyDocument>;
+  removeMember: (userId: Types.ObjectId) => Promise<ICompanyDocument>;
+  hasAccess: (userId: Types.ObjectId) => boolean;
+  transferOwnership: (
+    newOwnerId: Types.ObjectId,
+    oldOwnerRoleId: Types.ObjectId,
+  ) => Promise<ICompanyDocument>;
+  updateMemberRole: (
+    userId: Types.ObjectId,
+    newRoleId: Types.ObjectId,
+  ) => Promise<ICompanyDocument>;
+  getMemberRole: (userId: Types.ObjectId) => Types.ObjectId | null;
+  getMembersByRole: (roleId: Types.ObjectId) => ICompanyMember[];
+  isCompanyOwner: (userId: Types.ObjectId) => boolean;
 }
 
 const companySchema = new Schema<ICompanyDocument>(
@@ -249,6 +281,12 @@ const companySchema = new Schema<ICompanyDocument>(
         },
       },
     ],
+    customers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'users',
+      },
+    ],
     isActive: {
       type: Boolean,
       default: true,
@@ -266,13 +304,6 @@ companySchema.pre('save', function (next) {
   // Format ABN - remove spaces and convert to uppercase
   if (this.abn) {
     this.abn = this.abn.replace(/\s/g, '').toUpperCase();
-  }
-
-  // Ensure owner is not in members array
-  if (this.members && this.owner) {
-    this.members = this.members.filter(
-      (member: ICompanyMember) => !member.user.equals(this.owner),
-    );
   }
 
   // Remove duplicate members (same user)
@@ -388,14 +419,10 @@ companySchema.methods.addMember = function (
   userId: Types.ObjectId,
   roleId: Types.ObjectId,
 ) {
-  // Don't add owner as member
-  if (this.owner.equals(userId)) {
-    throw new Error('Owner cannot be added as a member');
-  }
 
   // Check if already a member
   const isAlreadyMember = this.members.some((member: ICompanyMember) =>
-    member.user.equals(userId),
+    (member.user as Types.ObjectId).equals(userId as any),
   );
 
   if (!isAlreadyMember) {
@@ -418,7 +445,7 @@ companySchema.methods.addMember = function (
 // Instance method to remove member
 companySchema.methods.removeMember = function (userId: Types.ObjectId) {
   this.members = this.members.filter(
-    (member: ICompanyMember) => !member.user.equals(userId),
+    (member: ICompanyMember) => !(member.user as Types.ObjectId).equals(userId as any),
   );
   return this.save();
 };
@@ -426,8 +453,8 @@ companySchema.methods.removeMember = function (userId: Types.ObjectId) {
 // Instance method to check if user has access (owner or member)
 companySchema.methods.hasAccess = function (userId: Types.ObjectId) {
   return (
-    this.owner.equals(userId) ||
-    this.members.some((member: ICompanyMember) => member.user.equals(userId))
+    (this.owner as Types.ObjectId).equals(userId as any) ||
+    this.members.some((member: ICompanyMember) => (member.user as Types.ObjectId).equals(userId as any))
   );
 };
 
@@ -440,13 +467,13 @@ companySchema.methods.transferOwnership = function (
 
   // Remove new owner from members if they are a member
   this.members = this.members.filter(
-    (member: ICompanyMember) => !member.user.equals(newOwnerId),
+    (member: ICompanyMember) => !(member.user as Types.ObjectId).equals(newOwnerId as any),
   );
 
   // Add old owner as member with specified role
   if (
     !this.members.some((member: ICompanyMember) =>
-      member.user.equals(oldOwnerId),
+      (member.user as Types.ObjectId).equals(oldOwnerId as any),
     )
   ) {
     this.members.push({
@@ -466,7 +493,7 @@ companySchema.methods.updateMemberRole = function (
   newRoleId: Types.ObjectId,
 ) {
   const memberToUpdate = this.members.find((member: ICompanyMember) =>
-    member.user.equals(userId),
+    (member.user as Types.ObjectId).equals(userId as any),
   );
 
   if (!memberToUpdate) {
@@ -480,7 +507,7 @@ companySchema.methods.updateMemberRole = function (
 // Instance method to get member role
 companySchema.methods.getMemberRole = function (userId: Types.ObjectId) {
   const foundMember = this.members.find((member: ICompanyMember) =>
-    member.user.equals(userId),
+    (member.user as Types.ObjectId).equals(userId as any),
   );
 
   return foundMember ? foundMember.role : null;
@@ -489,8 +516,12 @@ companySchema.methods.getMemberRole = function (userId: Types.ObjectId) {
 // Instance method to get members by role
 companySchema.methods.getMembersByRole = function (roleId: Types.ObjectId) {
   return this.members.filter((member: ICompanyMember) =>
-    member.role.equals(roleId),
+    (member.role as Types.ObjectId).equals(roleId as any),
   );
+};
+
+companySchema.methods.isCompanyOwner = function (userId: Types.ObjectId) {
+  return (this.owner as Types.ObjectId).equals(userId as any);
 };
 
 const Company = mongoose.model<ICompanyDocument, ICompanyModel>(

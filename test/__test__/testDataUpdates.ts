@@ -25,7 +25,7 @@ const testDataUpdates = {
     // Instead of: expect(res.body.user.name).toBe(testData.name);
     // Use: expect(res.body.user.firstName).toBe(testData.firstName);
     //      expect(res.body.user.lastName).toBe(testData.lastName);
-  }
+  },
 };
 
 export default testDataUpdates;

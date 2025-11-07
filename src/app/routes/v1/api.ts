@@ -10,7 +10,28 @@ import {
   getProfile,
   refreshToken,
   getRole,
+  updateProfile,
+  deleteAccount,
 } from '../../controllers/v1/authController';
+import {
+  getCompanyInfo,
+  updateCompanyInfo,
+} from '../../controllers/v1/companyController';
+import {
+  getServices,
+  getServiceById,
+  createService,
+  updateService,
+  deleteService,
+} from '../../controllers/v1/serviceController';
+import {
+  getDeals,
+  getDealById,
+  createDeal,
+  updateDeal,
+  deleteDeal,
+  updateDealStatus,
+} from '../../controllers/v1/dealController';
 import {
   createOperateSite,
   getOperateSites,
@@ -21,7 +42,7 @@ import {
   findNearbyOperateSites,
   getOperateSiteStatus,
 } from '../../controllers/v1/operateSiteController';
-import { getCompanyUsers } from '../../controllers/v1/companyController';
+import { getCompanyUsers, getCompanyCustomers } from '../../controllers/v1/companyController';
 import {
   getUserById,
   createUserWithRole,
@@ -34,7 +55,20 @@ import { customerRegistrationValidation } from '../../validation/customerRegistr
 import {
   loginValidation,
   refreshTokenValidation,
+  updateProfileValidation,
 } from '../../validation/authValidation';
+import {
+  updateCompanyValidation,
+} from '../../validation/companyValidation';
+import {
+  createServiceValidation,
+  updateServiceValidation,
+} from '../../validation/serviceValidation';
+import {
+  createDealValidation,
+  updateDealValidation,
+  updateDealStatusValidation,
+} from '../../validation/dealValidation';
 import {
   createUserWithRoleValidation,
   companyAndUserIdValidation,
@@ -73,6 +107,20 @@ router.post('/logout', authenticationTokenMiddleware, logout);
 
 router.get('/me', authenticationTokenMiddleware, getProfile);
 
+router.patch(
+  '/me',
+  authenticationTokenMiddleware,
+  updateProfileValidation,
+  handleValidationErrors,
+  updateProfile,
+);
+
+router.delete(
+  '/me',
+  authenticationTokenMiddleware,
+  deleteAccount,
+);
+
 router.get(
   '/company/:companyId/me/role',
   authenticationTokenMiddleware,
@@ -87,6 +135,99 @@ router.post(
 );
 
 router.get('/verify/:token', activateAccount);
+
+// Company routes
+router.get(
+  '/company/:companyId',
+  authenticationTokenMiddleware,
+  getCompanyInfo,
+);
+
+router.patch(
+  '/company/:companyId',
+  authenticationTokenMiddleware,
+  updateCompanyValidation,
+  handleValidationErrors,
+  updateCompanyInfo,
+);
+
+// Service routes (owner only)
+router.get(
+  '/company/:companyId/services',
+  authenticationTokenMiddleware,
+  getServices,
+);
+
+router.get(
+  '/company/:companyId/services/:serviceId',
+  authenticationTokenMiddleware,
+  getServiceById,
+);
+
+router.post(
+  '/company/:companyId/services',
+  authenticationTokenMiddleware,
+  createServiceValidation,
+  handleValidationErrors,
+  createService,
+);
+
+router.patch(
+  '/company/:companyId/services/:serviceId',
+  authenticationTokenMiddleware,
+  updateServiceValidation,
+  handleValidationErrors,
+  updateService,
+);
+
+router.delete(
+  '/company/:companyId/services/:serviceId',
+  authenticationTokenMiddleware,
+  deleteService,
+);
+
+// Deal routes (owner only)
+router.get(
+  '/company/:companyId/deals',
+  authenticationTokenMiddleware,
+  getDeals,
+);
+
+router.get(
+  '/company/:companyId/deals/:dealId',
+  authenticationTokenMiddleware,
+  getDealById,
+);
+
+router.post(
+  '/company/:companyId/deals',
+  authenticationTokenMiddleware,
+  createDealValidation,
+  handleValidationErrors,
+  createDeal,
+);
+
+router.patch(
+  '/company/:companyId/deals/:dealId',
+  authenticationTokenMiddleware,
+  updateDealValidation,
+  handleValidationErrors,
+  updateDeal,
+);
+
+router.delete(
+  '/company/:companyId/deals/:dealId',
+  authenticationTokenMiddleware,
+  deleteDeal,
+);
+
+router.patch(
+  '/company/:companyId/deals/:dealId/status',
+  authenticationTokenMiddleware,
+  updateDealStatusValidation,
+  handleValidationErrors,
+  updateDealStatus,
+);
 
 // Operate Site routes (protected)
 router.post(
@@ -149,6 +290,14 @@ router.get(
   authenticationTokenMiddleware,
   validateCompanyAccess, // Validates company access and provides req.company
   getCompanyUsers,
+);
+
+// Company customers route - get all customers associated with a company
+router.get(
+  '/company/:id/customers',
+  authenticationTokenMiddleware,
+  validateCompanyAccess, // Validates company access and provides req.company
+  getCompanyCustomers,
 );
 
 // Example routes using the new security approach

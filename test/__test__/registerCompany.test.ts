@@ -2,14 +2,16 @@ import request from 'supertest';
 import app from '../setup/app';
 import UserBuilder from './builders/userBuilder';
 import CompanyBuilder from './builders/companyBuilder';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import db from '../setup/db';
 
 // Import the mocked module to access mock functions
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const mockEmailService = require('../../src/app/services/emailService');
 
 describe('Register Company', () => {
-   
-  
+
+
   it('should register a company if valid data provided', async () => {
     const testData = {
       email: 'companytest@example.com',

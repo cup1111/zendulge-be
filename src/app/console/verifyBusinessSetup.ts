@@ -62,14 +62,10 @@ const verifyBusinessSetupData = async () => {
 
     // Get Invited User
     const invitedUser = await User.findOne({ email: 'manager@zendulge.com' });
-    const invitedUserRole = invitedUser?.role
-      ? await Role.findById(invitedUser.role)
-      : null;
 
     console.log('👥 Invited User:');
     console.log(`   Email: ${invitedUser?.email}`);
     console.log(`   Name: ${invitedUser?.firstName} ${invitedUser?.lastName}`);
-    console.log(`   Role: ${invitedUserRole?.name}`);
     console.log(`   Job Title: ${invitedUser?.jobTitle}`);
     console.log(`   Active: ${invitedUser?.active}`);
 

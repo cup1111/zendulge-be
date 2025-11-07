@@ -1,7 +1,6 @@
 import mongoose, {
   CallbackWithoutResultAndOptionalError,
   Schema,
-  Types,
 } from 'mongoose';
 import * as jwt from 'jsonwebtoken';
 import config from '../config/app';
@@ -9,20 +8,14 @@ import * as bcrypt from 'bcrypt';
 import { winstonLogger } from '../../loaders/logger';
 import { transformLeanResult } from '../../lib/mongoUtils';
 
-export interface IProjectRole {
-  project: Types.ObjectId;
-  role: Types.ObjectId;
-}
 
 export interface IUser {
   email: string;
   password?: string;
   isSuperUser?: number;
-  role?: Types.ObjectId; // Reference to Role model
   refreshToken?: string;
   activeCode?: string;
   active: boolean;
-  projectsRoles?: IProjectRole[];
   firstName?: string;
   lastName?: string;
   phoneNumber?: string;
@@ -100,11 +93,6 @@ const userSchema = new Schema<IUserDocument>(
       type: String,
       trim: true,
     },
-    role: {
-      type: Schema.Types.ObjectId,
-      ref: 'roles',
-      index: true,
-    },
     activeCode: {
       type: String,
       trim: true,
@@ -181,9 +169,6 @@ userSchema.methods.toJSON = function () {
 
 userSchema.methods.generateAuthToken = async function () {
   const user = this;
-
-  // Populate role to include basic role info in JWT
-  await user.populate('role');
 
   // Get companies this user has access to (owner or member)
   const Company = mongoose.model('companies');

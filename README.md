@@ -248,3 +248,9 @@ Month 2 (Dec 2025) 3. Browsing & Deal Cards + 4. Business Dashboard Homepage cat
 Month 3 (Jan 2026) 5. Basic Booking Flow + 6. Notifications & Owner Panel Booking flow with simulated payments. Notifications & owner control. AUD $1,200
 
 Month 4 (Feb 2026, by 5 Feb) 7. Stripe Test Payment, 8. MVP Finalisation, 9. Final Handover Stripe payments (test + live), order lifecycle, refunds/cancellations, advanced search, error logging, handover package. AUD $1,400 + Bonus Voucher $250
+
+## invite user twice need to show error message
+
+## invite user forgot to assign sites, only buiness owner can solve this issue
+
+## Services ???

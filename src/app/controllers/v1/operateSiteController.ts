@@ -11,8 +11,14 @@ interface AuthenticatedRequest extends Request {
   token?: string;
 }
 
+interface CompanyRequest extends Request {
+  company?: import('../../model/company').ICompanyDocument;
+}
+
+interface AuthCompanyRequest extends AuthenticatedRequest, CompanyRequest {}
+
 export const createOperateSite = async (
-  req: AuthenticatedRequest,
+  req: AuthCompanyRequest,
   res: Response,
 ): Promise<void> => {
   const {
@@ -76,20 +82,24 @@ export const createOperateSite = async (
 };
 
 export const getOperateSites = async (
-  req: AuthenticatedRequest,
+  req: AuthCompanyRequest,
   res: Response,
 ): Promise<void> => {
   const { id: companyId } = req.params;
   const { isActive, page = 1, limit = 10 } = req.query;
-
+  const user = req.user;
+  
   if (!companyId) {
     throw new ValidationException('Company ID is required');
   }
 
   const filter: Record<string, unknown> = { company: companyId };
+  if (user && !req.company?.isCompanyOwner(user._id)) {
+    filter.members = user.id;
+  }
   if (isActive !== undefined) {
     filter.isActive = isActive === 'true';
-  }
+  } 
 
   const skip = (Number(page) - 1) * Number(limit);
 

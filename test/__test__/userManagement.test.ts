@@ -8,10 +8,14 @@ import Role from '../../src/app/model/role';
 
 let ownerUser: any;
 let memberUser: any;
+let managerUser: any;
+let otherManagerUser: any;
 let company: any;
 let ownerRole: any;
+let managerRole: any;
 let employeeRole: any;
 let ownerToken: string;
+let managerToken: string;
 let outsiderToken: string;
 let operateSite1: any;
 let operateSite2: any;
@@ -27,6 +31,7 @@ describe('User Management Endpoints', () => {
   beforeEach(async () => {
     // Fetch already-seeded roles
     ownerRole = await Role.findOne({ name: RoleName.OWNER });
+    managerRole = await Role.findOne({ name: RoleName.MANAGER });
     employeeRole = await Role.findOne({ name: RoleName.EMPLOYEE });
     // Create users
     ownerUser = await new UserBuilder()
@@ -37,6 +42,16 @@ describe('User Management Endpoints', () => {
     memberUser = await new UserBuilder()
       .withEmail('member@example.com')
       .withPassword('MemberPass123')
+      .withActive(true)
+      .save();
+    managerUser = await new UserBuilder()
+      .withEmail('manager@example.com')
+      .withPassword('ManagerPass123')
+      .withActive(true)
+      .save();
+    otherManagerUser = await new UserBuilder()
+      .withEmail('manager2@example.com')
+      .withPassword('Manager2Pass123')
       .withActive(true)
       .save();
     await new UserBuilder()
@@ -50,12 +65,15 @@ describe('User Management Endpoints', () => {
       .withContact(ownerUser._id)
       .withMember(ownerUser._id, ownerRole._id)
       .withMember(memberUser._id, employeeRole._id)
+      .withMember(managerUser._id, managerRole._id)
+      .withMember(otherManagerUser._id, managerRole._id)
       .save();
     // Create operate sites for this company
     operateSite1 = await new OperateSiteBuilder().withCompany(company._id).withName('Site 1').save();
     operateSite2 = await new OperateSiteBuilder().withCompany(company._id).withName('Site 2').save();
     // Login users
     ownerToken = await loginAndGetToken('owner@example.com', 'OwnerPass123');
+    managerToken = await loginAndGetToken('manager@example.com', 'ManagerPass123');
     outsiderToken = await loginAndGetToken('outsider@example.com', 'OutsiderPass123');
   });
 
@@ -148,6 +166,46 @@ describe('User Management Endpoints', () => {
         });
       expect(response.status).not.toBe(400);
     });
+
+    it('should return 403 when manager attempts to update another manager', async () => {
+      const response = await request(app.getApp())
+        .patch(`/api/v1/company/${company._id}/users/${otherManagerUser._id}`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .send({ firstName: 'Blocked' })
+        .expect(403);
+
+      expect(response.body.message).toContain('Managers cannot manage other managers');
+    });
+
+    it('should return 403 when manager attempts to update the owner', async () => {
+      const response = await request(app.getApp())
+        .patch(`/api/v1/company/${company._id}/users/${ownerUser._id}`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .send({ firstName: 'BlockedOwner' })
+        .expect(403);
+
+      expect(response.body.message).toContain('Managers cannot manage company owners');
+    });
+
+    it('should return 403 when manager attempts to assign manager role', async () => {
+      const response = await request(app.getApp())
+        .patch(`/api/v1/company/${company._id}/users/${memberUser._id}`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .send({ role: managerRole._id })
+        .expect(403);
+
+      expect(response.body.message).toContain('Managers cannot assign owner or manager roles');
+    });
+
+    it('should allow manager to update employees in their company', async () => {
+      const response = await request(app.getApp())
+        .patch(`/api/v1/company/${company._id}/users/${memberUser._id}`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .send({ firstName: 'ManagerUpdated' })
+        .expect(200);
+
+      expect(response.body.firstName).toBe('ManagerUpdated');
+    });
   });
 
   describe('DELETE /api/v1/company/:id/users/:userId', () => {
@@ -162,6 +220,34 @@ describe('User Management Endpoints', () => {
         .delete(`/api/v1/company/${company._id}/users/${memberUser._id}`)
         .set('Authorization', `Bearer ${outsiderToken}`)
         .expect(403);
+    });
+
+    it('should return 403 when manager attempts to delete another manager', async () => {
+      const response = await request(app.getApp())
+        .delete(`/api/v1/company/${company._id}/users/${otherManagerUser._id}`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(403);
+
+      expect(response.body.message).toContain('Managers cannot delete other managers');
+    });
+
+    it('should return 403 when manager attempts to delete the owner', async () => {
+      const response = await request(app.getApp())
+        .delete(`/api/v1/company/${company._id}/users/${ownerUser._id}`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(403);
+
+      expect(response.body.message).toContain('Managers cannot delete company owners');
+    });
+
+    it('should allow manager to delete employees in their company', async () => {
+      const response = await request(app.getApp())
+        .delete(`/api/v1/company/${company._id}/users/${memberUser._id}`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toContain('User deleted successfully');
     });
   });
 

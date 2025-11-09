@@ -175,7 +175,7 @@ export const businessRegister = async (
 export const customerRegister = async (
   registrationData: ICustomerRegistration,
 ) => {
-  const { email, password } = registrationData;
+  const { email, password, firstName, lastName, jobTitle } = registrationData;
 
   // Check if user already exists
   const existingUser = await User.findByEmail(email);
@@ -206,6 +206,9 @@ export const customerRegister = async (
   const userData = {
     email,
     password,
+    firstName,
+    lastName,
+    jobTitle,
     active: false,
   };
 

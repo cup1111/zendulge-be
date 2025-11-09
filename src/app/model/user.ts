@@ -1,12 +1,14 @@
 import mongoose, {
   CallbackWithoutResultAndOptionalError,
   Schema,
+  Types,
 } from 'mongoose';
 import * as jwt from 'jsonwebtoken';
 import config from '../config/app';
 import * as bcrypt from 'bcrypt';
 import { winstonLogger } from '../../loaders/logger';
 import { transformLeanResult } from '../../lib/mongoUtils';
+import type { IRoleDocument } from './role';
 
 
 export interface IUser {
@@ -25,6 +27,7 @@ export interface IUser {
   avatarIcon?: string;
   abbreviation?: string;
   userName?: string;
+  role?: Types.ObjectId | IRoleDocument | null;
 }
 
 export interface IUserDocument extends IUser, mongoose.Document {
@@ -96,6 +99,11 @@ const userSchema = new Schema<IUserDocument>(
     activeCode: {
       type: String,
       trim: true,
+    },
+    role: {
+      type: Schema.Types.ObjectId,
+      ref: 'roles',
+      default: null,
     },
   },
   { timestamps: true },

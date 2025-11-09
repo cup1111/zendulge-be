@@ -27,9 +27,26 @@ async function connect(): Promise<{ dbConnection: Connection }> {
 
 async function createDefaultData(): Promise<void> {
   // Seed roles
-  await new RoleBuilder().withName(RoleName.OWNER).withDescription('Business owner who can manage their company').withActive(true).save();
-  await new RoleBuilder().withName(RoleName.EMPLOYEE).withDescription('Employee with limited access to company resources').withActive(true).save();
-  await new RoleBuilder().withName(RoleName.CUSTOMER).withDescription('Customer with basic access').withActive(true).save();
+  await new RoleBuilder()
+    .withName(RoleName.OWNER)
+    .withDescription('Business owner who can manage their company')
+    .withActive(true)
+    .save();
+  await new RoleBuilder()
+    .withName(RoleName.MANAGER)
+    .withDescription('Manager with extended team access')
+    .withActive(true)
+    .save();
+  await new RoleBuilder()
+    .withName(RoleName.EMPLOYEE)
+    .withDescription('Employee with limited access to company resources')
+    .withActive(true)
+    .save();
+  await new RoleBuilder()
+    .withName(RoleName.CUSTOMER)
+    .withDescription('Customer with basic access')
+    .withActive(true)
+    .save();
 
   const user = await new UserBuilder().save();
   defaultUser = user;
@@ -37,7 +54,7 @@ async function createDefaultData(): Promise<void> {
   const company = await new CompanyBuilder().withOwner(user.id).withContact(user.id).save();
   defaultCompany = company;
 
-  
+
 }
 
 async function clearDatabase(): Promise<void> {

@@ -163,6 +163,6 @@ export const updateDealStatusValidation = [
   body('status')
     .notEmpty()
     .withMessage('Status is required')
-    .isIn(['active', 'inactive', 'expired', 'sold_out'])
-    .withMessage('Status must be one of: active, inactive, expired, sold_out'),
+    .isIn(['active', 'inactive'])
+    .withMessage('Status must be one of: active, inactive'),
 ];

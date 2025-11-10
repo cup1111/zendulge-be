@@ -95,7 +95,8 @@ export const updateUser = async (req: UserManagementRequest, res: Response) => {
         statusCode = 400;
       } else if (
         error.message.includes('not authorized') ||
-        error.message.includes('Managers cannot')
+        error.message.includes('Managers cannot') ||
+        error.message.includes('Only company owners')
       ) {
         statusCode = 403;
       } else if (error.message.includes('not found')) {

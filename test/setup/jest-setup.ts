@@ -2,24 +2,11 @@ import sinon from 'sinon';
 import * as dotenv from 'dotenv';
 import db from './db';
 import app from './app';
-import * as authMiddleware from '../../src/app/middleware/authMiddleware';
-import * as permissionMiddleware from '../../src/app/middleware/permissionMiddleware';
-import { config } from '../../src/app/config/app';
-import User from '../../src/app/model/user';
-import { AuthenticationException } from '../../src/app/exceptions';
-import * as jwt from 'jsonwebtoken';
 
 beforeAll(async () => {
   dotenv.config();
   await db.connect();
   await db.createDefaultData();
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  sinon.stub(permissionMiddleware, 'permission').callsFake(function (slug: string) {
-    return (req: any, res: any, next: any) => {
-      return next();
-    };
-  });
   await app.loadApp();
 });
 

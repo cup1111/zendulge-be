@@ -11,7 +11,7 @@ import { transformLeanResult } from '../../lib/mongoUtils';
 import type { IRoleDocument } from './role';
 
 
-export interface IUser {
+export interface IUser extends mongoose.Document {
   email: string;
   password?: string;
   isSuperUser?: number;
@@ -30,7 +30,7 @@ export interface IUser {
   role?: Types.ObjectId | IRoleDocument | null;
 }
 
-export interface IUserDocument extends IUser, mongoose.Document {
+export interface IUserDocument extends IUser {
   generateAuthToken(): Promise<{ token: string; refreshToken: string }>;
   activeAccount(): void;
   toJSON(): object;

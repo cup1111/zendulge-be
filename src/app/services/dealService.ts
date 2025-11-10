@@ -336,6 +336,10 @@ const updateDealStatus = async (companyId: string, dealId: string, userId: strin
     throw new Error('Company not found');
   }
 
+  if (!['active', 'inactive'].includes(status)) {
+    throw new Error('Status can only be set to active or inactive');
+  }
+
   // Check if the user has access to the company
   if (!company.hasAccess(userId as any)) {
     throw new Error('Access denied');

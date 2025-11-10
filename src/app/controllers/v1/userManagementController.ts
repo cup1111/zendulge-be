@@ -96,11 +96,10 @@ export const updateUser = async (req: UserManagementRequest, res: Response) => {
       } else if (
         error.message.includes('not authorized') ||
         error.message.includes('Managers cannot') ||
-        error.message.includes('Only company owners')
+        error.message.includes('Only company owners') ||
+        error.message.includes('not found')
       ) {
         statusCode = 403;
-      } else if (error.message.includes('not found')) {
-        statusCode = 404;
       }
     }
 
@@ -152,11 +151,12 @@ export const deleteUser = async (req: UserManagementRequest, res: Response) => {
       } else if (
         error.message.includes('not authorized') ||
         error.message.includes('Managers cannot') ||
-        error.message.includes('Only company owners')
+        error.message.includes('Only company owners') ||
+        error.message.includes('not found')
       ) {
         statusCode = 403;
-      } else if (error.message.includes('not found')) {
-        statusCode = 404;
+      } else if () {
+        statusCode = 403;
       }
     }
 

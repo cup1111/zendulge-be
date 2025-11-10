@@ -155,8 +155,6 @@ export const deleteUser = async (req: UserManagementRequest, res: Response) => {
         error.message.includes('not found')
       ) {
         statusCode = 403;
-      } else if () {
-        statusCode = 403;
       }
     }
 

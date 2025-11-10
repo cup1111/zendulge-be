@@ -51,6 +51,41 @@ export const createDealValidation = [
     .withMessage('End date is required')
     .isISO8601()
     .withMessage('End date must be a valid date'),
+  body('availability')
+    .custom(value => {
+      if (!value) {
+        return true;
+      }
+
+      const startDate = new Date(value.startDate);
+      const endDate = new Date(value.endDate);
+
+      if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+        return true;
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const normalizedStart = new Date(startDate);
+      normalizedStart.setHours(0, 0, 0, 0);
+      const normalizedEnd = new Date(endDate);
+      normalizedEnd.setHours(0, 0, 0, 0);
+
+      if (normalizedEnd.getTime() <= normalizedStart.getTime()) {
+        throw new Error('End date must be after start date');
+      }
+
+      if (normalizedStart.getTime() < today.getTime()) {
+        throw new Error('Start date cannot be before today');
+      }
+
+      if (normalizedEnd.getTime() < today.getTime()) {
+        throw new Error('End date cannot be before today');
+      }
+
+      return true;
+    }),
   body('availability.maxBookings')
     .optional()
     .isInt({ min: 1 })
@@ -127,6 +162,60 @@ export const updateDealValidation = [
     .optional()
     .isISO8601()
     .withMessage('End date must be a valid date'),
+  body('availability')
+    .optional()
+    .custom(value => {
+      if (!value) {
+        return true;
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (value.startDate !== undefined) {
+        const startDate = new Date(value.startDate);
+        if (!Number.isNaN(startDate.getTime())) {
+          startDate.setHours(0, 0, 0, 0);
+
+          if (startDate.getTime() < today.getTime()) {
+            throw new Error('Start date cannot be before today');
+          }
+
+          if (value.endDate !== undefined) {
+            const endDate = new Date(value.endDate);
+            if (!Number.isNaN(endDate.getTime())) {
+              endDate.setHours(0, 0, 0, 0);
+              if (endDate.getTime() <= startDate.getTime()) {
+                throw new Error('End date must be after start date');
+              }
+            }
+          }
+        }
+      }
+
+      if (value.endDate !== undefined) {
+        const endDate = new Date(value.endDate);
+        if (!Number.isNaN(endDate.getTime())) {
+          endDate.setHours(0, 0, 0, 0);
+
+          if (endDate.getTime() < today.getTime()) {
+            throw new Error('End date cannot be before today');
+          }
+
+          if (value.startDate !== undefined) {
+            const startDate = new Date(value.startDate);
+            if (!Number.isNaN(startDate.getTime())) {
+              startDate.setHours(0, 0, 0, 0);
+              if (endDate.getTime() <= startDate.getTime()) {
+                throw new Error('End date must be after start date');
+              }
+            }
+          }
+        }
+      }
+
+      return true;
+    }),
   body('availability.maxBookings')
     .optional()
     .isInt({ min: 1 })

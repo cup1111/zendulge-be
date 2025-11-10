@@ -3,6 +3,36 @@ import Company from '../model/company';
 import Service from '../model/service';
 import OperateSite from '../model/operateSite';
 
+const normalizeDate = (value: any, fieldName: string): Date => {
+  const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`${fieldName} must be a valid date`);
+  }
+
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const startOfToday = (): Date => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+};
+
+const ensureFutureDate = (date: Date, fieldName: string) => {
+  const today = startOfToday();
+  if (date.getTime() < today.getTime()) {
+    throw new Error(`${fieldName} cannot be before today`);
+  }
+};
+
+const ensureEndAfterStart = (start: Date, end: Date) => {
+  if (end.getTime() <= start.getTime()) {
+    throw new Error('End date must be after start date');
+  }
+};
+
 const getDealsByCompany = async (companyId: string, userId: string): Promise<IDealDocument[]> => {
   const company = await Company.findById(companyId);
   if (!company || !company.hasAccess(userId as any)) {
@@ -136,6 +166,20 @@ const createDeal = async (companyId: string, userId: string, dealData: any): Pro
     };
   }
 
+  const availabilityStartDate = normalizeDate(dealData.availability.startDate ?? new Date(), 'Start date');
+  const availabilityEndDate = normalizeDate(dealData.availability.endDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'End date');
+
+  ensureFutureDate(availabilityStartDate, 'Start date');
+  ensureFutureDate(availabilityEndDate, 'End date');
+  ensureEndAfterStart(availabilityStartDate, availabilityEndDate);
+
+  dealData.availability = {
+    ...dealData.availability,
+    startDate: availabilityStartDate,
+    endDate: availabilityEndDate,
+    currentBookings: dealData.availability.currentBookings ?? 0,
+  };
+
   const newDeal = new Deal({
     ...dealData,
     company: companyId,
@@ -250,24 +294,37 @@ const updateDeal = async (companyId: string, dealId: string, userId: string, upd
   }
 
   // Determine effective status and end date for validation
-  const nextStatus: string = updateData.status ?? existingDeal.status;
-  let nextEndDate: Date | null = existingDeal.availability?.endDate
-    ? new Date(existingDeal.availability.endDate)
-    : null;
-  if (updateData.availability?.endDate) {
-    nextEndDate = new Date(updateData.availability.endDate);
-    updateData.availability.endDate = nextEndDate;
-  }
+  const availabilityUpdates = updateData.availability;
+  const updatingStartDate = availabilityUpdates?.startDate !== undefined;
+  const updatingEndDate = availabilityUpdates?.endDate !== undefined;
 
-  if (nextStatus === 'expired') {
-    if (!nextEndDate) {
-      throw new Error('Expired deals must include an end date');
+  if (updatingStartDate || updatingEndDate) {
+    if (!existingDeal.availability) {
+      throw new Error('Existing deal does not have availability information');
     }
-    const todayEnd = new Date();
-    todayEnd.setHours(0, 0, 0, 0);
-    if (nextEndDate.getTime() <= todayEnd.getTime()) {
-      throw new Error('Expired deals must have an end date after today');
+
+    const effectiveStart = updatingStartDate
+      ? normalizeDate(availabilityUpdates?.startDate, 'Start date')
+      : normalizeDate(existingDeal.availability.startDate, 'Start date');
+    const effectiveEnd = updatingEndDate
+      ? normalizeDate(availabilityUpdates?.endDate, 'End date')
+      : normalizeDate(existingDeal.availability.endDate, 'End date');
+
+    if (updatingStartDate) {
+      ensureFutureDate(effectiveStart, 'Start date');
     }
+
+    if (updatingEndDate) {
+      ensureFutureDate(effectiveEnd, 'End date');
+    }
+
+    ensureEndAfterStart(effectiveStart, effectiveEnd);
+
+    updateData.availability = {
+      ...updateData.availability,
+      ...(updatingStartDate ? { startDate: effectiveStart } : {}),
+      ...(updatingEndDate ? { endDate: effectiveEnd } : {}),
+    };
   }
 
   // Recalculate discount if price or originalPrice are updated

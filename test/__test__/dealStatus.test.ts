@@ -125,7 +125,62 @@ describe('Deal status management', () => {
     expect(response.body.message).toContain('Status must be one of: active, inactive');
   });
 
-  it('rejects expired deals with end date before or equal to today', async () => {
+  it('rejects creating a deal when end date is before start date', async () => {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() + 5);
+    const endDate = new Date(startDate);
+
+    const response = await request(app.getApp())
+      .post(`/api/v1/company/${company._id}/deals`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        title: 'Invalid Date Deal',
+        description: 'Deal with invalid end date',
+        category: 'Cleaning',
+        price: 100,
+        duration: 60,
+        operatingSite: [operateSite._id.toString()],
+        service: service._id.toString(),
+        availability: {
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0],
+        },
+      })
+      .expect(422);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toContain('End date must be after start date');
+  });
+
+  it('rejects creating a deal when start date is before today', async () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const response = await request(app.getApp())
+      .post(`/api/v1/company/${company._id}/deals`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        title: 'Past Start Date Deal',
+        description: 'Deal with past start date',
+        category: 'Cleaning',
+        price: 100,
+        duration: 60,
+        operatingSite: [operateSite._id.toString()],
+        service: service._id.toString(),
+        availability: {
+          startDate: yesterday.toISOString().split('T')[0],
+          endDate: tomorrow.toISOString().split('T')[0],
+        },
+      })
+      .expect(422);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toContain('Start date cannot be before today');
+  });
+
+  it('rejects updating a deal when start date is set before today', async () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
 
@@ -133,34 +188,32 @@ describe('Deal status management', () => {
       .patch(`/api/v1/company/${company._id}/deals/${deal._id}`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
-        status: 'expired',
         availability: {
-          endDate: yesterday.toISOString(),
+          startDate: yesterday.toISOString().split('T')[0],
         },
       })
-      .expect(400);
+      .expect(422);
 
     expect(response.body.success).toBe(false);
-    expect(response.body.message).toContain('Expired deals must have an end date after today');
+    expect(response.body.message).toContain('Start date cannot be before today');
   });
 
-  it('allows expired deals when end date is after today', async () => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
+  it('rejects updating a deal when end date is before or equal to start date', async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     const response = await request(app.getApp())
       .patch(`/api/v1/company/${company._id}/deals/${deal._id}`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
-        status: 'expired',
         availability: {
-          endDate: tomorrow.toISOString(),
+          endDate: today.toISOString().split('T')[0],
         },
       })
-      .expect(200);
+      .expect(400);
 
-    expect(response.body.success).toBe(true);
-    expect(response.body.data.status).toBe('expired');
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toContain('End date must be after start date');
   });
 });
 

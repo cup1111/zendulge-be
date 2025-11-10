@@ -62,17 +62,19 @@
 - → Can **modify details before saving**
 - And a new deal is created with "Copy of" prefix
 
-### US-D006: Owner Enforces Expired Deal End Date
+### US-D006: Owner Validates Deal Availability Dates
 **As a** business owner  
-**I want to** ensure expired deals have a future end date  
-**So that** customers are not shown already-ended promotions
+**I want to** prevent deals being saved with invalid availability windows  
+**So that** customers only see promotions that are currently or soon available
 
 **Acceptance Criteria:**
 - Login as **owner**
-- → Edit any deal and set status to **expired**
-- → If end date is today or earlier, **receive validation error**
-- → If end date is after today, **save is successful**
-- → Deal status shows as **expired**
+- → Create or edit a deal
+- → Start date must be **today or later**
+- → End date must be **after the start date**
+- → If start date is before today, show validation error **"Start date cannot be before today"**
+- → If end date is before today, show validation error **"End date cannot be before today"**
+- → If end date is on or before start date, show validation error **"End date must be after start date"**
 
 ## Manager User Stories
 
@@ -98,3 +100,16 @@
 - → Deal Management
 - → Should see deals from **assigned locations only**
 - → **Cannot see deals from other locations**
+
+### US-D008: Manager Validates Deal Availability Dates
+**As a** manager  
+**I want to** be blocked from entering invalid availability dates  
+**So that** I only publish offers that are upcoming and well-defined
+
+**Acceptance Criteria:**
+- Login as **manager**
+- → Create or edit a deal within my assigned locations
+- → Start date must be **today or later**
+- → End date must be **after the start date**
+- → Past start or end dates trigger validation errors
+- → End dates on or before the start date trigger validation error **"End date must be after start date"**

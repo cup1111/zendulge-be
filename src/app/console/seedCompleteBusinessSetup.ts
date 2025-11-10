@@ -270,10 +270,10 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       service: postConstructionService?.id,
       createdBy: companyOwner.id,
       availability: {
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days from now
+        startDate: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000), // 120 days ago
+        endDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
         maxBookings: 10,
-        currentBookings: 2,
+        currentBookings: 10,
       },
       status: 'expired',
       tags: ['construction', 'renovation', 'heavy-duty'],

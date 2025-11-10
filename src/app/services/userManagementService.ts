@@ -549,6 +549,13 @@ export class UserManagementService {
           throw new Error('Acting user is not authorized for this company');
         }
 
+        if (
+          targetRoleName === RoleName.MANAGER &&
+          actingRoleName !== RoleName.OWNER
+        ) {
+          throw new Error('Only company owners can delete company managers');
+        }
+
         if (actingRoleName === RoleName.MANAGER) {
           if (targetRoleName === RoleName.OWNER) {
             throw new Error('Managers cannot delete company owners');

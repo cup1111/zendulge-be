@@ -228,7 +228,7 @@ describe('User Management Endpoints', () => {
         .set('Authorization', `Bearer ${managerToken}`)
         .expect(403);
 
-      expect(response.body.message).toContain('Managers cannot delete other managers');
+      expect(response.body.message).toContain('Only company owners can delete company managers');
     });
 
     it('should return 403 when manager attempts to delete the owner', async () => {
@@ -244,6 +244,16 @@ describe('User Management Endpoints', () => {
       const response = await request(app.getApp())
         .delete(`/api/v1/company/${company._id}/users/${memberUser._id}`)
         .set('Authorization', `Bearer ${managerToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toContain('User deleted successfully');
+    });
+
+    it('should allow owner to delete managers in their company', async () => {
+      const response = await request(app.getApp())
+        .delete(`/api/v1/company/${company._id}/users/${otherManagerUser._id}`)
+        .set('Authorization', `Bearer ${ownerToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);

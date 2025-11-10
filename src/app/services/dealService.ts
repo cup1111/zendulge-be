@@ -249,6 +249,27 @@ const updateDeal = async (companyId: string, dealId: string, userId: string, upd
     updateData.operatingSite = operatingSiteIds;
   }
 
+  // Determine effective status and end date for validation
+  const nextStatus: string = updateData.status ?? existingDeal.status;
+  let nextEndDate: Date | null = existingDeal.availability?.endDate
+    ? new Date(existingDeal.availability.endDate)
+    : null;
+  if (updateData.availability?.endDate) {
+    nextEndDate = new Date(updateData.availability.endDate);
+    updateData.availability.endDate = nextEndDate;
+  }
+
+  if (nextStatus === 'expired') {
+    if (!nextEndDate) {
+      throw new Error('Expired deals must include an end date');
+    }
+    const todayEnd = new Date();
+    todayEnd.setHours(0, 0, 0, 0);
+    if (nextEndDate.getTime() <= todayEnd.getTime()) {
+      throw new Error('Expired deals must have an end date after today');
+    }
+  }
+
   // Recalculate discount if price or originalPrice are updated
   if (updateData.originalPrice !== undefined || updateData.price !== undefined) {
     const currentOriginalPrice = updateData.originalPrice !== undefined ? updateData.originalPrice : existingDeal.originalPrice;

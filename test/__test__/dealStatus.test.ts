@@ -124,5 +124,43 @@ describe('Deal status management', () => {
     expect(response.body.success).toBe(false);
     expect(response.body.message).toContain('Status must be one of: active, inactive');
   });
+
+  it('rejects expired deals with end date before or equal to today', async () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const response = await request(app.getApp())
+      .patch(`/api/v1/company/${company._id}/deals/${deal._id}`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        status: 'expired',
+        availability: {
+          endDate: yesterday.toISOString(),
+        },
+      })
+      .expect(400);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toContain('Expired deals must have an end date after today');
+  });
+
+  it('allows expired deals when end date is after today', async () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const response = await request(app.getApp())
+      .patch(`/api/v1/company/${company._id}/deals/${deal._id}`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        status: 'expired',
+        availability: {
+          endDate: tomorrow.toISOString(),
+        },
+      })
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.status).toBe('expired');
+  });
 });
 

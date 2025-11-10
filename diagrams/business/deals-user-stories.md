@@ -62,6 +62,18 @@
 - → Can **modify details before saving**
 - And a new deal is created with "Copy of" prefix
 
+### US-D006: Owner Enforces Expired Deal End Date
+**As a** business owner  
+**I want to** ensure expired deals have a future end date  
+**So that** customers are not shown already-ended promotions
+
+**Acceptance Criteria:**
+- Login as **owner**
+- → Edit any deal and set status to **expired**
+- → If end date is today or earlier, **receive validation error**
+- → If end date is after today, **save is successful**
+- → Deal status shows as **expired**
+
 ## Manager User Stories
 
 ### US-D006: Manager Creates Deal

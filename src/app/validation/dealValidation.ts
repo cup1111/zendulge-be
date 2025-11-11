@@ -41,21 +41,32 @@ export const createDealValidation = [
   body('operatingSite.*')
     .isMongoId()
     .withMessage('Each operating site must be a valid MongoDB ObjectId'),
-  body('availability.startDate')
+  body('startDate')
     .notEmpty()
     .withMessage('Start date is required')
     .isISO8601()
     .withMessage('Start date must be a valid date'),
-  body('availability.endDate')
+  body('endDate')
     .notEmpty()
     .withMessage('End date is required')
     .isISO8601()
     .withMessage('End date must be a valid date'),
-  body('availability')
+  body('maxBookings')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Max bookings must be a positive integer'),
+  body('currentBookings')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Current bookings must be a non-negative integer'),
+  body()
     .custom(value => {
       if (!value) {
         return true;
       }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
       const startDate = new Date(value.startDate);
       const endDate = new Date(value.endDate);
@@ -64,32 +75,23 @@ export const createDealValidation = [
         return true;
       }
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(0, 0, 0, 0);
 
-      const normalizedStart = new Date(startDate);
-      normalizedStart.setHours(0, 0, 0, 0);
-      const normalizedEnd = new Date(endDate);
-      normalizedEnd.setHours(0, 0, 0, 0);
-
-      if (normalizedEnd.getTime() <= normalizedStart.getTime()) {
+      if (endDate.getTime() <= startDate.getTime()) {
         throw new Error('End date must be after start date');
       }
 
-      if (normalizedStart.getTime() < today.getTime()) {
+      if (startDate.getTime() < today.getTime()) {
         throw new Error('Start date cannot be before today');
       }
 
-      if (normalizedEnd.getTime() < today.getTime()) {
+      if (endDate.getTime() < today.getTime()) {
         throw new Error('End date cannot be before today');
       }
 
       return true;
     }),
-  body('availability.maxBookings')
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage('Max bookings must be a positive integer'),
   body('status')
     .optional()
     .isIn(['active', 'inactive', 'expired', 'sold_out'])
@@ -154,16 +156,23 @@ export const updateDealValidation = [
     .optional()
     .isMongoId()
     .withMessage('Each operating site must be a valid MongoDB ObjectId'),
-  body('availability.startDate')
+  body('startDate')
     .optional()
     .isISO8601()
     .withMessage('Start date must be a valid date'),
-  body('availability.endDate')
+  body('endDate')
     .optional()
     .isISO8601()
     .withMessage('End date must be a valid date'),
-  body('availability')
+  body('maxBookings')
     .optional()
+    .isInt({ min: 1 })
+    .withMessage('Max bookings must be a positive integer'),
+  body('currentBookings')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Current bookings must be a non-negative integer'),
+  body()
     .custom(value => {
       if (!value) {
         return true;
@@ -172,9 +181,12 @@ export const updateDealValidation = [
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
+      const hasStart = Object.prototype.hasOwnProperty.call(value, 'startDate');
+      const hasEnd = Object.prototype.hasOwnProperty.call(value, 'endDate');
+
       let normalizedStart: Date | undefined;
 
-      if (value.startDate !== undefined) {
+      if (hasStart) {
         const startDate = new Date(value.startDate);
         if (!Number.isNaN(startDate.getTime())) {
           startDate.setHours(0, 0, 0, 0);
@@ -182,7 +194,7 @@ export const updateDealValidation = [
         }
       }
 
-      if (value.endDate !== undefined) {
+      if (hasEnd) {
         const endDate = new Date(value.endDate);
         if (!Number.isNaN(endDate.getTime())) {
           endDate.setHours(0, 0, 0, 0);
@@ -191,20 +203,14 @@ export const updateDealValidation = [
             throw new Error('End date cannot be before today');
           }
 
-          if (normalizedStart) {
-            if (endDate.getTime() <= normalizedStart.getTime()) {
-              throw new Error('End date must be after start date');
-            }
+          if (normalizedStart && endDate.getTime() <= normalizedStart.getTime()) {
+            throw new Error('End date must be after start date');
           }
         }
       }
 
       return true;
     }),
-  body('availability.maxBookings')
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage('Max bookings must be a positive integer'),
   body('status')
     .optional()
     .isIn(['active', 'inactive', 'expired', 'sold_out'])
@@ -227,8 +233,7 @@ export const updateDealValidation = [
     .isLength({ min: 1, max: 30 })
     .withMessage('Each tag must be between 1 and 30 characters'),
   body('service')
-    .notEmpty()
-    .withMessage('Service is required')
+    .optional()
     .isMongoId()
     .withMessage('Service must be a valid MongoDB ObjectId'),
 ];

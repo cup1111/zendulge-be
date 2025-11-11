@@ -9,12 +9,10 @@ export interface IDeal {
   discount?: number;
   duration: number; // Duration in minutes
   operatingSite: string[]; // Array of Operating Site ID references
-  availability: {
-    startDate: Date;
-    endDate: Date;
-    maxBookings?: number;
-    currentBookings: number;
-  };
+  startDate: Date;
+  endDate: Date;
+  maxBookings?: number;
+  currentBookings: number;
   status: 'active' | 'inactive' | 'expired' | 'sold_out';
   images?: string[];
   tags?: string[];
@@ -69,24 +67,22 @@ const dealSchema = new Schema<IDealDocument>({
     required: true,
     ref: 'operateSites',
   },
-  availability: {
-    startDate: {
-      type: Date,
-      required: true,
-    },
-    endDate: {
-      type: Date,
-      required: true,
-    },
-    maxBookings: {
-      type: Number,
-      min: 1,
-    },
-    currentBookings: {
-      type: Number,
-      default: 0,
-      min: 0,
-    },
+  startDate: {
+    type: Date,
+    required: true,
+  },
+  endDate: {
+    type: Date,
+    required: true,
+  },
+  maxBookings: {
+    type: Number,
+    min: 1,
+  },
+  currentBookings: {
+    type: Number,
+    default: 0,
+    min: 0,
   },
   status: {
     type: String,
@@ -127,7 +123,7 @@ dealSchema.index({ company: 1, 'operatingSite': 1 });
 dealSchema.index({ company: 1, service: 1 });
 dealSchema.index({ company: 1, createdBy: 1 });
 dealSchema.index({ category: 1 });
-dealSchema.index({ 'availability.startDate': 1, 'availability.endDate': 1 });
+dealSchema.index({ startDate: 1, endDate: 1 });
 
 const Deal = mongoose.model<IDealDocument>('deals', dealSchema);
 export default Deal;

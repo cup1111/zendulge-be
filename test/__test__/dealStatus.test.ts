@@ -75,11 +75,9 @@ describe('Deal status management', () => {
       discount: 25,
       duration: 60,
       operatingSite: [operateSite._id.toString()],
-      availability: {
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        currentBookings: 0,
-      },
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      currentBookings: 0,
       status: 'active',
       company: company._id.toString(),
       service: service._id.toString(),
@@ -141,10 +139,8 @@ describe('Deal status management', () => {
         duration: 60,
         operatingSite: [operateSite._id.toString()],
         service: service._id.toString(),
-        availability: {
-          startDate: startDate.toISOString().split('T')[0],
-          endDate: endDate.toISOString().split('T')[0],
-        },
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
       })
       .expect(422);
 
@@ -169,10 +165,8 @@ describe('Deal status management', () => {
         duration: 60,
         operatingSite: [operateSite._id.toString()],
         service: service._id.toString(),
-        availability: {
-          startDate: yesterday.toISOString().split('T')[0],
-          endDate: tomorrow.toISOString().split('T')[0],
-        },
+        startDate: yesterday.toISOString().split('T')[0],
+        endDate: tomorrow.toISOString().split('T')[0],
       })
       .expect(422);
 
@@ -188,14 +182,12 @@ describe('Deal status management', () => {
       .patch(`/api/v1/company/${company._id}/deals/${deal._id}`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
-        availability: {
-          startDate: yesterday.toISOString().split('T')[0],
-        },
+        startDate: yesterday.toISOString().split('T')[0],
       })
       .expect(200);
 
     expect(response.body.success).toBe(true);
-    expect(response.body.data.availability.startDate).toContain(
+    expect(response.body.data.startDate).toContain(
       yesterday.toISOString().split('T')[0],
     );
   });
@@ -222,9 +214,7 @@ describe('Deal status management', () => {
       .patch(`/api/v1/company/${company._id}/deals/${deal._id}`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
-        availability: {
-          endDate: today.toISOString().split('T')[0],
-        },
+        endDate: today.toISOString().split('T')[0],
       })
       .expect(400);
 

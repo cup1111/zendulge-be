@@ -189,12 +189,10 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       operatingSite: [MelbourneCBDOperateSite.id],
       service: deepCleaningService?.id,
       createdBy: companyOwner.id,
-      availability: {
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-        maxBookings: 50,
-        currentBookings: 12,
-      },
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      maxBookings: 50,
+      currentBookings: 12,
       status: 'active',
       tags: ['spring', 'cleaning', 'special'],
       company: company.id,
@@ -209,12 +207,10 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       operatingSite: [SouthYarraoperateSite2.id],
       service: officeCleaningService?.id,
       createdBy: companyOwner.id,
-      availability: {
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
-        maxBookings: 20,
-        currentBookings: 5,
-      },
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
+      maxBookings: 20,
+      currentBookings: 5,
       status: 'active',
       tags: ['office', 'commercial', 'deep-clean'],
       company: company.id,
@@ -229,12 +225,10 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       operatingSite: [MelbourneCBDOperateSite.id],
       service: carpetCleaningService?.id,
       createdBy: companyOwner.id,
-      availability: {
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
-        maxBookings: 30,
-        currentBookings: 8,
-      },
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
+      maxBookings: 30,
+      currentBookings: 8,
       status: 'active',
       tags: ['carpet', 'upholstery', 'stain-removal'],
       company: company.id,
@@ -249,12 +243,10 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       operatingSite: [SouthYarraoperateSite2.id],
       service: windowCleaningService?.id,
       createdBy: companyOwner.id,
-      availability: {
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000), // 20 days from now
-        maxBookings: 40,
-        currentBookings: 15,
-      },
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000), // 20 days from now
+      maxBookings: 40,
+      currentBookings: 15,
       status: 'sold_out',
       tags: ['windows', 'residential', 'commercial'],
       company: company.id,
@@ -269,12 +261,10 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       operatingSite: [MelbourneCBDOperateSite.id],
       service: postConstructionService?.id,
       createdBy: companyOwner.id,
-      availability: {
-        startDate: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000), // 120 days ago
-        endDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
-        maxBookings: 10,
-        currentBookings: 10,
-      },
+      startDate: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000), // 120 days ago
+      endDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+      maxBookings: 10,
+      currentBookings: 10,
       status: 'expired',
       tags: ['construction', 'renovation', 'heavy-duty'],
       company: company.id,
@@ -289,12 +279,10 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       operatingSite: [MelbourneCBDOperateSite.id],
       service: basicCleaningService?.id,
       createdBy: companyOwner.id,
-      availability: {
-        startDate: new Date(),
-        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
-        maxBookings: 100,
-        currentBookings: 25,
-      },
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+      maxBookings: 100,
+      currentBookings: 25,
       status: 'inactive',
       tags: ['monthly', 'maintenance', 'subscription'],
       company: company.id,

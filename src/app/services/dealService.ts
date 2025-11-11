@@ -2,12 +2,13 @@ import Deal, { IDealDocument } from '../model/deal';
 import Company from '../model/company';
 import Service from '../model/service';
 import OperateSite from '../model/operateSite';
+import { BadRequestException } from '../exceptions';
 
 const normalizeDate = (value: any, fieldName: string): Date => {
   const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    throw new Error(`${fieldName} must be a valid date`);
+    throw new BadRequestException(`${fieldName} must be a valid date`);
   }
 
   date.setHours(0, 0, 0, 0);
@@ -23,13 +24,13 @@ const startOfToday = (): Date => {
 const ensureFutureDate = (date: Date, fieldName: string) => {
   const today = startOfToday();
   if (date.getTime() < today.getTime()) {
-    throw new Error(`${fieldName} cannot be before today`);
+    throw new BadRequestException(`${fieldName} cannot be before today`);
   }
 };
 
 const ensureEndAfterStart = (start: Date, end: Date) => {
   if (end.getTime() <= start.getTime()) {
-    throw new Error('End date must be after start date');
+    throw new BadRequestException('End date must be after start date');
   }
 };
 
@@ -191,31 +192,64 @@ const createDeal = async (companyId: string, userId: string, dealData: any): Pro
     dealData.discount = normalizedDiscount;
   }
 
-  // Set default availability if not provided
-  if (!dealData.availability) {
-    dealData.availability = {
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-      currentBookings: 0,
-    };
+  if (dealData.availability) {
+    const legacyAvailability = dealData.availability;
+    if (Object.prototype.hasOwnProperty.call(legacyAvailability, 'startDate')) {
+      dealData.startDate = legacyAvailability.startDate;
+    }
+    if (Object.prototype.hasOwnProperty.call(legacyAvailability, 'endDate')) {
+      dealData.endDate = legacyAvailability.endDate;
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(legacyAvailability, 'maxBookings')
+    ) {
+      dealData.maxBookings = legacyAvailability.maxBookings;
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(legacyAvailability, 'currentBookings')
+    ) {
+      dealData.currentBookings = legacyAvailability.currentBookings;
+    }
   }
 
-  const availabilityStartDate = normalizeDate(dealData.availability.startDate ?? new Date(), 'Start date');
-  const availabilityEndDate = normalizeDate(dealData.availability.endDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'End date');
+  const defaultStartDate = dealData.startDate
+    ? normalizeDate(dealData.startDate, 'Start date')
+    : startOfToday();
+  const defaultEndDate = dealData.endDate
+    ? normalizeDate(dealData.endDate, 'End date')
+    : normalizeDate(
+      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      'End date',
+    );
 
-  ensureFutureDate(availabilityStartDate, 'Start date');
-  ensureFutureDate(availabilityEndDate, 'End date');
-  ensureEndAfterStart(availabilityStartDate, availabilityEndDate);
+  ensureFutureDate(defaultStartDate, 'Start date');
+  ensureFutureDate(defaultEndDate, 'End date');
+  ensureEndAfterStart(defaultStartDate, defaultEndDate);
 
-  dealData.availability = {
-    ...dealData.availability,
-    startDate: availabilityStartDate,
-    endDate: availabilityEndDate,
-    currentBookings: dealData.availability.currentBookings ?? 0,
-  };
+  const rawMaxBookings =
+    dealData.maxBookings !== undefined && dealData.maxBookings !== null
+      ? Number(dealData.maxBookings)
+      : undefined;
+  const maxBookings =
+    rawMaxBookings !== undefined && !Number.isNaN(rawMaxBookings)
+      ? rawMaxBookings
+      : undefined;
+  const rawCurrentBookings =
+    dealData.currentBookings !== undefined && dealData.currentBookings !== null
+      ? Number(dealData.currentBookings)
+      : 0;
+  const currentBookings = Number.isNaN(rawCurrentBookings)
+    ? 0
+    : rawCurrentBookings;
+
+  delete dealData.availability;
 
   const newDeal = new Deal({
     ...dealData,
+    startDate: defaultStartDate,
+    endDate: defaultEndDate,
+    maxBookings,
+    currentBookings,
     company: companyId,
     createdBy: userId, // Track who created the deal
   });
@@ -327,34 +361,74 @@ const updateDeal = async (companyId: string, dealId: string, userId: string, upd
     updateData.operatingSite = operatingSiteIds;
   }
 
-  // Determine effective status and end date for validation
-  const availabilityUpdates = updateData.availability;
-  const updatingStartDate = availabilityUpdates?.startDate !== undefined;
-  const updatingEndDate = availabilityUpdates?.endDate !== undefined;
-
-  if (updatingStartDate || updatingEndDate) {
-    if (!existingDeal.availability) {
-      throw new Error('Existing deal does not have availability information');
+  if (updateData.availability) {
+    const availabilityUpdates = updateData.availability;
+    if (Object.prototype.hasOwnProperty.call(availabilityUpdates, 'startDate')) {
+      updateData.startDate = availabilityUpdates.startDate;
     }
-
-    const effectiveStart = updatingStartDate
-      ? normalizeDate(availabilityUpdates?.startDate, 'Start date')
-      : normalizeDate(existingDeal.availability.startDate, 'Start date');
-    const effectiveEnd = updatingEndDate
-      ? normalizeDate(availabilityUpdates?.endDate, 'End date')
-      : normalizeDate(existingDeal.availability.endDate, 'End date');
-
-    if (updatingEndDate) {
-      ensureFutureDate(effectiveEnd, 'End date');
+    if (Object.prototype.hasOwnProperty.call(availabilityUpdates, 'endDate')) {
+      updateData.endDate = availabilityUpdates.endDate;
     }
+    if (
+      Object.prototype.hasOwnProperty.call(availabilityUpdates, 'maxBookings')
+    ) {
+      updateData.maxBookings = availabilityUpdates.maxBookings;
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(
+        availabilityUpdates,
+        'currentBookings',
+      )
+    ) {
+      updateData.currentBookings = availabilityUpdates.currentBookings;
+    }
+    delete updateData.availability;
+  }
 
+  const hasStartDateUpdate = Object.prototype.hasOwnProperty.call(
+    updateData,
+    'startDate',
+  );
+  const hasEndDateUpdate = Object.prototype.hasOwnProperty.call(
+    updateData,
+    'endDate',
+  );
+
+  if (hasStartDateUpdate || hasEndDateUpdate) {
+    const effectiveStart = hasStartDateUpdate
+      ? normalizeDate(updateData.startDate, 'Start date')
+      : new Date(existingDeal.startDate);
+    const effectiveEnd = hasEndDateUpdate
+      ? normalizeDate(updateData.endDate, 'End date')
+      : new Date(existingDeal.endDate);
+
+    ensureFutureDate(effectiveEnd, 'End date');
     ensureEndAfterStart(effectiveStart, effectiveEnd);
 
-    updateData.availability = {
-      ...updateData.availability,
-      ...(updatingStartDate ? { startDate: effectiveStart } : {}),
-      ...(updatingEndDate ? { endDate: effectiveEnd } : {}),
-    };
+    if (hasStartDateUpdate) {
+      updateData.startDate = effectiveStart;
+    }
+    if (hasEndDateUpdate) {
+      updateData.endDate = effectiveEnd;
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updateData, 'maxBookings')) {
+    const rawMaxBookings =
+      updateData.maxBookings !== undefined && updateData.maxBookings !== null
+        ? Number(updateData.maxBookings)
+        : undefined;
+    updateData.maxBookings =
+      rawMaxBookings !== undefined && !Number.isNaN(rawMaxBookings)
+        ? rawMaxBookings
+        : undefined;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updateData, 'currentBookings')) {
+    const rawCurrentBookings = Number(updateData.currentBookings);
+    updateData.currentBookings = Number.isNaN(rawCurrentBookings)
+      ? existingDeal.currentBookings
+      : rawCurrentBookings;
   }
 
   // Recalculate discount if price or originalPrice are updated

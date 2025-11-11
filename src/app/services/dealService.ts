@@ -4,6 +4,9 @@ import Service from '../model/service';
 import OperateSite from '../model/operateSite';
 import { BadRequestException } from '../exceptions';
 
+const toUtcMidnight = (date: Date): Date =>
+  new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+
 const normalizeDate = (value: any, fieldName: string): Date => {
   const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
 
@@ -11,25 +14,23 @@ const normalizeDate = (value: any, fieldName: string): Date => {
     throw new BadRequestException(`${fieldName} must be a valid date`);
   }
 
-  date.setHours(0, 0, 0, 0);
-  return date;
+  return toUtcMidnight(date);
 };
 
-const startOfToday = (): Date => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return today;
-};
+const startOfToday = (): Date => toUtcMidnight(new Date());
 
 const ensureFutureDate = (date: Date, fieldName: string) => {
+  const normalized = toUtcMidnight(date);
   const today = startOfToday();
-  if (date.getTime() < today.getTime()) {
+  if (normalized.getTime() < today.getTime()) {
     throw new BadRequestException(`${fieldName} cannot be before today`);
   }
 };
 
 const ensureEndAfterStart = (start: Date, end: Date) => {
-  if (end.getTime() <= start.getTime()) {
+  const normalizedStart = toUtcMidnight(start);
+  const normalizedEnd = toUtcMidnight(end);
+  if (normalizedEnd.getTime() <= normalizedStart.getTime()) {
     throw new BadRequestException('End date must be after start date');
   }
 };

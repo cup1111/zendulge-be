@@ -139,8 +139,8 @@ describe('Deal status management', () => {
         duration: 60,
         operatingSite: [operateSite._id.toString()],
         service: service._id.toString(),
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0],
+        startDate: `${startDate.toISOString().split('T')[0]}T00:00:00.000Z`,
+        endDate: `${endDate.toISOString().split('T')[0]}T00:00:00.000Z`,
       })
       .expect(422);
 
@@ -165,8 +165,8 @@ describe('Deal status management', () => {
         duration: 60,
         operatingSite: [operateSite._id.toString()],
         service: service._id.toString(),
-        startDate: yesterday.toISOString().split('T')[0],
-        endDate: tomorrow.toISOString().split('T')[0],
+        startDate: `${yesterday.toISOString().split('T')[0]}T00:00:00.000Z`,
+        endDate: `${tomorrow.toISOString().split('T')[0]}T00:00:00.000Z`,
       })
       .expect(422);
 
@@ -177,19 +177,18 @@ describe('Deal status management', () => {
   it('allows updating a deal when start date is set before today', async () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
+    const isoUtc = `${yesterday.toISOString().split('T')[0]}T00:00:00.000Z`;
 
     const response = await request(app.getApp())
       .patch(`/api/v1/company/${company._id}/deals/${deal._id}`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
-        startDate: yesterday.toISOString().split('T')[0],
+        startDate: isoUtc,
       })
       .expect(200);
 
     expect(response.body.success).toBe(true);
-    expect(response.body.data.startDate).toContain(
-      yesterday.toISOString().split('T')[0],
-    );
+    expect(response.body.data.startDate).toBe(isoUtc);
   });
 
   it('normalizes discount to zero when price exceeds original price', async () => {
@@ -214,7 +213,7 @@ describe('Deal status management', () => {
       .patch(`/api/v1/company/${company._id}/deals/${deal._id}`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
-        endDate: today.toISOString().split('T')[0],
+        endDate: `${today.toISOString().split('T')[0]}T00:00:00.000Z`,
       })
       .expect(400);
 

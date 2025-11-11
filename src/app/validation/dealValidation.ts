@@ -172,24 +172,13 @@ export const updateDealValidation = [
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
+      let normalizedStart: Date | undefined;
+
       if (value.startDate !== undefined) {
         const startDate = new Date(value.startDate);
         if (!Number.isNaN(startDate.getTime())) {
           startDate.setHours(0, 0, 0, 0);
-
-          if (startDate.getTime() < today.getTime()) {
-            throw new Error('Start date cannot be before today');
-          }
-
-          if (value.endDate !== undefined) {
-            const endDate = new Date(value.endDate);
-            if (!Number.isNaN(endDate.getTime())) {
-              endDate.setHours(0, 0, 0, 0);
-              if (endDate.getTime() <= startDate.getTime()) {
-                throw new Error('End date must be after start date');
-              }
-            }
-          }
+          normalizedStart = startDate;
         }
       }
 
@@ -202,13 +191,9 @@ export const updateDealValidation = [
             throw new Error('End date cannot be before today');
           }
 
-          if (value.startDate !== undefined) {
-            const startDate = new Date(value.startDate);
-            if (!Number.isNaN(startDate.getTime())) {
-              startDate.setHours(0, 0, 0, 0);
-              if (endDate.getTime() <= startDate.getTime()) {
-                throw new Error('End date must be after start date');
-              }
+          if (normalizedStart) {
+            if (endDate.getTime() <= normalizedStart.getTime()) {
+              throw new Error('End date must be after start date');
             }
           }
         }

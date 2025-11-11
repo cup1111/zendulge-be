@@ -33,6 +33,36 @@ const ensureEndAfterStart = (start: Date, end: Date) => {
   }
 };
 
+const normalizeDiscount = (
+  originalPrice?: number | null,
+  price?: number | null,
+): number | undefined => {
+  if (
+    originalPrice === undefined ||
+    originalPrice === null ||
+    price === undefined ||
+    price === null ||
+    originalPrice === 0
+  ) {
+    return undefined;
+  }
+
+  const rawDiscount = Math.round(((originalPrice - price) / originalPrice) * 100);
+  if (Number.isNaN(rawDiscount)) {
+    return undefined;
+  }
+
+  if (rawDiscount <= 0) {
+    return 0;
+  }
+
+  if (rawDiscount >= 100) {
+    return 100;
+  }
+
+  return rawDiscount;
+};
+
 const getDealsByCompany = async (companyId: string, userId: string): Promise<IDealDocument[]> => {
   const company = await Company.findById(companyId);
   if (!company || !company.hasAccess(userId as any)) {
@@ -153,8 +183,12 @@ const createDeal = async (companyId: string, userId: string, dealData: any): Pro
   }
 
   // Calculate discount if originalPrice and price are provided
-  if (dealData.originalPrice && dealData.price) {
-    dealData.discount = Math.round(((dealData.originalPrice - dealData.price) / dealData.originalPrice) * 100);
+  if (dealData.originalPrice !== undefined || dealData.price !== undefined) {
+    const normalizedDiscount = normalizeDiscount(
+      dealData.originalPrice ?? service.basePrice,
+      dealData.price ?? service.basePrice,
+    );
+    dealData.discount = normalizedDiscount;
   }
 
   // Set default availability if not provided
@@ -310,10 +344,6 @@ const updateDeal = async (companyId: string, dealId: string, userId: string, upd
       ? normalizeDate(availabilityUpdates?.endDate, 'End date')
       : normalizeDate(existingDeal.availability.endDate, 'End date');
 
-    if (updatingStartDate) {
-      ensureFutureDate(effectiveStart, 'Start date');
-    }
-
     if (updatingEndDate) {
       ensureFutureDate(effectiveEnd, 'End date');
     }
@@ -329,14 +359,19 @@ const updateDeal = async (companyId: string, dealId: string, userId: string, upd
 
   // Recalculate discount if price or originalPrice are updated
   if (updateData.originalPrice !== undefined || updateData.price !== undefined) {
-    const currentOriginalPrice = updateData.originalPrice !== undefined ? updateData.originalPrice : existingDeal.originalPrice;
-    const currentPrice = updateData.price !== undefined ? updateData.price : existingDeal.price;
+    const currentOriginalPrice =
+      updateData.originalPrice !== undefined
+        ? updateData.originalPrice
+        : existingDeal.originalPrice;
+    const currentPrice =
+      updateData.price !== undefined ? updateData.price : existingDeal.price;
 
-    if (currentOriginalPrice && currentPrice) {
-      updateData.discount = Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100);
-    } else {
-      updateData.discount = undefined; // Clear discount if prices are incomplete
-    }
+    const normalizedDiscount = normalizeDiscount(
+      currentOriginalPrice ?? undefined,
+      currentPrice ?? undefined,
+    );
+
+    updateData.discount = normalizedDiscount;
   }
 
   const deal = await Deal.findOneAndUpdate(

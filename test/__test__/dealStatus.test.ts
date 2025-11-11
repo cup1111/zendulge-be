@@ -180,7 +180,7 @@ describe('Deal status management', () => {
     expect(response.body.message).toContain('Start date cannot be before today');
   });
 
-  it('rejects updating a deal when start date is set before today', async () => {
+  it('allows updating a deal when start date is set before today', async () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
 
@@ -192,10 +192,26 @@ describe('Deal status management', () => {
           startDate: yesterday.toISOString().split('T')[0],
         },
       })
-      .expect(422);
+      .expect(200);
 
-    expect(response.body.success).toBe(false);
-    expect(response.body.message).toContain('Start date cannot be before today');
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.availability.startDate).toContain(
+      yesterday.toISOString().split('T')[0],
+    );
+  });
+
+  it('normalizes discount to zero when price exceeds original price', async () => {
+    const response = await request(app.getApp())
+      .patch(`/api/v1/company/${company._id}/deals/${deal._id}`)
+      .set('Authorization', `Bearer ${ownerToken}`)
+      .send({
+        price: deal.originalPrice + 50,
+      })
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.price).toBe(deal.originalPrice + 50);
+    expect(response.body.data.discount).toBe(0);
   });
 
   it('rejects updating a deal when end date is before or equal to start date', async () => {

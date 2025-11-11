@@ -70,9 +70,10 @@
 **Acceptance Criteria:**
 - Login as **owner**
 - → Create or edit a deal
-- → Start date must be **today or later**
+- → For new deals, start date must be **today or later**
+- → When updating existing deals, historical start dates are allowed
 - → End date must be **after the start date**
-- → If start date is before today, show validation error **"Start date cannot be before today"**
+- → If a new deal uses a start date before today, show validation error **"Start date cannot be before today"**
 - → If end date is before today, show validation error **"End date cannot be before today"**
 - → If end date is on or before start date, show validation error **"End date must be after start date"**
 
@@ -109,7 +110,8 @@
 **Acceptance Criteria:**
 - Login as **manager**
 - → Create or edit a deal within my assigned locations
-- → Start date must be **today or later**
+- → For new deals, start date must be **today or later**
+- → When updating existing deals, historical start dates are allowed
 - → End date must be **after the start date**
-- → Past start or end dates trigger validation errors
+- → Past start dates are allowed for existing deals; past end dates still trigger validation errors
 - → End dates on or before the start date trigger validation error **"End date must be after start date"**

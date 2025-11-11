@@ -50,7 +50,9 @@
 - → Should see **"Delete" button**
 - → Can **confirm deletion**
 - And the service is removed from all locations
-- And existing deals using this service are handled appropriately
+- If existing deals use the service, the system blocks deletion and shows
+  **"This service is in use by existing deals. Please update or remove those
+  deals before deleting it."**
 
 ## Manager User Stories
 

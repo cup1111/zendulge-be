@@ -1,5 +1,7 @@
 import Service from '../model/service';
 import Company from '../model/company';
+import Deal from '../model/deal';
+import { ConflictException } from '../exceptions';
 
 const getServicesByCompany = async (companyId: string, userId: string) => {
   // Verify user has access to the company
@@ -130,6 +132,17 @@ const deleteService = async (companyId: string, serviceId: string, userId: strin
 
   if (!company) {
     throw new Error('Company not found or you do not have permission to delete services');
+  }
+
+  const hasRelatedDeals = await Deal.exists({
+    company: companyId,
+    service: serviceId,
+  });
+
+  if (hasRelatedDeals) {
+    throw new ConflictException(
+      'This service is in use by existing deals. Please update or remove those deals before deleting it.',
+    );
   }
 
   const service = await Service.findOneAndDelete({

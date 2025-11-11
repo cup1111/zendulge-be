@@ -92,6 +92,32 @@ const updateService = async (companyId: string, serviceId: string, userId: strin
     throw new Error('Company not found or you do not have permission to update services');
   }
 
+  const service = await Service.findOne({
+    _id: serviceId,
+    company: companyId,
+  });
+
+  if (!service) {
+    throw new Error('Service not found');
+  }
+
+  const isDeactivating =
+    updateData.status === 'inactive' && service.status !== 'inactive';
+
+  if (isDeactivating) {
+    const hasActiveDeals = await Deal.exists({
+      company: companyId,
+      service: serviceId,
+      status: 'active',
+    });
+
+    if (hasActiveDeals) {
+      throw new ConflictException(
+        'This service cannot be deactivated while active deals reference it. Please deactivate or update those deals first.',
+      );
+    }
+  }
+
   // Only allow updating specific fields for security
   const allowedFields = {
     name: updateData.name,
@@ -107,19 +133,8 @@ const updateService = async (companyId: string, serviceId: string, userId: strin
     Object.entries(allowedFields).filter(([, value]) => value !== undefined),
   );
 
-  const service = await Service.findOneAndUpdate(
-    {
-      _id: serviceId,
-      company: companyId,
-    },
-    filteredData,
-    { new: true, runValidators: true },
-  );
-
-  if (!service) {
-    throw new Error('Service not found');
-  }
-
+  service.set(filteredData);
+  await service.save();
   return service;
 };
 

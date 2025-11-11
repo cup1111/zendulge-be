@@ -53,6 +53,8 @@
 - If existing deals use the service, the system blocks deletion and shows
   **"This service is in use by existing deals. Please update or remove those
   deals before deleting it."**
+- → Attempting to set a service to **Inactive** while active deals exist shows
+  **"This service cannot be deactivated while active deals reference it. Please deactivate or update those deals first."**
 
 ## Manager User Stories
 

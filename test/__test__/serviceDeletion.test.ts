@@ -22,7 +22,7 @@ async function loginAndGetToken(email: string, password: string) {
     return res.body.data.accessToken;
 }
 
-describe('Service deletion safeguards', () => {
+describe('Service safeguards', () => {
     beforeEach(async () => {
         ownerRole = await Role.findOne({ name: RoleName.OWNER });
 
@@ -117,6 +117,79 @@ describe('Service deletion safeguards', () => {
         );
         const persistedService = await Service.findById(service._id);
         expect(persistedService).not.toBeNull();
+    });
+
+    it('prevents deactivating a service when active deals reference it', async () => {
+        const service = await Service.create({
+            name: 'High Demand Cleaning',
+            category: 'Cleaning',
+            duration: 90,
+            basePrice: 220,
+            description: 'Premium cleaning package',
+            company: company._id.toString(),
+            status: 'active',
+        });
+
+        await Deal.create({
+            title: 'High Demand Cleaning Promo',
+            description: 'Seasonal promotion for the premium package.',
+            category: 'Cleaning',
+            price: 200,
+            originalPrice: 260,
+            duration: 90,
+            operatingSite: [operateSite._id.toString()],
+            availability: {
+                startDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+                endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                currentBookings: 0,
+            },
+            status: 'active',
+            company: company._id.toString(),
+            service: service._id.toString(),
+            createdBy: ownerUser._id.toString(),
+        });
+
+        const response = await request(app.getApp())
+            .patch(`/api/v1/company/${company._id}/services/${service._id}`)
+            .set('Authorization', `Bearer ${ownerToken}`)
+            .send({
+                status: 'inactive',
+            })
+            .expect(409);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toContain(
+            'This service cannot be deactivated while active deals reference it. Please deactivate or update those deals first.',
+        );
+
+        const persistedService = await Service.findById(service._id);
+        expect(persistedService?.status).toBe('active');
+    });
+
+    it('allows deactivating a service when no active deals reference it', async () => {
+        const service = await Service.create({
+            name: 'Seasonal Landscaping',
+            category: 'Maintenance',
+            duration: 180,
+            basePrice: 500,
+            description: 'Landscaping service for commercial sites',
+            company: company._id.toString(),
+            status: 'active',
+        });
+
+        const response = await request(app.getApp())
+            .patch(`/api/v1/company/${company._id}/services/${service._id}`)
+            .set('Authorization', `Bearer ${ownerToken}`)
+            .send({
+                status: 'inactive',
+            })
+            .expect(200);
+
+        expect(response.body.success).toBe(true);
+        expect(response.body.data.status).toBe('inactive');
+
+        const persistedService = await Service.findById(service._id);
+        expect(persistedService?.status).toBe('inactive');
     });
 });
 

@@ -22,7 +22,7 @@ describe('Register Company', () => {
       companyName: 'Test Company Ltd',
       companyEmail: 'contact@testcompany.com',
       companyDescription: 'A test company for testing purposes',
-      serviceCategory: 'Beauty & Wellness',
+      categories: ['Beauty & Wellness'],
       businessAddress: {
         street: '123 Test Street',
         city: 'Melbourne',
@@ -67,7 +67,7 @@ describe('Register Company', () => {
       companyName: 'Existing Company',
       companyEmail: 'contact@existing.com',
       companyDescription: 'An existing company for testing',
-      serviceCategory: 'Professional Services',
+      categories: ['Professional Services'],
       businessAddress: {
         street: '456 Existing Street',
         city: 'Sydney',
@@ -102,7 +102,7 @@ describe('Register Company', () => {
       companyName: 'Inactive User Company',
       companyEmail: 'contact@inactive.com',
       companyDescription: 'A company for inactive user testing',
-      serviceCategory: 'Health & Fitness',
+      categories: ['Health & Fitness'],
       businessAddress: {
         street: '789 Inactive Street',
         city: 'Brisbane',
@@ -155,7 +155,7 @@ describe('Register Company', () => {
       companyName: 'Existing Company Name',
       companyEmail: 'contact@newcompany.com',
       companyDescription: 'A company with existing name for testing',
-      serviceCategory: 'Technology',
+      categories: ['Technology'],
       businessAddress: {
         street: '999 New Street',
         city: 'Perth',

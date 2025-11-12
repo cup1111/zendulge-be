@@ -71,13 +71,11 @@ describe('Company Users Endpoint Integration', () => {
     });
     // Login as owner
     ownerToken = await loginAndGetToken('owner@test.com', 'OwnerPass123');
- 
-   
+
+
     const response = await request(app.getApp())
       .get(`/api/v1/company/${testCompany._id}/users`)
       .set('Authorization', `Bearer ${ownerToken}`);
-    // eslint-disable-next-line no-console
-    console.log('Company users response:', response.body);
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
     expect(response.body.length).toBeGreaterThan(0);

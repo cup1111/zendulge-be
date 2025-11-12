@@ -14,6 +14,8 @@ export const globalErrorHandler = (
   error: any,
   req: Request,
   res: Response,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _next: NextFunction,
 ) => {
   // Extract error details
   const errorName = error?.name || 'UnknownError';

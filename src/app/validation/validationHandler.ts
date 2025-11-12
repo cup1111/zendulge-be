@@ -19,10 +19,12 @@ export const handleValidationErrors = (
       message: error.msg,
     }));
 
-    throw new ValidationException(
+    const exception = new ValidationException(
       `Validation failed: ${errorMessages}`,
       formattedErrors,
     );
+
+    return res.status(exception.statusCode).json(exception.toResponse());
   }
 
   next();

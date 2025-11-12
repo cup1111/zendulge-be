@@ -28,7 +28,6 @@ const activateUser = async (activationCode: string) => {
   }
 
   user.active = true;
-  user.activeCode = '';
   return user.save();
 };
 

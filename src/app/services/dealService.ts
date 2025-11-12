@@ -2,6 +2,68 @@ import Deal, { IDealDocument } from '../model/deal';
 import Company from '../model/company';
 import Service from '../model/service';
 import OperateSite from '../model/operateSite';
+import { BadRequestException } from '../exceptions';
+
+const toUtcMidnight = (date: Date): Date =>
+  new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+
+const normalizeDate = (value: any, fieldName: string): Date => {
+  const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestException(`${fieldName} must be a valid date`);
+  }
+
+  return toUtcMidnight(date);
+};
+
+const startOfToday = (): Date => toUtcMidnight(new Date());
+
+const ensureFutureDate = (date: Date, fieldName: string) => {
+  const normalized = toUtcMidnight(date);
+  const today = startOfToday();
+  if (normalized.getTime() < today.getTime()) {
+    throw new BadRequestException(`${fieldName} cannot be before today`);
+  }
+};
+
+const ensureEndAfterStart = (start: Date, end: Date) => {
+  const normalizedStart = toUtcMidnight(start);
+  const normalizedEnd = toUtcMidnight(end);
+  if (normalizedEnd.getTime() <= normalizedStart.getTime()) {
+    throw new BadRequestException('End date must be after start date');
+  }
+};
+
+const normalizeDiscount = (
+  originalPrice?: number | null,
+  price?: number | null,
+): number | undefined => {
+  if (
+    originalPrice === undefined ||
+    originalPrice === null ||
+    price === undefined ||
+    price === null ||
+    originalPrice === 0
+  ) {
+    return undefined;
+  }
+
+  const rawDiscount = Math.round(((originalPrice - price) / originalPrice) * 100);
+  if (Number.isNaN(rawDiscount)) {
+    return undefined;
+  }
+
+  if (rawDiscount <= 0) {
+    return 0;
+  }
+
+  if (rawDiscount >= 100) {
+    return 100;
+  }
+
+  return rawDiscount;
+};
 
 const getDealsByCompany = async (companyId: string, userId: string): Promise<IDealDocument[]> => {
   const company = await Company.findById(companyId);
@@ -123,21 +185,72 @@ const createDeal = async (companyId: string, userId: string, dealData: any): Pro
   }
 
   // Calculate discount if originalPrice and price are provided
-  if (dealData.originalPrice && dealData.price) {
-    dealData.discount = Math.round(((dealData.originalPrice - dealData.price) / dealData.originalPrice) * 100);
+  if (dealData.originalPrice !== undefined || dealData.price !== undefined) {
+    const normalizedDiscount = normalizeDiscount(
+      dealData.originalPrice ?? service.basePrice,
+      dealData.price ?? service.basePrice,
+    );
+    dealData.discount = normalizedDiscount;
   }
 
-  // Set default availability if not provided
-  if (!dealData.availability) {
-    dealData.availability = {
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-      currentBookings: 0,
-    };
+  if (dealData.availability) {
+    const legacyAvailability = dealData.availability;
+    if (Object.prototype.hasOwnProperty.call(legacyAvailability, 'startDate')) {
+      dealData.startDate = legacyAvailability.startDate;
+    }
+    if (Object.prototype.hasOwnProperty.call(legacyAvailability, 'endDate')) {
+      dealData.endDate = legacyAvailability.endDate;
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(legacyAvailability, 'maxBookings')
+    ) {
+      dealData.maxBookings = legacyAvailability.maxBookings;
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(legacyAvailability, 'currentBookings')
+    ) {
+      dealData.currentBookings = legacyAvailability.currentBookings;
+    }
   }
+
+  const defaultStartDate = dealData.startDate
+    ? normalizeDate(dealData.startDate, 'Start date')
+    : startOfToday();
+  const defaultEndDate = dealData.endDate
+    ? normalizeDate(dealData.endDate, 'End date')
+    : normalizeDate(
+      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      'End date',
+    );
+
+  ensureFutureDate(defaultStartDate, 'Start date');
+  ensureFutureDate(defaultEndDate, 'End date');
+  ensureEndAfterStart(defaultStartDate, defaultEndDate);
+
+  const rawMaxBookings =
+    dealData.maxBookings !== undefined && dealData.maxBookings !== null
+      ? Number(dealData.maxBookings)
+      : undefined;
+  const maxBookings =
+    rawMaxBookings !== undefined && !Number.isNaN(rawMaxBookings)
+      ? rawMaxBookings
+      : undefined;
+  const rawCurrentBookings =
+    dealData.currentBookings !== undefined && dealData.currentBookings !== null
+      ? Number(dealData.currentBookings)
+      : 0;
+  const currentBookings = Number.isNaN(rawCurrentBookings)
+    ? 0
+    : rawCurrentBookings;
+
+  delete dealData.availability;
 
   const newDeal = new Deal({
     ...dealData,
+    startDate: defaultStartDate,
+    endDate: defaultEndDate,
+    maxBookings,
+    currentBookings,
     company: companyId,
     createdBy: userId, // Track who created the deal
   });
@@ -249,16 +362,91 @@ const updateDeal = async (companyId: string, dealId: string, userId: string, upd
     updateData.operatingSite = operatingSiteIds;
   }
 
+  if (updateData.availability) {
+    const availabilityUpdates = updateData.availability;
+    if (Object.prototype.hasOwnProperty.call(availabilityUpdates, 'startDate')) {
+      updateData.startDate = availabilityUpdates.startDate;
+    }
+    if (Object.prototype.hasOwnProperty.call(availabilityUpdates, 'endDate')) {
+      updateData.endDate = availabilityUpdates.endDate;
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(availabilityUpdates, 'maxBookings')
+    ) {
+      updateData.maxBookings = availabilityUpdates.maxBookings;
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(
+        availabilityUpdates,
+        'currentBookings',
+      )
+    ) {
+      updateData.currentBookings = availabilityUpdates.currentBookings;
+    }
+    delete updateData.availability;
+  }
+
+  const hasStartDateUpdate = Object.prototype.hasOwnProperty.call(
+    updateData,
+    'startDate',
+  );
+  const hasEndDateUpdate = Object.prototype.hasOwnProperty.call(
+    updateData,
+    'endDate',
+  );
+
+  if (hasStartDateUpdate || hasEndDateUpdate) {
+    const effectiveStart = hasStartDateUpdate
+      ? normalizeDate(updateData.startDate, 'Start date')
+      : new Date(existingDeal.startDate);
+    const effectiveEnd = hasEndDateUpdate
+      ? normalizeDate(updateData.endDate, 'End date')
+      : new Date(existingDeal.endDate);
+
+    ensureFutureDate(effectiveEnd, 'End date');
+    ensureEndAfterStart(effectiveStart, effectiveEnd);
+
+    if (hasStartDateUpdate) {
+      updateData.startDate = effectiveStart;
+    }
+    if (hasEndDateUpdate) {
+      updateData.endDate = effectiveEnd;
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updateData, 'maxBookings')) {
+    const rawMaxBookings =
+      updateData.maxBookings !== undefined && updateData.maxBookings !== null
+        ? Number(updateData.maxBookings)
+        : undefined;
+    updateData.maxBookings =
+      rawMaxBookings !== undefined && !Number.isNaN(rawMaxBookings)
+        ? rawMaxBookings
+        : undefined;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updateData, 'currentBookings')) {
+    const rawCurrentBookings = Number(updateData.currentBookings);
+    updateData.currentBookings = Number.isNaN(rawCurrentBookings)
+      ? existingDeal.currentBookings
+      : rawCurrentBookings;
+  }
+
   // Recalculate discount if price or originalPrice are updated
   if (updateData.originalPrice !== undefined || updateData.price !== undefined) {
-    const currentOriginalPrice = updateData.originalPrice !== undefined ? updateData.originalPrice : existingDeal.originalPrice;
-    const currentPrice = updateData.price !== undefined ? updateData.price : existingDeal.price;
+    const currentOriginalPrice =
+      updateData.originalPrice !== undefined
+        ? updateData.originalPrice
+        : existingDeal.originalPrice;
+    const currentPrice =
+      updateData.price !== undefined ? updateData.price : existingDeal.price;
 
-    if (currentOriginalPrice && currentPrice) {
-      updateData.discount = Math.round(((currentOriginalPrice - currentPrice) / currentOriginalPrice) * 100);
-    } else {
-      updateData.discount = undefined; // Clear discount if prices are incomplete
-    }
+    const normalizedDiscount = normalizeDiscount(
+      currentOriginalPrice ?? undefined,
+      currentPrice ?? undefined,
+    );
+
+    updateData.discount = normalizedDiscount;
   }
 
   const deal = await Deal.findOneAndUpdate(
@@ -334,6 +522,10 @@ const updateDealStatus = async (companyId: string, dealId: string, userId: strin
   const company = await Company.findById(companyId);
   if (!company) {
     throw new Error('Company not found');
+  }
+
+  if (!['active', 'inactive'].includes(status)) {
+    throw new Error('Status can only be set to active or inactive');
   }
 
   // Check if the user has access to the company

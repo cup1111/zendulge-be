@@ -46,6 +46,9 @@ yarn fix-vscode-cli
 
 # Install all recommended extensions
 yarn setup-vscode-plugin
+
+# Setup Sample data for project
+yarn setup
 ```
 
 ### 3. Environment Configuration
@@ -128,19 +131,6 @@ src/
 └── index.ts              # Application entry point
 ```
 
-## 🔧 Available Scripts
-
-| Script           | Description                              |
-| ---------------- | ---------------------------------------- |
-| `yarn start`     | Start production server                  |
-| `yarn dev`       | Start development server with hot reload |
-| `yarn build`     | Build TypeScript to JavaScript           |
-| `yarn test`      | Run test suite                           |
-| `yarn coverage`  | Run tests with coverage report           |
-| `yarn lint`      | Run ESLint                               |
-| `yarn setup`     | Initialize application setup             |
-| `yarn load-test` | Run performance tests                    |
-
 ## 🐳 Docker Support
 
 ### Development with Docker
@@ -161,34 +151,6 @@ docker-compose up -d
 - **Performance Monitoring**: Request timing and metrics
 
 ## 🚀 Deployment
-
-### Production Deployment
-
-1. **Build the application**:
-
-   ```bash
-   yarn build
-   ```
-
-2. **Set production environment variables**:
-
-   ```bash
-   NODE_ENV=production
-   ```
-
-3. **Start the production server**:
-   ```bash
-   yarn start
-   ```
-
-### Environment Variables
-
-Ensure all required environment variables are set in production:
-
-- Database connection strings
-- AWS credentials and configuration
-- JWT secrets
-- Email service configuration
 
 ### Development Guidelines
 

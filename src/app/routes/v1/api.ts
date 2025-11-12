@@ -77,6 +77,8 @@ import {
 import { handleValidationErrors } from '../../validation/validationHandler';
 import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
 import { validateCompanyAccess } from '../../middleware/companyAccessMiddleware';
+import { RoleName } from '../../enum/roles';
+import { authorizeUserManagementAction } from '../../middleware/userManagementAccessMiddleware';
 
 const router = express.Router();
 
@@ -289,6 +291,9 @@ router.get(
   '/company/:id/users',
   authenticationTokenMiddleware,
   validateCompanyAccess, // Validates company access and provides req.company
+  authorizeUserManagementAction(
+    [RoleName.OWNER, RoleName.MANAGER, RoleName.EMPLOYEE],
+  ),
   getCompanyUsers,
 );
 
@@ -316,6 +321,9 @@ router.get(
   '/company/:id/users/:userId',
   authenticationTokenMiddleware,
   validateCompanyAccess, // Validates company access and provides req.company
+  authorizeUserManagementAction(
+    [RoleName.OWNER, RoleName.MANAGER, RoleName.EMPLOYEE],
+  ),
   companyAndUserIdValidation,
   handleValidationErrors,
   getUserById,
@@ -325,6 +333,9 @@ router.post(
   '/company/:id/invite',
   authenticationTokenMiddleware,
   validateCompanyAccess, // Validates company access and provides req.company
+  authorizeUserManagementAction(
+    [RoleName.OWNER, RoleName.MANAGER],
+  ),
   createUserWithRoleValidation,
   handleValidationErrors,
   createUserWithRole,
@@ -334,6 +345,9 @@ router.patch(
   '/company/:id/users/:userId',
   authenticationTokenMiddleware,
   validateCompanyAccess, // Validates company access and provides req.company
+  authorizeUserManagementAction(
+    [RoleName.OWNER, RoleName.MANAGER],
+  ),
   updateUserValidation,
   handleValidationErrors,
   updateUser,
@@ -343,6 +357,9 @@ router.delete(
   '/company/:id/users/:userId',
   authenticationTokenMiddleware,
   validateCompanyAccess, // Validates company access and provides req.company
+  authorizeUserManagementAction(
+    [RoleName.OWNER, RoleName.MANAGER],
+  ),
   companyAndUserIdValidation,
   handleValidationErrors,
   deleteUser,

@@ -19,11 +19,15 @@ export const updateCompanyValidation = [
     .withMessage('Description cannot exceed 500 characters')
     .trim(),
 
-  body('serviceCategory')
+  body('categories')
     .optional()
-    .isLength({ min: 1, max: 100 })
-    .withMessage('Service category must be between 1 and 100 characters')
-    .trim(),
+    .isArray({ min: 1 })
+    .withMessage('Categories must be a non-empty array'),
+  body('categories.*')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Each category must be between 2 and 50 characters'),
 
   body('businessAddress.street')
     .optional()

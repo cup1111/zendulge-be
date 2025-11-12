@@ -58,7 +58,7 @@ describe('Account Activation', () => {
     expect(res.body.message).toBe('Invalid or expired activation token');
   });
 
-  it.skip('should return 409 for already activated account', async () => {
+  it('should return 409 for already activated account', async () => {
     const activationCode = 'alreadyactivated123';
 
     await new UserBuilder()
@@ -66,6 +66,7 @@ describe('Account Activation', () => {
       .withFirstName('Test')
       .withLastName('User')
       .withActive(true)
+      .withActiveCode(activationCode)
       .save();
 
     const res = await request(app.application)

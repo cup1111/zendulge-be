@@ -5,6 +5,7 @@ import OperateSite from '../model/operateSite';
 import { winstonLogger } from '../../loaders/logger';
 import { Types } from 'mongoose';
 import { RoleName } from '../enum/roles';
+import { getUserRoleName, normalizeId } from './userManagementUtils';
 
 // Interface for service input types
 interface CreateUserRequest {
@@ -34,25 +35,29 @@ async function filterMembersBySiteAccess(
   members: any[],
   currentUserId: string,
   companyId: Types.ObjectId,
+  isOwner: boolean,
 ): Promise<any[]> {
-  const currentUserRole = members.find(m =>
-    m.user &&
-    !(m.user instanceof Types.ObjectId) &&
-    m.user._id.toString() === currentUserId,
+  const populatedMembers = members.filter(
+    m => m.user && !(m.user instanceof Types.ObjectId),
   );
 
-  const validMembers = members.filter(m =>
-    m.user &&
-    !(m.user instanceof Types.ObjectId) &&
-    m.user._id.toString() !== currentUserId,
+  const validMembers = populatedMembers.filter(
+    m => m.user._id.toString() !== currentUserId,
   );
 
-  if (currentUserRole.role.name === RoleName.OWNER) {
+  if (isOwner) {
     return validMembers;
   }
 
-  if (validMembers.length === 0) return [];
+  const currentUserRole = populatedMembers.find(m =>
+    m.user &&
+    m.user._id.toString() === currentUserId,
+  );
 
+  if (!currentUserRole) {
+    // Current user is not part of members (e.g. company owner without member record)
+    return [];
+  }
 
   // Get current user's site access
   const userSiteIds = await OperateSite.find({
@@ -128,21 +133,67 @@ export class UserManagementService {
       { path: 'members.role' },
     ]);
 
+    const currentUserId = normalizeId((user as any)?._id ?? user?.id ?? null);
+    if (!currentUserId) {
+      throw new Error('Acting user identifier is required');
+    }
+    const isOwner = normalizeId(result.owner) === currentUserId;
+
     const filteredMembers = await filterMembersBySiteAccess(
       result?.members || [],
-      (user as any)._id.toString(),
+      currentUserId,
       company._id,
+      isOwner,
     );
 
-    // Filtered members based on site access
-    const finalMembers = filteredMembers?.map((member) => {
-      if (member.user && !(member.user instanceof Types.ObjectId)) {
-        const userObj = member.user.toObject();
-        return { ...userObj, role: member.role };
+    const memberEntries = filteredMembers?.filter(
+      (member) =>
+        member?.user && !(member.user instanceof Types.ObjectId),
+    );
+
+    if (!memberEntries || memberEntries.length === 0) {
+      return [];
+    }
+
+    const memberIds = memberEntries.map((member) =>
+      member.user._id.toString(),
+    );
+
+    const sites = await OperateSite.find({
+      company: company._id,
+      members: { $in: memberIds },
+    })
+      .select('_id name address members')
+      .lean();
+
+    const siteMap = new Map<string, any[]>();
+    for (const site of sites) {
+      const siteMembers = (site.members ?? []) as Types.ObjectId[];
+      for (const memberId of siteMembers) {
+        const key = memberId.toString();
+        if (!siteMap.has(key)) {
+          siteMap.set(key, []);
+        }
+        siteMap.get(key)!.push({
+          id: site._id.toString(),
+          name: site.name,
+          address: site.address ?? null,
+        });
       }
-      return null;
+    }
+
+    return memberEntries.map((member) => {
+      const userObj = member.user.toObject();
+      delete userObj.password;
+      delete userObj.refreshToken;
+      delete userObj.activeCode;
+
+      return {
+        ...userObj,
+        role: member.role,
+        operatingSites: siteMap.get(member.user._id.toString()) ?? [],
+      };
     });
-    return finalMembers;
   }
 
   // Create user with role (with optional company assignment)
@@ -253,10 +304,13 @@ export class UserManagementService {
       delete userResponse.refreshToken;
       delete userResponse.activeCode;
 
+      const creationMessage = company
+        ? 'User created successfully and added to company'
+        : 'User created successfully';
+
       return {
         success: true,
-        message: `User created successfully${company ? ' and added to company' : ''
-        }`,
+        message: creationMessage,
         data: userResponse,
       };
     } catch (error) {
@@ -270,6 +324,7 @@ export class UserManagementService {
     userId: string,
     updateData: UpdateUserRequest,
     companyId?: string,
+    actingUser?: IUser,
   ) {
     try {
       if (!Types.ObjectId.isValid(userId)) {
@@ -283,16 +338,42 @@ export class UserManagementService {
       }
 
       // If companyId is provided, validate that user belongs to that company
-      let company = null;
+      let company: ICompanyDocument | null = null;
+      let actingRoleName: RoleName | null = null;
       if (companyId) {
         company = await Company.findOne({
           _id: companyId,
-          $or: [{ owner: (user as any)._id }, { 'members.user': (user as any)._id }],
           isActive: true,
-        });
+        }).populate('members.role');
 
         if (!company) {
+          throw new Error('Company not found');
+        }
+
+        const targetRoleName = await getUserRoleName(
+          company,
+          normalizeId(user._id),
+        );
+
+        if (!targetRoleName) {
           throw new Error('User not found in the specified company');
+        }
+
+        const actingUserId = normalizeId((actingUser as any)?._id ?? null);
+        actingRoleName = await getUserRoleName(company, actingUserId);
+
+        if (actingUserId && !actingRoleName) {
+          throw new Error('Acting user is not authorized for this company');
+        }
+
+        if (actingRoleName === RoleName.MANAGER) {
+          if (targetRoleName === RoleName.OWNER) {
+            throw new Error('Managers cannot manage company owners');
+          }
+
+          if (targetRoleName === RoleName.MANAGER) {
+            throw new Error('Managers cannot manage other managers');
+          }
         }
       }
 
@@ -308,6 +389,12 @@ export class UserManagementService {
         });
         if (!role) {
           throw new Error('Role not found');
+        }
+
+        if (company && actingRoleName === RoleName.MANAGER) {
+          if (role.name === RoleName.MANAGER || role.name === RoleName.OWNER) {
+            throw new Error('Managers cannot assign owner or manager roles');
+          }
         }
       }
 
@@ -423,7 +510,7 @@ export class UserManagementService {
   }
 
   // Delete user (soft delete) with optional company validation
-  async deleteUser(userId: string, companyId?: string) {
+  async deleteUser(userId: string, companyId?: string, actingUser?: IUser) {
     try {
       if (!Types.ObjectId.isValid(userId)) {
         throw new Error('Invalid user ID format');
@@ -437,14 +524,44 @@ export class UserManagementService {
 
       // If companyId is provided, validate that user belongs to that company
       if (companyId) {
-        const userInCompany = await Company.findOne({
+        const company = await Company.findOne({
           _id: companyId,
-          $or: [{ owner: (user as any)._id }, { 'members.user': (user as any)._id }],
           isActive: true,
-        });
+        }).populate('members.role');
 
-        if (!userInCompany) {
+        if (!company) {
+          throw new Error('Company not found');
+        }
+
+        const targetRoleName = await getUserRoleName(
+          company,
+          normalizeId(user._id),
+        );
+
+        if (!targetRoleName) {
           throw new Error('User not found in the specified company');
+        }
+
+        const actingUserId = normalizeId((actingUser as any)?._id ?? null);
+        const actingRoleName = await getUserRoleName(company, actingUserId);
+
+        if (actingUserId && !actingRoleName) {
+          throw new Error('Acting user is not authorized for this company');
+        }
+
+        if (actingRoleName === RoleName.MANAGER) {
+          if (targetRoleName === RoleName.OWNER) {
+            throw new Error('Managers cannot delete company owners');
+          }
+
+          if (targetRoleName === RoleName.MANAGER) {
+            throw new Error('Only company owners can delete company managers');
+          }
+        } else if (
+          targetRoleName === RoleName.MANAGER &&
+          actingRoleName !== RoleName.OWNER
+        ) {
+          throw new Error('Only company owners can delete company managers');
         }
 
         // Remove user from company members

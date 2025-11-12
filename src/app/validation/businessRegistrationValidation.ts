@@ -50,10 +50,13 @@ export const businessRegistrationValidation = [
       'Company description must be between 10 and 500 characters if provided',
     ),
 
-  body('serviceCategory')
+  body('categories')
+    .isArray({ min: 1 })
+    .withMessage('Categories must be a non-empty array'),
+  body('categories.*')
     .trim()
     .isLength({ min: 2, max: 50 })
-    .withMessage('Service category must be between 2 and 50 characters'),
+    .withMessage('Each category must be between 2 and 50 characters'),
 
   // Business address fields
   body('businessAddress.street')

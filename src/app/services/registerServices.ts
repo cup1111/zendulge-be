@@ -35,7 +35,7 @@ export interface IBusinessRegistration {
   companyName: string;
   companyEmail: string;
   companyDescription?: string;
-  serviceCategory: string;
+  categories: string[];
   businessAddress: {
     street: string;
     city: string;
@@ -70,7 +70,7 @@ export const businessRegister = async (
     companyName,
     companyEmail,
     companyDescription,
-    serviceCategory,
+    categories,
     businessAddress,
     abn,
     companyWebsite,
@@ -133,7 +133,7 @@ export const businessRegister = async (
     name: companyName,
     email: companyEmail,
     description: companyDescription,
-    serviceCategory,
+    categories,
     businessAddress: {
       ...businessAddress,
       country: businessAddress.country || 'Australia',

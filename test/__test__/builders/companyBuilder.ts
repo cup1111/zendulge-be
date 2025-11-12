@@ -8,7 +8,7 @@ export default class CompanyBuilder extends BaseBuilder<ICompanyDocument> {
       name: 'Test Company',
       email: 'test@company.com',
       description: 'A test company for testing purposes',
-      serviceCategory: 'Beauty & Wellness',
+      categories: ['Beauty & Wellness'],
       businessAddress: {
         street: '123 Test Street',
         city: 'Melbourne',
@@ -41,8 +41,8 @@ export default class CompanyBuilder extends BaseBuilder<ICompanyDocument> {
     return this;
   }
 
-  withServiceCategory(serviceCategory: string): CompanyBuilder {
-    this.properties.serviceCategory = serviceCategory;
+  withCategories(categories: string[]): CompanyBuilder {
+    this.properties.categories = categories;
     return this;
   }
 

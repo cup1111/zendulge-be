@@ -12,7 +12,7 @@ export interface ICompany {
   name: string;
   email: string;
   description?: string;
-  serviceCategory: string;
+  categories: string[];
   businessAddress: {
     street: string;
     city: string;
@@ -125,12 +125,15 @@ const companySchema = new Schema<ICompanyDocument>(
           'Company description must be at least 10 characters if provided',
       },
     },
-    serviceCategory: {
-      type: String,
-      required: [true, 'Service category is required'],
-      trim: true,
-      minlength: [2, 'Service category must be at least 2 characters long'],
-      maxlength: [50, 'Service category cannot exceed 50 characters'],
+    categories: {
+      type: [String],
+      required: [true, 'Categories are required'],
+      validate: {
+        validator: function (v: string[]) {
+          return Array.isArray(v) && v.length > 0 && v.every(cat => cat.trim().length >= 2 && cat.trim().length <= 50);
+        },
+        message: 'Categories must be a non-empty array of strings between 2 and 50 characters',
+      },
     },
     businessAddress: {
       street: {

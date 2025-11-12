@@ -34,7 +34,7 @@ const updateCompany = async (companyId: string, userId: string, updateData: any)
     name: updateData.name,
     email: updateData.email,
     description: updateData.description,
-    serviceCategory: updateData.serviceCategory,
+    categories: updateData.categories,
     businessAddress: updateData.businessAddress,
     abn: updateData.abn,
     website: updateData.website,

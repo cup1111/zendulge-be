@@ -311,7 +311,7 @@ const createCompanyIfNotExists = async (companyOwner: any) => {
     name: 'Zendulge Technologies Pty Ltd',
     email: 'info@zendulge.com',
     description: 'Premium business services and technology solutions',
-    serviceCategory: 'Technology & Business Services',
+    categories: ['Technology & Business Services'],
     businessAddress: {
       street: '123 Collins Street',
       city: 'Melbourne',

@@ -133,7 +133,7 @@ export class UserManagementService {
       { path: 'members.role' },
     ]);
 
-    const currentUserId = normalizeId((user as any)?._id ?? user?.id ?? null);
+    const currentUserId = normalizeId(user);
     if (!currentUserId) {
       throw new Error('Acting user identifier is required');
     }

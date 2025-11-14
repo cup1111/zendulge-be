@@ -120,7 +120,7 @@ export const businessRegister = async (
   }
 
   // Create the user
-  const user = await userService.store(userData);
+  const user = await userService.store({ userData, active: true });
 
   // Get user ID (handle both transformed and non-transformed objects)
   const userId = user.id || user._id;

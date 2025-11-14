@@ -251,7 +251,7 @@ export const toggleOperateSiteStatus = async (
   res.status(200).json({
     success: true,
     message: `Operate site ${operateSite.isActive ? 'activated' : 'deactivated'
-      } successfully`,
+    } successfully`,
     data: { isActive: operateSite.isActive },
   });
 };

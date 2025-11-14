@@ -1,6 +1,6 @@
 import { Types } from 'mongoose';
 import Role from '../model/role';
-import { ICompanyDocument } from '../model/company';
+import { IBusinessDocument } from '../model/business';
 import { RoleName } from '../enum/roles';
 import { winstonLogger } from '../../loaders/logger';
 
@@ -40,26 +40,26 @@ export const resolveRoleName = async (
 };
 
 export const getUserRoleName = async (
-  company: ICompanyDocument | null,
+  business: IBusinessDocument | null,
   userId?: string | null,
 ): Promise<RoleName | null> => {
-  if (!company || !userId) {
+  if (!business || !userId) {
     return null;
   }
 
-  if (normalizeId(company.owner) === userId) {
+  if (normalizeId(business.owner) === userId) {
     return RoleName.OWNER;
   }
 
-  const companyMember = company.members?.find((memberEntry) => {
+  const businessMember = business.members?.find((memberEntry) => {
     const memberUserId = normalizeId(memberEntry.user);
     return memberUserId === userId;
   });
 
-  if (!companyMember) {
+  if (!businessMember) {
     return null;
   }
 
-  return resolveRoleName(companyMember.role);
+  return resolveRoleName(businessMember.role);
 };
 

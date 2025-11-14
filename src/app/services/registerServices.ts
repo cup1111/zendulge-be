@@ -1,10 +1,10 @@
 import User from '../model/user';
-import Company from '../model/company';
+import Business from '../model/business';
 import userService from './userService';
 import emailService from './emailService';
 import {
   EmailAlreadyExistsException,
-  CompanyAlreadyExistsException,
+  BusinessAlreadyExistsException,
 } from '../exceptions';
 
 // Helper function to generate activation code and send email
@@ -31,7 +31,7 @@ export interface IBusinessRegistration {
   lastName: string;
   jobTitle?: string;
 
-  // Company data
+  // Business data
   companyName: string;
   companyEmail: string;
   companyDescription?: string;
@@ -113,14 +113,14 @@ export const businessRegister = async (
     };
   }
 
-  // Check if company name already exists
-  const existingCompany = await Company.isNameTaken(companyName);
-  if (existingCompany) {
-    throw new CompanyAlreadyExistsException();
+  // Check if business name already exists
+  const existingBusiness = await Business.isNameTaken(companyName);
+  if (existingBusiness) {
+    throw new BusinessAlreadyExistsException();
   }
 
   // Create the user
-  const user = await userService.store({ userData, active: true });
+  const user = await userService.store({ ...userData, active: false });
 
   // Get user ID (handle both transformed and non-transformed objects)
   const userId = user.id || user._id;
@@ -128,8 +128,8 @@ export const businessRegister = async (
     throw new Error('User creation failed - no ID returned');
   }
 
-  // Prepare company data
-  const companyData = {
+  // Prepare business data
+  const businessData = {
     name: companyName,
     email: companyEmail,
     description: companyDescription,
@@ -148,9 +148,9 @@ export const businessRegister = async (
     isActive: true,
   };
 
-  // Create the company
-  const company = new Company(companyData);
-  await company.save();
+  // Create the business
+  const business = new Business(businessData);
+  await business.save();
 
   // Generate activation code and send email
   await generateAndSendActivationEmail(user);
@@ -163,9 +163,9 @@ export const businessRegister = async (
       firstName: user.firstName,
       lastName: user.lastName,
     },
-    company: {
-      id: company.id || company._id,
-      name: company.name,
+    business: {
+      id: business.id || business._id,
+      name: business.name,
     },
     message:
       'Registration successful. Please check your email to verify your account.',

@@ -1,6 +1,6 @@
 import mongoose, { Types } from 'mongoose';
 import User from '../model/user';
-import Company from '../model/company';
+import Business from '../model/business';
 import OperateSite from '../model/operateSite';
 import Service from '../model/service';
 import Deal from '../model/deal';
@@ -22,7 +22,7 @@ async function createUserIfNotExists(userData: any, userLabel: string) {
   return user;
 }
 
-const createSitesIfNoExists = async (company: any) => {
+const createSitesIfNoExists = async (business: any) => {
 
   // Create 2 Operate Sites
   const operateSite1Data = {
@@ -41,7 +41,7 @@ const createSitesIfNoExists = async (company: any) => {
     },
     specialInstruction:
       'Main headquarters with full service availability. Meeting rooms available by appointment.',
-    company: company.id,
+    company: business.id,
     latitude: -37.8136,
     longitude: 144.9631,
     isActive: true,
@@ -63,7 +63,7 @@ const createSitesIfNoExists = async (company: any) => {
     },
     specialInstruction:
       'Boutique location specializing in premium consultations. Valet parking available.',
-    company: company.id,
+    company: business.id,
     latitude: -37.8394,
     longitude: 144.9944,
     isActive: true,
@@ -95,7 +95,7 @@ const createSitesIfNoExists = async (company: any) => {
   return [operateSite1, operateSite2];
 };
 
-const createServicesIfNotExists = async (company: any) => {
+const createServicesIfNotExists = async (business: any) => {
   const servicesData = [
     {
       name: 'Basic Cleaning Service',
@@ -103,7 +103,7 @@ const createServicesIfNotExists = async (company: any) => {
       duration: 60,
       basePrice: 80.00,
       description: 'Standard cleaning service for residential properties',
-      company: company.id,
+      company: business.id,
       status: 'active',
     },
     {
@@ -112,7 +112,7 @@ const createServicesIfNotExists = async (company: any) => {
       duration: 180,
       basePrice: 200.00,
       description: 'Comprehensive deep cleaning including all areas',
-      company: company.id,
+      company: business.id,
       status: 'active',
     },
     {
@@ -121,7 +121,7 @@ const createServicesIfNotExists = async (company: any) => {
       duration: 120,
       basePrice: 150.00,
       description: 'Professional office cleaning service',
-      company: company.id,
+      company: business.id,
       status: 'active',
     },
     {
@@ -130,7 +130,7 @@ const createServicesIfNotExists = async (company: any) => {
       duration: 90,
       basePrice: 120.00,
       description: 'Professional carpet and upholstery cleaning',
-      company: company.id,
+      company: business.id,
       status: 'active',
     },
     {
@@ -139,7 +139,7 @@ const createServicesIfNotExists = async (company: any) => {
       duration: 45,
       basePrice: 60.00,
       description: 'Interior and exterior window cleaning service',
-      company: company.id,
+      company: business.id,
       status: 'active',
     },
     {
@@ -148,7 +148,7 @@ const createServicesIfNotExists = async (company: any) => {
       duration: 240,
       basePrice: 300.00,
       description: 'Heavy-duty cleaning after construction or renovation',
-      company: company.id,
+      company: business.id,
       status: 'inactive',
     },
   ];
@@ -156,7 +156,7 @@ const createServicesIfNotExists = async (company: any) => {
   for (const serviceData of servicesData) {
     const existingService = await Service.findOne({
       name: serviceData.name,
-      company: company.id,
+      company: business.id,
     });
 
     if (!existingService) {
@@ -169,14 +169,14 @@ const createServicesIfNotExists = async (company: any) => {
   }
 };
 
-const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any, SouthYarraoperateSite2: any, companyOwner: any) => {
+const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: any, SouthYarraoperateSite2: any, companyOwner: any) => {
   // Get services to reference them
-  const basicCleaningService = await Service.findOne({ name: 'Basic Cleaning Service', company: company.id });
-  const deepCleaningService = await Service.findOne({ name: 'Deep Cleaning Service', company: company.id });
-  const officeCleaningService = await Service.findOne({ name: 'Office Cleaning', company: company.id });
-  const carpetCleaningService = await Service.findOne({ name: 'Carpet Cleaning', company: company.id });
-  const windowCleaningService = await Service.findOne({ name: 'Window Cleaning', company: company.id });
-  const postConstructionService = await Service.findOne({ name: 'Post-Construction Cleanup', company: company.id });
+  const basicCleaningService = await Service.findOne({ name: 'Basic Cleaning Service', company: business.id });
+  const deepCleaningService = await Service.findOne({ name: 'Deep Cleaning Service', company: business.id });
+  const officeCleaningService = await Service.findOne({ name: 'Office Cleaning', company: business.id });
+  const carpetCleaningService = await Service.findOne({ name: 'Carpet Cleaning', company: business.id });
+  const windowCleaningService = await Service.findOne({ name: 'Window Cleaning', company: business.id });
+  const postConstructionService = await Service.findOne({ name: 'Post-Construction Cleanup', company: business.id });
 
   const dealsData = [
     {
@@ -195,7 +195,7 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       currentBookings: 12,
       status: 'active',
       tags: ['spring', 'cleaning', 'special'],
-      company: company.id,
+      company: business.id,
     },
     {
       title: 'Office Deep Clean',
@@ -213,7 +213,7 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       currentBookings: 5,
       status: 'active',
       tags: ['office', 'commercial', 'deep-clean'],
-      company: company.id,
+      company: business.id,
     },
     {
       title: 'Carpet Cleaning Package',
@@ -231,7 +231,7 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       currentBookings: 8,
       status: 'active',
       tags: ['carpet', 'upholstery', 'stain-removal'],
-      company: company.id,
+      company: business.id,
     },
     {
       title: 'Window Cleaning Service',
@@ -249,7 +249,7 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       currentBookings: 15,
       status: 'sold_out',
       tags: ['windows', 'residential', 'commercial'],
-      company: company.id,
+      company: business.id,
     },
     {
       title: 'Post-Construction Cleanup',
@@ -267,7 +267,7 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       currentBookings: 10,
       status: 'expired',
       tags: ['construction', 'renovation', 'heavy-duty'],
-      company: company.id,
+      company: business.id,
     },
     {
       title: 'Monthly Maintenance Package',
@@ -285,14 +285,14 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
       currentBookings: 25,
       status: 'inactive',
       tags: ['monthly', 'maintenance', 'subscription'],
-      company: company.id,
+      company: business.id,
     },
   ];
 
   for (const dealData of dealsData) {
     const existingDeal = await Deal.findOne({
       title: dealData.title,
-      company: company.id,
+      company: business.id,
     });
 
     if (!existingDeal) {
@@ -305,9 +305,9 @@ const createDealsIfNotExists = async (company: any, MelbourneCBDOperateSite: any
   }
 };
 
-const createCompanyIfNotExists = async (companyOwner: any) => {
-  // Create a Company for the Company Owner
-  const companyData = {
+const createBusinessIfNotExists = async (companyOwner: any) => {
+  // Create a Business for the Business Owner
+  const businessData = {
     name: 'Zendulge Technologies Pty Ltd',
     email: 'info@zendulge.com',
     description: 'Premium business services and technology solutions',
@@ -328,15 +328,15 @@ const createCompanyIfNotExists = async (companyOwner: any) => {
     isActive: true,
   };
 
-  let company = await Company.findOne({ name: companyData.name });
-  if (!company) {
-    company = new Company(companyData);
-    await company.save();
-    console.log('✅ Created company: Zendulge Technologies');
+  let business = await Business.findOne({ name: businessData.name });
+  if (!business) {
+    business = new Business(businessData);
+    await business.save();
+    console.log('✅ Created business: Zendulge Technologies');
   } else {
-    console.log('ℹ️  Company already exists: Zendulge Technologies');
+    console.log('ℹ️  Business already exists: Zendulge Technologies');
   }
-  return company;
+  return business;
 };
 
 const seedCompleteBusinessSetup = async () => {
@@ -470,7 +470,7 @@ const seedCompleteBusinessSetup = async () => {
       active: true,
     };
 
-    // Check if company owner already exists
+    // Check if business owner already exists
     const companyOwner = await createUserIfNotExists(companyOwnerData, 'Company Owner user');
     const invitedAllManagerUser = await createUserIfNotExists(invitedAllMangerData, 'invited user: Sarah Johnson');
     const invitedMelbourneCBDEmployee1 = await createUserIfNotExists(invitedMelbourneCBDEmployee1Data, 'invited employee: John Doe');
@@ -482,19 +482,19 @@ const seedCompleteBusinessSetup = async () => {
     const customerWithCompany = await createUserIfNotExists(customerWithCompanyUserData, 'customer: Customer With Company');
     await createUserIfNotExists(customerNoCompanyUserData, 'customer: Customer No Company');
 
-    const company = await createCompanyIfNotExists(companyOwner);
-    const [MelbourneCBDOperateSite, SouthYarraoperateSite2] = await createSitesIfNoExists(company);
-    await createServicesIfNotExists(company);
-    await createDealsIfNotExists(company, MelbourneCBDOperateSite, SouthYarraoperateSite2, companyOwner);
+    const business = await createBusinessIfNotExists(companyOwner);
+    const [MelbourneCBDOperateSite, SouthYarraoperateSite2] = await createSitesIfNoExists(business);
+    await createServicesIfNotExists(business);
+    await createDealsIfNotExists(business, MelbourneCBDOperateSite, SouthYarraoperateSite2, companyOwner);
 
-    await company.addMember(new Types.ObjectId(companyOwner.id), ownerRole.id);
-    await company.addMember(new Types.ObjectId(invitedAllManagerUser.id), managerRole.id);
-    await company.addMember(new Types.ObjectId(invitedMelbourneCBDEmployee1.id), employeeRole.id);
-    await company.addMember(new Types.ObjectId(invitedNoSiteEmployee2.id), employeeRole.id);
-    await company.addMember(new Types.ObjectId(invitedCBDOnlyManager2.id), managerRole.id);
-    await company.addMember(new Types.ObjectId(invitedCBDOnlyManager1.id), managerRole.id);
-    await company.addMember(new Types.ObjectId(invitedSouthYarraManager.id), managerRole.id);
-    await company.addMember(new Types.ObjectId(invitedSouthYarraNotActiveEmployee.id), employeeRole.id);
+    await business.addMember(new Types.ObjectId(companyOwner.id), ownerRole.id);
+    await business.addMember(new Types.ObjectId(invitedAllManagerUser.id), managerRole.id);
+    await business.addMember(new Types.ObjectId(invitedMelbourneCBDEmployee1.id), employeeRole.id);
+    await business.addMember(new Types.ObjectId(invitedNoSiteEmployee2.id), employeeRole.id);
+    await business.addMember(new Types.ObjectId(invitedCBDOnlyManager2.id), managerRole.id);
+    await business.addMember(new Types.ObjectId(invitedCBDOnlyManager1.id), managerRole.id);
+    await business.addMember(new Types.ObjectId(invitedSouthYarraManager.id), managerRole.id);
+    await business.addMember(new Types.ObjectId(invitedSouthYarraNotActiveEmployee.id), employeeRole.id);
 
     await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedAllManagerUser.id));
     await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedAllManagerUser.id));
@@ -504,17 +504,17 @@ const seedCompleteBusinessSetup = async () => {
     await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedSouthYarraManager.id));
     await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedSouthYarraNotActiveEmployee.id));
 
-    // Add customerWithCompany to company.customers array
-    if (!company.customers) {
-      company.customers = [];
+    // Add customerWithCompany to business.customers array
+    if (!business.customers) {
+      business.customers = [];
     }
     const customerId = new Types.ObjectId(customerWithCompany.id);
-    if (!company.customers.some((id: any) => id.toString() === customerId.toString())) {
-      company.customers.push(customerId);
-      await company.save();
-      console.log('✅ Added customerWithCompany to company.customers');
+    if (!business.customers.some((id: any) => id.toString() === customerId.toString())) {
+      business.customers.push(customerId);
+      await business.save();
+      console.log('✅ Added customerWithCompany to business.customers');
     } else {
-      console.log('ℹ️  customerWithCompany already in company.customers');
+      console.log('ℹ️  customerWithCompany already in business.customers');
     }
 
     process.exit(0);

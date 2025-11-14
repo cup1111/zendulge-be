@@ -1,23 +1,23 @@
 import request from 'supertest';
 import app from '../setup/app';
 import UserBuilder from './builders/userBuilder';
-import CompanyBuilder from './builders/companyBuilder';
+import BusinessBuilder from './builders/businessBuilder';
 import Role from '../../src/app/model/role';
 import { RoleName } from '../../src/app/enum/roles';
 
 const validOwner = { email: 'owner@example.com', password: 'OwnerPass123' };
 const validMember = { email: 'member@example.com', password: 'MemberPass123' };
 
-describe('GET /api/v1/company/:companyId/me/role', () => {
-  it('should return owner role for company owner', async () => {
-    // Create owner user and company
+describe('GET /api/v1/business/:businessId/me/role', () => {
+  it('should return owner role for business owner', async () => {
+    // Create owner user and business
     const owner = await new UserBuilder()
       .withEmail(validOwner.email)
       .withPassword(validOwner.password)
       .withActive(true)
       .save();
     const ownerRole = await Role.findOne({ name: RoleName.OWNER });
-    const company = await new CompanyBuilder()
+    const business = await new BusinessBuilder()
       .withName('Owner Test Company')
       .withOwner(owner._id)
       .withContact(owner._id)
@@ -30,7 +30,7 @@ describe('GET /api/v1/company/:companyId/me/role', () => {
     const token = loginRes.body.data.accessToken;
     // Call endpoint
     const res = await request(app.application)
-      .get(`/api/v1/company/${company._id}/me/role`)
+      .get(`/api/v1/business/${business._id}/me/role`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.statusCode).toBe(200);
@@ -40,8 +40,8 @@ describe('GET /api/v1/company/:companyId/me/role', () => {
     expect(res.body.role.slug.toLowerCase()).toBe('owner');
   });
 
-  it('should return member role for company member', async () => {
-    // Create owner, member, and company
+  it('should return member role for business member', async () => {
+    // Create owner, member, and business
     const owner = await new UserBuilder()
       .withEmail('owner2@example.com')
       .withPassword('OwnerPass123')
@@ -53,7 +53,7 @@ describe('GET /api/v1/company/:companyId/me/role', () => {
       .withActive(true)
       .save();
     const memberRole = await Role.findOne({ name: RoleName.EMPLOYEE });
-    const company = await new CompanyBuilder()
+    const business = await new BusinessBuilder()
       .withName('Member Test Company')
       .withOwner(owner._id)
       .withContact(owner._id)
@@ -66,7 +66,7 @@ describe('GET /api/v1/company/:companyId/me/role', () => {
     const token = loginRes.body.data.accessToken;
     // Call endpoint
     const res = await request(app.application)
-      .get(`/api/v1/company/${company._id}/me/role`)
+      .get(`/api/v1/business/${business._id}/me/role`)
       .set('Authorization', `Bearer ${token}`);
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
@@ -75,7 +75,7 @@ describe('GET /api/v1/company/:companyId/me/role', () => {
     expect(res.body.role.slug.toLowerCase()).toBe('employee');
   });
 
-  it('should return 404 for non-existent company', async () => {
+  it('should return 404 for non-existent business', async () => {
     // Create and login a user
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const user = await new UserBuilder()
@@ -87,13 +87,13 @@ describe('GET /api/v1/company/:companyId/me/role', () => {
       .post('/api/v1/login')
       .send({ email: 'ghost@example.com', password: 'GhostPass123' });
     const token = loginRes.body.data.accessToken;
-    // Use a fake companyId that does not exist
-    const fakeCompanyId = '507f1f77bcf86cd799439099';
+    // Use a fake businessId that does not exist
+    const fakeBusinessId = '507f1f77bcf86cd799439099';
     const res = await request(app.application)
-      .get(`/api/v1/company/${fakeCompanyId}/me/role`)
+      .get(`/api/v1/business/${fakeBusinessId}/me/role`)
       .set('Authorization', `Bearer ${token}`);
     expect(res.statusCode).toBe(404);
     expect(res.body.success).toBe(false);
-    expect(res.body.message).toMatch(/company not found/i);
+    expect(res.body.message).toMatch(/business not found/i);
   });
 });

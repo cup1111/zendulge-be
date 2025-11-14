@@ -1,11 +1,11 @@
 import Service from '../model/service';
-import Company from '../model/company';
+import Business from '../model/business';
 import Deal from '../model/deal';
 import { ConflictException } from '../exceptions';
 
 const getServicesByCompany = async (companyId: string, userId: string) => {
-  // Verify user has access to the company
-  const company = await Company.findOne({
+  // Verify user has access to the business
+  const business = await Business.findOne({
     _id: companyId,
     $or: [
       { owner: userId },
@@ -13,8 +13,8 @@ const getServicesByCompany = async (companyId: string, userId: string) => {
     ],
   });
 
-  if (!company) {
-    throw new Error('Company not found or access denied');
+  if (!business) {
+    throw new Error('Business not found or access denied');
   }
 
   // Get all services for the company
@@ -23,8 +23,8 @@ const getServicesByCompany = async (companyId: string, userId: string) => {
 };
 
 const getServiceById = async (companyId: string, serviceId: string, userId: string) => {
-  // Verify user has access to the company
-  const company = await Company.findOne({
+  // Verify user has access to the business
+  const business = await Business.findOne({
     _id: companyId,
     $or: [
       { owner: userId },
@@ -32,8 +32,8 @@ const getServiceById = async (companyId: string, serviceId: string, userId: stri
     ],
   });
 
-  if (!company) {
-    throw new Error('Company not found or access denied');
+  if (!business) {
+    throw new Error('Business not found or access denied');
   }
 
   const service = await Service.findOne({
@@ -49,14 +49,14 @@ const getServiceById = async (companyId: string, serviceId: string, userId: stri
 };
 
 const createService = async (companyId: string, userId: string, serviceData: any) => {
-  // Verify user is owner of the company
-  const company = await Company.findOne({
+  // Verify user is owner of the business
+  const business = await Business.findOne({
     _id: companyId,
     owner: userId,
   });
 
-  if (!company) {
-    throw new Error('Company not found or you do not have permission to create services');
+  if (!business) {
+    throw new Error('Business not found or you do not have permission to create services');
   }
 
   // Only allow updating specific fields for security
@@ -82,14 +82,14 @@ const createService = async (companyId: string, userId: string, serviceData: any
 };
 
 const updateService = async (companyId: string, serviceId: string, userId: string, updateData: any) => {
-  // Verify user is owner of the company
-  const company = await Company.findOne({
+  // Verify user is owner of the business
+  const business = await Business.findOne({
     _id: companyId,
     owner: userId,
   });
 
-  if (!company) {
-    throw new Error('Company not found or you do not have permission to update services');
+  if (!business) {
+    throw new Error('Business not found or you do not have permission to update services');
   }
 
   const service = await Service.findOne({
@@ -139,14 +139,14 @@ const updateService = async (companyId: string, serviceId: string, userId: strin
 };
 
 const deleteService = async (companyId: string, serviceId: string, userId: string) => {
-  // Verify user is owner of the company
-  const company = await Company.findOne({
+  // Verify user is owner of the business
+  const business = await Business.findOne({
     _id: companyId,
     owner: userId,
   });
 
-  if (!company) {
-    throw new Error('Company not found or you do not have permission to delete services');
+  if (!business) {
+    throw new Error('Business not found or you do not have permission to delete services');
   }
 
   const hasRelatedDeals = await Deal.exists({

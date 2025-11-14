@@ -178,9 +178,9 @@ userSchema.methods.toJSON = function () {
 userSchema.methods.generateAuthToken = async function () {
   const user = this;
 
-  // Get companies this user has access to (owner or member)
-  const Company = mongoose.model('companies');
-  const userCompanies = await Company.find({
+  // Get businesses this user has access to (owner or member)
+  const Business = mongoose.model('businesses');
+  const userBusinesses = await Business.find({
     $or: [{ owner: user.id }, { 'members.user': user.id }],
     isActive: true,
   })
@@ -188,7 +188,7 @@ userSchema.methods.generateAuthToken = async function () {
     .lean();
 
   // Transform lean results to ensure consistent id field
-  const transformedCompanies = transformLeanResult(userCompanies);
+  const transformedBusinesses = transformLeanResult(userBusinesses);
   const payload = {
     id: user.id,
     email: user.email,
@@ -196,9 +196,9 @@ userSchema.methods.generateAuthToken = async function () {
     lastName: user.lastName || null,
     userName: user.userName || null,
     avatarIcon: user.avatarIcon || null,
-    companies: transformedCompanies.map((c: any) => ({
-      id: c.id,
-      name: c.name,
+    businesses: transformedBusinesses.map((b: any) => ({
+      id: b.id,
+      name: b.name,
     })),
   };
 

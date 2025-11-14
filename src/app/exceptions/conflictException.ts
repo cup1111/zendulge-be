@@ -14,9 +14,9 @@ export class EmailAlreadyExistsException extends ConflictException {
   }
 }
 
-// 409 - Company name already exists
-export class CompanyAlreadyExistsException extends ConflictException {
-  constructor(message: string = 'Company already registered') {
+// 409 - Business name already exists
+export class BusinessAlreadyExistsException extends ConflictException {
+  constructor(message: string = 'Business already registered') {
     super(message);
   }
 }

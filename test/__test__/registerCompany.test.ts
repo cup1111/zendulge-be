@@ -1,7 +1,7 @@
 import request from 'supertest';
 import app from '../setup/app';
 import UserBuilder from './builders/userBuilder';
-import CompanyBuilder from './builders/companyBuilder';
+import BusinessBuilder from './builders/businessBuilder';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import db from '../setup/db';
 
@@ -46,7 +46,7 @@ describe('Register Company', () => {
     expect(res.body.user.email).toBe(testData.email);
     expect(res.body.user.firstName).toBe(testData.firstName);
     expect(res.body.user.lastName).toBe(testData.lastName);
-    expect(res.body.company.name).toBe(testData.companyName);
+    expect(res.body.business.name).toBe(testData.companyName);
     expect(res.body.message).toBe('Registration successful. Please check your email to verify your account.');
   });
 
@@ -131,10 +131,10 @@ describe('Register Company', () => {
       .withFirstName('Owner')
       .withLastName('User')
       .save();
-    await new CompanyBuilder()
+    await new BusinessBuilder()
       .withName('Existing Company Name')
       .withEmail('contact@newcompany.com')
-      .withServiceCategory('Technology')
+      .withCategories(['Technology'])
       .withBusinessAddress({
         street: '999 New Street',
         city: 'Perth',
@@ -171,7 +171,7 @@ describe('Register Company', () => {
       .send(testData);
     expect(res.statusCode).toBe(409);
     expect(res.body.success).toBe(false);
-    expect(res.body.message).toBe('Company already registered');
+    expect(res.body.message).toBe('Business already registered');
   });
 
   it('should return 422 for missing required fields', async () => {

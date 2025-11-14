@@ -11,14 +11,14 @@ interface AuthenticatedRequest extends Request {
   token?: string;
 }
 
-interface CompanyRequest extends Request {
-  company?: import('../../model/company').ICompanyDocument;
+interface BusinessRequest extends Request {
+  business?: import('../../model/business').IBusinessDocument;
 }
 
-interface AuthCompanyRequest extends AuthenticatedRequest, CompanyRequest {}
+interface AuthBusinessRequest extends AuthenticatedRequest, BusinessRequest { }
 
 export const createOperateSite = async (
-  req: AuthCompanyRequest,
+  req: AuthBusinessRequest,
   res: Response,
 ): Promise<void> => {
   const {
@@ -82,24 +82,24 @@ export const createOperateSite = async (
 };
 
 export const getOperateSites = async (
-  req: AuthCompanyRequest,
+  req: AuthBusinessRequest,
   res: Response,
 ): Promise<void> => {
   const { id: companyId } = req.params;
   const { isActive, page = 1, limit = 10 } = req.query;
   const user = req.user;
-  
+
   if (!companyId) {
     throw new ValidationException('Company ID is required');
   }
 
   const filter: Record<string, unknown> = { company: companyId };
-  if (user && !req.company?.isCompanyOwner(user._id)) {
+  if (user && !req.business?.isBusinessOwner(user._id)) {
     filter.members = user.id;
   }
   if (isActive !== undefined) {
     filter.isActive = isActive === 'true';
-  } 
+  }
 
   const skip = (Number(page) - 1) * Number(limit);
 
@@ -250,9 +250,8 @@ export const toggleOperateSiteStatus = async (
 
   res.status(200).json({
     success: true,
-    message: `Operate site ${
-      operateSite.isActive ? 'activated' : 'deactivated'
-    } successfully`,
+    message: `Operate site ${operateSite.isActive ? 'activated' : 'deactivated'
+      } successfully`,
     data: { isActive: operateSite.isActive },
   });
 };

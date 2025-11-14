@@ -1,7 +1,7 @@
 import request from 'supertest';
 
 import app from '../setup/app';
-import CompanyBuilder from './builders/companyBuilder';
+import BusinessBuilder from './builders/businessBuilder';
 import OperateSiteBuilder from './builders/operateSiteBuilder';
 import UserBuilder from './builders/userBuilder';
 import Deal from '../../src/app/model/deal';
@@ -10,7 +10,7 @@ import Service from '../../src/app/model/service';
 import { RoleName } from '../../src/app/enum/roles';
 
 let ownerUser: any;
-let company: any;
+let business: any;
 let operateSite: any;
 let ownerRole: any;
 let ownerToken: string;
@@ -32,7 +32,7 @@ describe('Service safeguards', () => {
             .withActive(true)
             .save();
 
-        company = await new CompanyBuilder()
+        business = await new BusinessBuilder()
             .withOwner(ownerUser._id)
             .withContact(ownerUser._id)
             .withMember(ownerUser._id, ownerRole?._id)
@@ -40,7 +40,7 @@ describe('Service safeguards', () => {
             .save();
 
         operateSite = await new OperateSiteBuilder()
-            .withCompany(company._id)
+            .withCompany(business._id)
             .withName('Service Safeguard Site')
             .save();
 
@@ -60,12 +60,12 @@ describe('Service safeguards', () => {
             duration: 60,
             basePrice: 150,
             description: 'General cleaning service',
-            company: company._id.toString(),
+            company: business._id.toString(),
             status: 'active',
         });
 
         const response = await request(app.getApp())
-            .delete(`/api/v1/company/${company._id}/services/${service._id}`)
+            .delete(`/api/v1/business/${business._id}/services/${service._id}`)
             .set('Authorization', `Bearer ${ownerToken}`)
             .expect(200);
 
@@ -82,7 +82,7 @@ describe('Service safeguards', () => {
             duration: 120,
             basePrice: 400,
             description: 'Post-construction cleanup',
-            company: company._id.toString(),
+            company: business._id.toString(),
             status: 'active',
         });
 
@@ -99,13 +99,13 @@ describe('Service safeguards', () => {
             endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             currentBookings: 0,
             status: 'active',
-            company: company._id.toString(),
+            company: business._id.toString(),
             service: service._id.toString(),
             createdBy: ownerUser._id.toString(),
         });
 
         const response = await request(app.getApp())
-            .delete(`/api/v1/company/${company._id}/services/${service._id}`)
+            .delete(`/api/v1/business/${business._id}/services/${service._id}`)
             .set('Authorization', `Bearer ${ownerToken}`)
             .expect(409);
 
@@ -124,7 +124,7 @@ describe('Service safeguards', () => {
             duration: 90,
             basePrice: 220,
             description: 'Premium cleaning package',
-            company: company._id.toString(),
+            company: business._id.toString(),
             status: 'active',
         });
 
@@ -140,13 +140,13 @@ describe('Service safeguards', () => {
             endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             currentBookings: 0,
             status: 'active',
-            company: company._id.toString(),
+            company: business._id.toString(),
             service: service._id.toString(),
             createdBy: ownerUser._id.toString(),
         });
 
         const response = await request(app.getApp())
-            .patch(`/api/v1/company/${company._id}/services/${service._id}`)
+            .patch(`/api/v1/business/${business._id}/services/${service._id}`)
             .set('Authorization', `Bearer ${ownerToken}`)
             .send({
                 status: 'inactive',
@@ -169,12 +169,12 @@ describe('Service safeguards', () => {
             duration: 180,
             basePrice: 500,
             description: 'Landscaping service for commercial sites',
-            company: company._id.toString(),
+            company: business._id.toString(),
             status: 'active',
         });
 
         const response = await request(app.getApp())
-            .patch(`/api/v1/company/${company._id}/services/${service._id}`)
+            .patch(`/api/v1/business/${business._id}/services/${service._id}`)
             .set('Authorization', `Bearer ${ownerToken}`)
             .send({
                 status: 'inactive',

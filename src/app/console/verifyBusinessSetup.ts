@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import User from '../model/user';
-import Company from '../model/company';
+import Business from '../model/business';
 import OperateSite from '../model/operateSite';
 import Role from '../model/role';
 import config from '../config/app';
@@ -13,29 +13,29 @@ const verifyBusinessSetupData = async () => {
     await mongoose.connect(config.dbConnection);
     console.log('Connected to MongoDB for business setup verification');
 
-    // Get Company
-    const company = await Company.findOne({
+    // Get Business
+    const business = await Business.findOne({
       name: 'Zendulge Technologies Pty Ltd',
     });
-    const companyOwner = company?.owner
-      ? await User.findById(company.owner)
+    const businessOwner = business?.owner
+      ? await User.findById(business.owner)
       : null;
 
-    console.log('\n🏢 Company Details:');
-    console.log(`   Name: ${company?.name}`);
+    console.log('\n🏢 Business Details:');
+    console.log(`   Name: ${business?.name}`);
     console.log(
-      `   Owner: ${companyOwner?.firstName} ${companyOwner?.lastName} (${companyOwner?.email})`,
+      `   Owner: ${businessOwner?.firstName} ${businessOwner?.lastName} (${businessOwner?.email})`,
     );
     console.log(
-      `   Address: ${company?.businessAddress?.street}, ${company?.businessAddress?.city}`,
+      `   Address: ${business?.businessAddress?.street}, ${business?.businessAddress?.city}`,
     );
-    console.log(`   ABN: ${company?.abn}`);
-    console.log(`   Website: ${company?.website}`);
-    console.log(`   Members: ${company?.members?.length || 0}`);
+    console.log(`   ABN: ${business?.abn}`);
+    console.log(`   Website: ${business?.website}`);
+    console.log(`   Members: ${business?.members?.length || 0}`);
 
-    if (company?.members && company.members.length > 0) {
+    if (business?.members && business.members.length > 0) {
       console.log('   Team Members:');
-      for (const member of company.members) {
+      for (const member of business.members) {
         const memberUser = await User.findById(member.user);
         const memberRole = await Role.findById(member.role);
         console.log(
@@ -45,7 +45,7 @@ const verifyBusinessSetupData = async () => {
     }
 
     // Get Operate Sites
-    const operateSites = await OperateSite.find({ company: company?.id });
+    const operateSites = await OperateSite.find({ company: business?.id });
     console.log('\n📍 Operate Sites:');
     operateSites.forEach((site, index) => {
       console.log(`   ${index + 1}. ${site.name}`);

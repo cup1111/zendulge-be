@@ -14,9 +14,9 @@ import {
   deleteAccount,
 } from '../../controllers/v1/authController';
 import {
-  getCompanyInfo,
-  updateCompanyInfo,
-} from '../../controllers/v1/companyController';
+  getBusinessInfo,
+  updateBusinessInfo,
+} from '../../controllers/v1/businessController';
 import {
   getServices,
   getServiceById,
@@ -42,7 +42,7 @@ import {
   findNearbyOperateSites,
   getOperateSiteStatus,
 } from '../../controllers/v1/operateSiteController';
-import { getCompanyUsers, getCompanyCustomers } from '../../controllers/v1/companyController';
+import { getBusinessUsers, getBusinessCustomers } from '../../controllers/v1/businessController';
 import {
   getUserById,
   createUserWithRole,
@@ -58,8 +58,8 @@ import {
   updateProfileValidation,
 } from '../../validation/authValidation';
 import {
-  updateCompanyValidation,
-} from '../../validation/companyValidation';
+  updateBusinessValidation,
+} from '../../validation/businessValidation';
 import {
   createServiceValidation,
   updateServiceValidation,
@@ -76,7 +76,7 @@ import {
 } from '../../validation/userManagementValidation';
 import { handleValidationErrors } from '../../validation/validationHandler';
 import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
-import { validateCompanyAccess } from '../../middleware/companyAccessMiddleware';
+import { validateBusinessAccess } from '../../middleware/businessAccessMiddleware';
 import { RoleName } from '../../enum/roles';
 import { authorizeUserManagementAction } from '../../middleware/userManagementAccessMiddleware';
 
@@ -124,7 +124,7 @@ router.delete(
 );
 
 router.get(
-  '/company/:companyId/me/role',
+  '/business/:businessId/me/role',
   authenticationTokenMiddleware,
   getRole,
 );
@@ -138,36 +138,36 @@ router.post(
 
 router.get('/verify/:token', activateAccount);
 
-// Company routes
+// Business routes
 router.get(
-  '/company/:companyId',
+  '/business/:businessId',
   authenticationTokenMiddleware,
-  getCompanyInfo,
+  getBusinessInfo,
 );
 
 router.patch(
-  '/company/:companyId',
+  '/business/:businessId',
   authenticationTokenMiddleware,
-  updateCompanyValidation,
+  updateBusinessValidation,
   handleValidationErrors,
-  updateCompanyInfo,
+  updateBusinessInfo,
 );
 
 // Service routes (owner only)
 router.get(
-  '/company/:companyId/services',
+  '/business/:businessId/services',
   authenticationTokenMiddleware,
   getServices,
 );
 
 router.get(
-  '/company/:companyId/services/:serviceId',
+  '/business/:businessId/services/:serviceId',
   authenticationTokenMiddleware,
   getServiceById,
 );
 
 router.post(
-  '/company/:companyId/services',
+  '/business/:businessId/services',
   authenticationTokenMiddleware,
   createServiceValidation,
   handleValidationErrors,
@@ -175,7 +175,7 @@ router.post(
 );
 
 router.patch(
-  '/company/:companyId/services/:serviceId',
+  '/business/:businessId/services/:serviceId',
   authenticationTokenMiddleware,
   updateServiceValidation,
   handleValidationErrors,
@@ -183,26 +183,26 @@ router.patch(
 );
 
 router.delete(
-  '/company/:companyId/services/:serviceId',
+  '/business/:businessId/services/:serviceId',
   authenticationTokenMiddleware,
   deleteService,
 );
 
 // Deal routes (owner only)
 router.get(
-  '/company/:companyId/deals',
+  '/business/:businessId/deals',
   authenticationTokenMiddleware,
   getDeals,
 );
 
 router.get(
-  '/company/:companyId/deals/:dealId',
+  '/business/:businessId/deals/:dealId',
   authenticationTokenMiddleware,
   getDealById,
 );
 
 router.post(
-  '/company/:companyId/deals',
+  '/business/:businessId/deals',
   authenticationTokenMiddleware,
   createDealValidation,
   handleValidationErrors,
@@ -210,7 +210,7 @@ router.post(
 );
 
 router.patch(
-  '/company/:companyId/deals/:dealId',
+  '/business/:businessId/deals/:dealId',
   authenticationTokenMiddleware,
   updateDealValidation,
   handleValidationErrors,
@@ -218,13 +218,13 @@ router.patch(
 );
 
 router.delete(
-  '/company/:companyId/deals/:dealId',
+  '/business/:businessId/deals/:dealId',
   authenticationTokenMiddleware,
   deleteDeal,
 );
 
 router.patch(
-  '/company/:companyId/deals/:dealId/status',
+  '/business/:businessId/deals/:dealId/status',
   authenticationTokenMiddleware,
   updateDealStatusValidation,
   handleValidationErrors,
@@ -233,16 +233,16 @@ router.patch(
 
 // Operate Site routes (protected)
 router.post(
-  '/company/:id/operate-sites',
+  '/business/:id/operate-sites',
   authenticationTokenMiddleware,
-  validateCompanyAccess, // Validates company access + provides req.company
+  validateBusinessAccess, // Validates business access + provides req.business
   createOperateSite,
 );
 
 router.get(
-  '/company/:id/operate-sites',
+  '/business/:id/operate-sites',
   authenticationTokenMiddleware,
-  validateCompanyAccess, // Validates company access
+  validateBusinessAccess, // Validates business access
   getOperateSites,
 );
 
@@ -252,75 +252,75 @@ router.get(
 );
 
 router.get(
-  '/company/:id/operate-sites/:operateSiteId',
+  '/business/:id/operate-sites/:operateSiteId',
   authenticationTokenMiddleware,
-  validateCompanyAccess, // Validates company access
+  validateBusinessAccess, // Validates business access
   getOperateSiteById,
 );
 
 router.put(
-  '/company/:id/operate-sites/:operateSiteId',
+  '/business/:id/operate-sites/:operateSiteId',
   authenticationTokenMiddleware,
-  validateCompanyAccess, // Validates company access
+  validateBusinessAccess, // Validates business access
   updateOperateSite,
 );
 
 router.delete(
-  '/company/:id/operate-sites/:operateSiteId',
+  '/business/:id/operate-sites/:operateSiteId',
   authenticationTokenMiddleware,
-  validateCompanyAccess,
+  validateBusinessAccess,
   deleteOperateSite,
 );
 
 router.patch(
-  '/company/:id/operate-sites/:operateSiteId/toggle-status',
+  '/business/:id/operate-sites/:operateSiteId/toggle-status',
   authenticationTokenMiddleware,
-  validateCompanyAccess,
+  validateBusinessAccess,
   toggleOperateSiteStatus,
 );
 
 router.get(
-  '/company/:id/operate-sites/:operateSiteId/status',
+  '/business/:id/operate-sites/:operateSiteId/status',
   authenticationTokenMiddleware,
-  validateCompanyAccess,
+  validateBusinessAccess,
   getOperateSiteStatus,
 );
 
-// Company users route - get all users associated with a company
+// Business users route - get all users associated with a business
 router.get(
-  '/company/:id/users',
+  '/business/:id/users',
   authenticationTokenMiddleware,
-  validateCompanyAccess, // Validates company access and provides req.company
+  validateBusinessAccess, // Validates business access and provides req.business
   authorizeUserManagementAction(
     [RoleName.OWNER, RoleName.MANAGER, RoleName.EMPLOYEE],
   ),
-  getCompanyUsers,
+  getBusinessUsers,
 );
 
-// Company customers route - get all customers associated with a company
+// Business customers route - get all customers associated with a business
 router.get(
-  '/company/:id/customers',
+  '/business/:id/customers',
   authenticationTokenMiddleware,
-  validateCompanyAccess, // Validates company access and provides req.company
-  getCompanyCustomers,
+  validateBusinessAccess, // Validates business access and provides req.business
+  getBusinessCustomers,
 );
 
 // Example routes using the new security approach
 
-// Business access route - company members can access their company's analytics
+// Business access route - business members can access their business's analytics
 router.get(
-  '/company/:id/operate-sites/:operateSiteId/analytics',
+  '/business/:id/operate-sites/:operateSiteId/analytics',
   authenticationTokenMiddleware,
-  validateCompanyAccess, // Validates company access and provides req.company
-  getOperateSiteById, // This would show analytics for company members
+  validateBusinessAccess, // Validates business access and provides req.business
+  getOperateSiteById, // This would show analytics for business members
 );
 
-// User Management routes following the company/:id pattern
-// Company-scoped user management (business owners manage their company users)
+// User Management routes following the business/:id pattern
+// Business-scoped user management (business owners manage their business users)
 router.get(
-  '/company/:id/users/:userId',
+  '/business/:id/users/:userId',
   authenticationTokenMiddleware,
-  validateCompanyAccess, // Validates company access and provides req.company
+  validateBusinessAccess, // Validates business access and provides req.business
   authorizeUserManagementAction(
     [RoleName.OWNER, RoleName.MANAGER, RoleName.EMPLOYEE],
   ),
@@ -330,9 +330,9 @@ router.get(
 );
 
 router.post(
-  '/company/:id/invite',
+  '/business/:id/invite',
   authenticationTokenMiddleware,
-  validateCompanyAccess, // Validates company access and provides req.company
+  validateBusinessAccess, // Validates business access and provides req.business
   authorizeUserManagementAction(
     [RoleName.OWNER, RoleName.MANAGER],
   ),
@@ -342,9 +342,9 @@ router.post(
 );
 
 router.patch(
-  '/company/:id/users/:userId',
+  '/business/:id/users/:userId',
   authenticationTokenMiddleware,
-  validateCompanyAccess, // Validates company access and provides req.company
+  validateBusinessAccess, // Validates business access and provides req.business
   authorizeUserManagementAction(
     [RoleName.OWNER, RoleName.MANAGER],
   ),
@@ -354,9 +354,9 @@ router.patch(
 );
 
 router.delete(
-  '/company/:id/users/:userId',
+  '/business/:id/users/:userId',
   authenticationTokenMiddleware,
-  validateCompanyAccess, // Validates company access and provides req.company
+  validateBusinessAccess, // Validates business access and provides req.business
   authorizeUserManagementAction(
     [RoleName.OWNER, RoleName.MANAGER],
   ),
@@ -365,11 +365,11 @@ router.delete(
   deleteUser,
 );
 
-// Get all roles (for company owner to assign roles to users)
+// Get all roles (for business owner to assign roles to users)
 router.get(
-  '/company/:id/roles',
+  '/business/:id/roles',
   authenticationTokenMiddleware,
-  validateCompanyAccess,
+  validateBusinessAccess,
   getAllRoles,
 );
 

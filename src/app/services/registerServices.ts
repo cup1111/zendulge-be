@@ -1,10 +1,10 @@
 import User from '../model/user';
-import Company from '../model/company';
+import Business from '../model/business';
 import userService from './userService';
 import emailService from './emailService';
 import {
   EmailAlreadyExistsException,
-  CompanyAlreadyExistsException,
+  BusinessAlreadyExistsException,
 } from '../exceptions';
 
 // Helper function to generate activation code and send email
@@ -31,10 +31,10 @@ export interface IBusinessRegistration {
   lastName: string;
   jobTitle?: string;
 
-  // Company data
-  companyName: string;
-  companyEmail: string;
-  companyDescription?: string;
+  // Business data
+  businessName: string;
+  businessEmail: string;
+  businessDescription?: string;
   categories: string[];
   businessAddress: {
     street: string;
@@ -44,7 +44,7 @@ export interface IBusinessRegistration {
     country?: string;
   };
   abn?: string;
-  companyWebsite?: string;
+  businessWebsite?: string;
   facebookUrl?: string;
   twitterUrl?: string;
   logo?: string;
@@ -67,13 +67,13 @@ export const businessRegister = async (
     firstName,
     lastName,
     jobTitle,
-    companyName,
-    companyEmail,
-    companyDescription,
+    businessName,
+    businessEmail,
+    businessDescription,
     categories,
     businessAddress,
     abn,
-    companyWebsite,
+    businessWebsite,
     facebookUrl,
     twitterUrl,
     logo,
@@ -113,14 +113,14 @@ export const businessRegister = async (
     };
   }
 
-  // Check if company name already exists
-  const existingCompany = await Company.isNameTaken(companyName);
-  if (existingCompany) {
-    throw new CompanyAlreadyExistsException();
+  // Check if business name already exists
+  const existingBusiness = await Business.isNameTaken(businessName);
+  if (existingBusiness) {
+    throw new BusinessAlreadyExistsException();
   }
 
   // Create the user
-  const user = await userService.store({ userData, active: true });
+  const user = await userService.store({ ...userData, active: false });
 
   // Get user ID (handle both transformed and non-transformed objects)
   const userId = user.id || user._id;
@@ -128,11 +128,11 @@ export const businessRegister = async (
     throw new Error('User creation failed - no ID returned');
   }
 
-  // Prepare company data
-  const companyData = {
-    name: companyName,
-    email: companyEmail,
-    description: companyDescription,
+  // Prepare business data
+  const businessData = {
+    name: businessName,
+    email: businessEmail,
+    description: businessDescription,
     categories,
     businessAddress: {
       ...businessAddress,
@@ -140,7 +140,7 @@ export const businessRegister = async (
     },
     contact: userId, // The registering user becomes the contact person
     abn,
-    website: companyWebsite,
+    website: businessWebsite,
     facebookUrl,
     twitterUrl,
     logo,
@@ -148,9 +148,9 @@ export const businessRegister = async (
     isActive: true,
   };
 
-  // Create the company
-  const company = new Company(companyData);
-  await company.save();
+  // Create the business
+  const business = new Business(businessData);
+  await business.save();
 
   // Generate activation code and send email
   await generateAndSendActivationEmail(user);
@@ -163,9 +163,9 @@ export const businessRegister = async (
       firstName: user.firstName,
       lastName: user.lastName,
     },
-    company: {
-      id: company.id || company._id,
-      name: company.name,
+    business: {
+      id: business.id || business._id,
+      name: business.name,
     },
     message:
       'Registration successful. Please check your email to verify your account.',

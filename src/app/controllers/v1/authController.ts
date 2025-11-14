@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
 import User, { IUserDocument } from '../../model/user';
 import Role from '../../model/role';
-import Company from '../../model/company';
+import Business from '../../model/business';
 import {
   AuthenticationException,
   ValidationException,
-  CompanyNotFoundException,
+  BusinessNotFoundException,
 } from '../../exceptions';
 import { winstonLogger } from '../../../loaders/logger';
 import { RoleName } from '../../enum/roles';
@@ -110,20 +110,20 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
 
 export const getRole = async (req: AuthenticatedRequest, res: Response) => {
   const user = req.user;
-  const { companyId } = req.params;
+  const { businessId } = req.params;
 
   if (!user) {
     throw new AuthenticationException('User not found');
   }
 
-  // Find the company
-  const company = await Company.findById(companyId).lean();
-  if (!company) {
-    throw new CompanyNotFoundException('Company not found');
+  // Find the business
+  const business = await Business.findById(businessId).lean();
+  if (!business) {
+    throw new BusinessNotFoundException('Business not found');
   }
 
   // If user is owner
-  if (company.owner && company.owner.toString() === user._id.toString()) {
+  if (business.owner && business.owner.toString() === user._id.toString()) {
     const ownerRoleDoc = await Role.findOne({ name: RoleName.OWNER }).lean();
     if (!ownerRoleDoc) {
       throw new ValidationException('Owner role not found');
@@ -139,7 +139,7 @@ export const getRole = async (req: AuthenticatedRequest, res: Response) => {
   }
 
   // If user is a member, find their role
-  const member = company.members?.find(
+  const member = business.members?.find(
     (m: any) => m.user.toString() === user._id.toString(),
   );
   if (member) {
@@ -160,7 +160,7 @@ export const getRole = async (req: AuthenticatedRequest, res: Response) => {
 
   // Not a member or owner
   throw new AuthenticationException(
-    'User does not have a role in this company',
+    'User does not have a role in this business',
   );
 };
 
@@ -223,8 +223,8 @@ export const deleteAccount = async (req: AuthenticatedRequest, res: Response) =>
   try {
     const userId = user._id.toString();
 
-    // Get all companies the user is owner or member of
-    const userCompanies = await Company.find({
+    // Get all businesses the user is owner or member of
+    const userBusinesses = await Business.find({
       $or: [
         { owner: userId },
         { 'members.user': userId },
@@ -232,15 +232,15 @@ export const deleteAccount = async (req: AuthenticatedRequest, res: Response) =>
       isActive: true,
     });
 
-    // Check if user is owner of any companies
-    const ownedCompanies = userCompanies.filter(
-      (company) => company.owner.toString() === userId,
+    // Check if user is owner of any businesses
+    const ownedBusinesses = userBusinesses.filter(
+      (business) => business.owner.toString() === userId,
     );
 
     // If user is an owner, check if all businesses are deactivated
-    if (ownedCompanies.length > 0) {
-      const activeBusinesses = ownedCompanies.filter(
-        (company) => company.isActive === true,
+    if (ownedBusinesses.length > 0) {
+      const activeBusinesses = ownedBusinesses.filter(
+        (business) => business.isActive === true,
       );
 
       if (activeBusinesses.length > 0) {
@@ -252,19 +252,19 @@ export const deleteAccount = async (req: AuthenticatedRequest, res: Response) =>
       }
     }
 
-    // Remove user from all companies (as owner or member)
-    for (const company of userCompanies) {
-      if (company.owner.toString() === userId) {
+    // Remove user from all businesses (as owner or member)
+    for (const business of userBusinesses) {
+      if (business.owner.toString() === userId) {
         // User is owner - already deactivated, just ensure it's set
-        company.isActive = false;
+        business.isActive = false;
       } else {
         // User is member - remove from members
-        company.members = company.members?.filter(
+        business.members = business.members?.filter(
           (member: any) =>
             (member.user as Types.ObjectId).toString() !== userId,
         ) || [];
       }
-      await company.save();
+      await business.save();
     }
 
     // Soft delete the user account

@@ -7,7 +7,7 @@ import {
 import { getUserRoleName, normalizeId } from '../services/userManagementUtils';
 
 interface UserManagementRequest extends Request {
-  company?: any;
+  business?: any;
   user?: any;
 }
 
@@ -18,9 +18,9 @@ export const authorizeUserManagementAction = (allowedRoles: RoleName[]) => {
     next: NextFunction,
   ) => {
     try {
-      if (!req.company) {
+      if (!req.business) {
         throw new AuthorizationException(
-          'Company context is required for user management',
+          'Business context is required for user management',
         );
       }
 
@@ -35,7 +35,7 @@ export const authorizeUserManagementAction = (allowedRoles: RoleName[]) => {
       }
 
       const actorRole =
-                (await getUserRoleName(req.company, actorId)) ?? null;
+        (await getUserRoleName(req.business, actorId)) ?? null;
 
       if (!actorRole || !allowedRoles.includes(actorRole)) {
         throw new InsufficientPermissionsException(

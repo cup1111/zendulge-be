@@ -57,7 +57,7 @@ The collection includes comprehensive error testing for Laravel-style exceptions
 
 ### ❌ ConflictException (409)
 - EmailAlreadyExistsException
-- CompanyAlreadyExistsException
+- BusinessAlreadyExistsException
 - AccountAlreadyActivatedException
 
 ### ❌ NotFoundException (404)
@@ -149,9 +149,9 @@ The environment file includes:
   "password": "SecurePass123",
   "name": "Jane Smith",
   "jobTitle": "CEO",
-  "companyName": "Tech Solutions Inc",
-  "companyDescription": "Leading technology solutions provider",
-  "companyWebsite": "https://techsolutions.example.com"
+  "businessName": "Tech Solutions Inc",
+  "businessDescription": "Leading technology solutions provider",
+  "businessWebsite": "https://techsolutions.example.com"
 }
 ```
 

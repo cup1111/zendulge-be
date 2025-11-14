@@ -1,34 +1,34 @@
-import Company from '../model/company';
+import Business from '../model/business';
 
-const store = async (companyData: any) => {
-  const company = new Company(companyData);
-  return company.save();
+const store = async (businessData: any) => {
+  const business = new Business(businessData);
+  return business.save();
 };
 
 const findByName = async (name: string) => {
-  return Company.findOne({
+  return Business.findOne({
     name: new RegExp(`^${name}$`, 'i'), // Case insensitive
     isActive: true,
   });
 };
 
-const getCompanyById = async (companyId: string, userId: string) => {
-  const company = await Company.findOne({
-    _id: companyId,
+const getBusinessById = async (businessId: string, userId: string) => {
+  const business = await Business.findOne({
+    _id: businessId,
     $or: [
       { owner: userId },
       { 'members.user': userId },
     ],
   });
 
-  if (!company) {
-    throw new Error('Company not found or access denied');
+  if (!business) {
+    throw new Error('Business not found or access denied');
   }
 
-  return company;
+  return business;
 };
 
-const updateCompany = async (companyId: string, userId: string, updateData: any) => {
+const updateBusiness = async (businessId: string, userId: string, updateData: any) => {
   // Only allow updating specific fields for security
   const allowedFields = {
     name: updateData.name,
@@ -47,25 +47,26 @@ const updateCompany = async (companyId: string, userId: string, updateData: any)
     Object.entries(allowedFields).filter(([, value]) => value !== undefined),
   );
 
-  const company = await Company.findOneAndUpdate(
+  const business = await Business.findOneAndUpdate(
     {
-      _id: companyId,
-      owner: userId, // Only owner can update company info
+      _id: businessId,
+      owner: userId, // Only owner can update business info
     },
     filteredData,
     { new: true, runValidators: true },
   );
 
-  if (!company) {
-    throw new Error('Company not found or you do not have permission to update it');
+  if (!business) {
+    throw new Error('Business not found or you do not have permission to update it');
   }
 
-  return company;
+  return business;
 };
 
 export default {
   store,
   findByName,
-  getCompanyById,
-  updateCompany,
+  getBusinessById,
+  updateBusiness,
 };
+

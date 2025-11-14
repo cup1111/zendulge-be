@@ -1,29 +1,29 @@
-import Company from '../model/company';
+import Business from '../model/business';
 import User from '../model/user';
 import { RoleName } from '../enum/roles';
 import { Types } from 'mongoose';
 
 /**
- * Get all customers for a company
+ * Get all customers for a business
  * Only accessible by owners and managers
  */
-const getCustomersByCompany = async (companyId: string, userId: string) => {
-  // Get company and populate members
-  const company = await Company.findById(companyId)
+const getCustomersByBusiness = async (businessId: string, userId: string) => {
+  // Get business and populate members
+  const business = await Business.findById(businessId)
     .populate('members.user')
     .populate('members.role');
 
-  if (!company) {
-    throw new Error('Company not found');
+  if (!business) {
+    throw new Error('Business not found');
   }
 
   // Check if user is owner
-  const isOwner = company.isCompanyOwner(new Types.ObjectId(userId));
+  const isOwner = business.isBusinessOwner(new Types.ObjectId(userId));
 
   // Check if user is manager
   let isManager = false;
-  if (!isOwner && company.members) {
-    const member = company.members.find(
+  if (!isOwner && business.members) {
+    const member = business.members.find(
       (m: any) => m.user._id.toString() === userId,
     );
     if (member?.role) {
@@ -37,40 +37,40 @@ const getCustomersByCompany = async (companyId: string, userId: string) => {
   }
 
   // Get customers
-  const companyWithCustomers = await Company.findById(companyId)
+  const businessWithCustomers = await Business.findById(businessId)
     .populate({
       path: 'customers',
       select: 'firstName lastName email phoneNumber active',
     })
     .lean();
 
-  return companyWithCustomers?.customers || [];
+  return businessWithCustomers?.customers || [];
 };
 
 /**
- * Add a customer to a company
+ * Add a customer to a business
  * Only accessible by owners and managers
  */
-const addCustomerToCompany = async (
-  companyId: string,
+const addCustomerToBusiness = async (
+  businessId: string,
   userId: string,
   customerId: string,
 ) => {
-  // Get company and check permissions
-  const company = await Company.findById(companyId)
+  // Get business and check permissions
+  const business = await Business.findById(businessId)
     .populate('members.role');
 
-  if (!company) {
-    throw new Error('Company not found');
+  if (!business) {
+    throw new Error('Business not found');
   }
 
   // Check if user is owner
-  const isOwner = company.isCompanyOwner(new Types.ObjectId(userId));
+  const isOwner = business.isBusinessOwner(new Types.ObjectId(userId));
 
   // Check if user is manager
   let isManager = false;
-  if (!isOwner && company.members) {
-    const member = company.members.find(
+  if (!isOwner && business.members) {
+    const member = business.members.find(
       (m: any) => m.user.toString() === userId,
     );
     if (member?.role) {
@@ -90,18 +90,18 @@ const addCustomerToCompany = async (
   }
 
   // Check if customer is already added
-  const existingCustomers = company.customers || [];
+  const existingCustomers = business.customers || [];
   const isAlreadyAdded = existingCustomers.some(
     (id: any) => id.toString() === customerId,
   );
 
   if (isAlreadyAdded) {
-    throw new Error('Customer is already added to this company');
+    throw new Error('Customer is already added to this business');
   }
 
-  // Add customer to company
-  company.customers = [...existingCustomers, new Types.ObjectId(customerId)];
-  await company.save();
+  // Add customer to business
+  business.customers = [...existingCustomers, new Types.ObjectId(customerId)];
+  await business.save();
 
   // Populate and return the customer
   const customerData = await User.findById(customerId)
@@ -112,29 +112,29 @@ const addCustomerToCompany = async (
 };
 
 /**
- * Remove a customer from a company
+ * Remove a customer from a business
  * Only accessible by owners and managers
  */
-const removeCustomerFromCompany = async (
-  companyId: string,
+const removeCustomerFromBusiness = async (
+  businessId: string,
   userId: string,
   customerId: string,
 ) => {
-  // Get company and check permissions
-  const company = await Company.findById(companyId)
+  // Get business and check permissions
+  const business = await Business.findById(businessId)
     .populate('members.role');
 
-  if (!company) {
-    throw new Error('Company not found');
+  if (!business) {
+    throw new Error('Business not found');
   }
 
   // Check if user is owner
-  const isOwner = company.isCompanyOwner(new Types.ObjectId(userId));
+  const isOwner = business.isBusinessOwner(new Types.ObjectId(userId));
 
   // Check if user is manager
   let isManager = false;
-  if (!isOwner && company.members) {
-    const member = company.members.find(
+  if (!isOwner && business.members) {
+    const member = business.members.find(
       (m: any) => m.user.toString() === userId,
     );
     if (member?.role) {
@@ -147,18 +147,18 @@ const removeCustomerFromCompany = async (
     throw new Error('Only owners and managers can remove customers');
   }
 
-  // Remove customer from company
-  const existingCustomers = company.customers || [];
-  company.customers = existingCustomers.filter(
+  // Remove customer from business
+  const existingCustomers = business.customers || [];
+  business.customers = existingCustomers.filter(
     (id: any) => id.toString() !== customerId,
   );
-  await company.save();
+  await business.save();
 
   return { success: true, message: 'Customer removed successfully' };
 };
 
 export default {
-  getCustomersByCompany,
-  addCustomerToCompany,
-  removeCustomerFromCompany,
+  getCustomersByBusiness,
+  addCustomerToBusiness,
+  removeCustomerFromBusiness,
 };

@@ -7,7 +7,7 @@ export default class RoleBuilder extends BaseBuilder<IRoleDocument> {
     super(defaultValues);
     this.properties = {
       name: RoleName.EMPLOYEE,
-      description: 'Employee with limited access to company resources',
+      description: 'Employee with limited access to business resources',
       isActive: true,
     };
   }

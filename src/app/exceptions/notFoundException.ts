@@ -14,9 +14,9 @@ export class UserNotFoundException extends NotFoundException {
   }
 }
 
-// 404 - Company not found
-export class CompanyNotFoundException extends NotFoundException {
-  constructor(message: string = 'Company not found') {
+// 404 - Business not found
+export class BusinessNotFoundException extends NotFoundException {
+  constructor(message: string = 'Business not found') {
     super(message);
   }
 }

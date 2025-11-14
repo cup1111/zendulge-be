@@ -1,5 +1,5 @@
 import UserBuilder from '../__test__/builders/userBuilder';
-import CompanyBuilder from '../__test__/builders/companyBuilder';
+import BusinessBuilder from '../__test__/builders/businessBuilder';
 import dbHandler from './dbHandler';
 import mongoose, { Connection } from 'mongoose';
 import RoleBuilder from '../__test__/builders/roleBuilder';
@@ -8,7 +8,7 @@ import { RoleName } from '../../src/app/enum/roles';
 let dbConnection: Connection | null = null;
 let isInitialized = false;
 let defaultUser: any = null;
-let defaultCompany: any = null;
+let defaultBusiness: any = null;
 
 async function connect(): Promise<{ dbConnection: Connection }> {
   if (!isInitialized) {
@@ -29,7 +29,7 @@ async function createDefaultData(): Promise<void> {
   // Seed roles
   await new RoleBuilder()
     .withName(RoleName.OWNER)
-    .withDescription('Business owner who can manage their company')
+    .withDescription('Business owner who can manage their business')
     .withActive(true)
     .save();
   await new RoleBuilder()
@@ -39,7 +39,7 @@ async function createDefaultData(): Promise<void> {
     .save();
   await new RoleBuilder()
     .withName(RoleName.EMPLOYEE)
-    .withDescription('Employee with limited access to company resources')
+    .withDescription('Employee with limited access to business resources')
     .withActive(true)
     .save();
   await new RoleBuilder()
@@ -51,8 +51,8 @@ async function createDefaultData(): Promise<void> {
   const user = await new UserBuilder().save();
   defaultUser = user;
 
-  const company = await new CompanyBuilder().withOwner(user.id).withContact(user.id).save();
-  defaultCompany = company;
+  const business = await new BusinessBuilder().withOwner(user.id).withContact(user.id).save();
+  defaultBusiness = business;
 
 
 }
@@ -71,7 +71,7 @@ export default {
   get defaultUser(): any {
     return defaultUser;
   },
-  get defaultCompany(): any {
-    return defaultCompany;
+  get defaultBusiness(): any {
+    return defaultBusiness;
   },
 };

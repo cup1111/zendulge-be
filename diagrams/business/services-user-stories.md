@@ -16,13 +16,13 @@
 
 ### US-S002: Owner Views Services
 **As a** business owner  
-**I want to** view all services in my company  
+**I want to** view all services in my business  
 **So that** I can manage my service portfolio
 
 **Acceptance Criteria:**
 - Login as **owner**
 - → Service Management
-- → Should see **all services** offered by the company
+- → Should see **all services** offered by the business
 - → Can view **detailed service information**
 - → Can see service usage statistics across locations
 
@@ -41,7 +41,7 @@
 
 ### US-S004: Owner Deletes Service
 **As a** business owner  
-**I want to** remove services from my company  
+**I want to** remove services from my business  
 **So that** I can discontinue outdated offerings
 
 **Acceptance Criteria:**
@@ -68,17 +68,17 @@
 - → Service Management → "Add Service"
 - → Can fill in **service details**
 - And the service is created successfully
-- And the service is available for all locations (company-wide)
+- And the service is available for all locations (business-wide)
 
 ### US-S006: Manager Views Services
 **As a** manager  
-**I want to** view all company services  
+**I want to** view all business services  
 **So that** I can understand available offerings for my locations
 
 **Acceptance Criteria:**
 - Login as **manager**
 - → Service Management
-- → Should see **all services** offered by the company
+- → Should see **all services** offered by the business
 - → Can view **detailed service information**
 - → Can see how services are performing in my assigned locations
 
@@ -87,7 +87,7 @@
 ### US-S007: Employee Cannot Add Service
 **As an** employee  
 **I want to** understand that service creation is restricted  
-**So that** service management follows company hierarchy
+**So that** service management follows business hierarchy
 
 **Acceptance Criteria:**
 - Login as **employee**

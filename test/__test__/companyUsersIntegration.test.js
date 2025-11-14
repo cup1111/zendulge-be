@@ -1,15 +1,15 @@
 const request = require('supertest');
 const app = require('../setup/app').default;
 const UserBuilder = require('./builders/userBuilder').default;
-const CompanyBuilder = require('./builders/companyBuilder').default;
+const BusinessBuilder = require('./builders/businessBuilder').default;
 const OperateSiteBuilder = require('./builders/operateSiteBuilder').default;
 const { RoleName } = require('../../src/app/enum/roles');
-const Company = require('../../src/app/model/company').default;
+const Business = require('../../src/app/model/business').default;
 const OperateSite = require('../../src/app/model/operateSite').default;
 const User = require('../../src/app/model/user').default;
 const Role = require('../../src/app/model/role').default;
 
-let testCompany;
+let testBusiness;
 let testOperateSite;
 let testUser;
 let testRole;
@@ -23,8 +23,8 @@ async function loginAndGetToken(email, password) {
   return res.body.data.accessToken;
 }
 
-describe('Company Users Endpoint Integration', () => {
-  it('should return company users with their operate sites', async () => {
+describe('Business Users Endpoint Integration', () => {
+  it('should return business users with their operate sites', async () => {
     // Clean up collections
     // Fetch already-seeded employee role
     testRole = await Role.findOne({ name: RoleName.EMPLOYEE });
@@ -34,12 +34,12 @@ describe('Company Users Endpoint Integration', () => {
       .withPassword('OwnerPass123')
       .withActive(true)
       .save();
-    // Create company with owner
-    testCompany = await new CompanyBuilder()
-      .withName('Test Company Ltd')
-      .withEmail('company@test.com')
-      .withDescription('Test company description for integration tests')
-      .withServiceCategory('Technology')
+    // Create business with owner
+    testBusiness = await new BusinessBuilder()
+      .withName('Test Business Ltd')
+      .withEmail('business@test.com')
+      .withDescription('Test business description for integration tests')
+      .withCategories(['Technology'])
       .withOwner(ownerUser._id)
       .withContact(ownerUser._id)
       .withActive()
@@ -47,7 +47,7 @@ describe('Company Users Endpoint Integration', () => {
     // Create operate site
     testOperateSite = await new OperateSiteBuilder()
       .withName('Test Site Integration')
-      .withCompany(testCompany._id)
+      .withBusiness(testBusiness._id)
       .save();
     // Create member user
     testUser = await new UserBuilder()
@@ -55,8 +55,8 @@ describe('Company Users Endpoint Integration', () => {
       .withPassword('MemberPass123')
       .withActive(true)
       .save();
-    // Add member to company
-    await Company.findByIdAndUpdate(testCompany._id, {
+    // Add member to business
+    await Business.findByIdAndUpdate(testBusiness._id, {
       $push: {
         members: {
           user: testUser._id,
@@ -74,7 +74,7 @@ describe('Company Users Endpoint Integration', () => {
 
 
     const response = await request(app.getApp())
-      .get(`/api/v1/company/${testCompany._id}/users`)
+      .get(`/api/v1/business/${testBusiness._id}/users`)
       .set('Authorization', `Bearer ${ownerToken}`);
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);

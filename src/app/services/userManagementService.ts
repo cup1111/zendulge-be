@@ -1,6 +1,6 @@
 import User, { IUser } from '../model/user';
 import Role from '../model/role';
-import Company, { ICompanyDocument } from '../model/company';
+import Business, { IBusinessDocument } from '../model/business';
 import OperateSite from '../model/operateSite';
 import { winstonLogger } from '../../loaders/logger';
 import { Types } from 'mongoose';
@@ -17,7 +17,7 @@ interface CreateUserRequest {
   department?: string;
   location?: string;
   role: string; // Role ID
-  companyId?: string; // Company to add user to
+  businessId?: string; // Business to add user to
   operateSiteIds?: string[]; // Array of operate site IDs the user should have access to
 }
 
@@ -34,7 +34,7 @@ interface UpdateUserRequest {
 async function filterMembersBySiteAccess(
   members: any[],
   currentUserId: string,
-  companyId: Types.ObjectId,
+  businessId: Types.ObjectId,
   isOwner: boolean,
 ): Promise<any[]> {
   const populatedMembers = members.filter(
@@ -55,13 +55,13 @@ async function filterMembersBySiteAccess(
   );
 
   if (!currentUserRole) {
-    // Current user is not part of members (e.g. company owner without member record)
+    // Current user is not part of members (e.g. business owner without member record)
     return [];
   }
 
   // Get current user's site access
   const userSiteIds = await OperateSite.find({
-    company: companyId,
+    business: businessId,
     members: currentUserId,
   }).distinct('_id');
 
@@ -71,7 +71,7 @@ async function filterMembersBySiteAccess(
   const memberUserIds = validMembers.map(m => m.user._id);
 
   const accessibleMemberIds = await OperateSite.find({
-    company: companyId,
+    business: businessId,
     _id: { $in: userSiteIds },
     members: { $in: memberUserIds },
   }).distinct('members');
@@ -87,7 +87,7 @@ async function filterMembersBySiteAccess(
 
 export class UserManagementService {
   // Get user by ID with role information
-  async getUserById(userId: string, companyId?: string) {
+  async getUserById(userId: string, businessId?: string) {
     try {
       if (!Types.ObjectId.isValid(userId)) {
         throw new Error('Invalid user ID format');
@@ -102,16 +102,16 @@ export class UserManagementService {
         throw new Error('User not found');
       }
 
-      // If companyId is provided, validate that user belongs to that company
-      if (companyId) {
-        const userInCompany = await Company.findOne({
-          _id: companyId,
+      // If businessId is provided, validate that user belongs to that business
+      if (businessId) {
+        const userInBusiness = await Business.findOne({
+          _id: businessId,
           $or: [{ owner: (user as any)._id }, { 'members.user': (user as any)._id }],
           isActive: true,
         });
 
-        if (!userInCompany) {
-          throw new Error('User not found in the specified company');
+        if (!userInBusiness) {
+          throw new Error('User not found in the specified business');
         }
       }
 
@@ -127,8 +127,8 @@ export class UserManagementService {
   }
 
   // Get all users with their roles
-  async getUsersByCompanyAndSite(company: ICompanyDocument, user: IUser) {
-    const result = await company.populate([
+  async getUsersByBusinessAndSite(business: IBusinessDocument, user: IUser) {
+    const result = await business.populate([
       { path: 'members.user' },
       { path: 'members.role' },
     ]);
@@ -142,7 +142,7 @@ export class UserManagementService {
     const filteredMembers = await filterMembersBySiteAccess(
       result?.members || [],
       currentUserId,
-      company._id,
+      business._id,
       isOwner,
     );
 
@@ -160,7 +160,7 @@ export class UserManagementService {
     );
 
     const sites = await OperateSite.find({
-      company: company._id,
+      business: business._id,
       members: { $in: memberIds },
     })
       .select('_id name address members')
@@ -196,7 +196,7 @@ export class UserManagementService {
     });
   }
 
-  // Create user with role (with optional company assignment)
+  // Create user with role (with optional business assignment)
   async createUserWithRole(userData: CreateUserRequest) {
     try {
       // Check if email already exists
@@ -215,21 +215,21 @@ export class UserManagementService {
         throw new Error('Role not found');
       }
 
-      // Validate company if provided
-      let company = null;
+      // Validate business if provided
+      let business = null;
       let validatedOperateSiteIds: Types.ObjectId[] = [];
 
-      if (userData.companyId) {
-        if (!Types.ObjectId.isValid(userData.companyId)) {
-          throw new Error('Invalid company ID format');
+      if (userData.businessId) {
+        if (!Types.ObjectId.isValid(userData.businessId)) {
+          throw new Error('Invalid business ID format');
         }
 
-        company = await Company.findOne({
-          _id: userData.companyId,
+        business = await Business.findOne({
+          _id: userData.businessId,
           isActive: true,
         });
-        if (!company) {
-          throw new Error('Company not found');
+        if (!business) {
+          throw new Error('Business not found');
         }
 
         // Validate operate site IDs if provided
@@ -241,16 +241,16 @@ export class UserManagementService {
             }
           }
 
-          // Check if all operate sites belong to the company and are active
+          // Check if all operate sites belong to the business and are active
           const operateSites = await OperateSite.find({
             _id: { $in: userData.operateSiteIds },
-            company: userData.companyId,
+            business: userData.businessId,
             isActive: true,
           });
 
           if (operateSites.length !== userData.operateSiteIds.length) {
             throw new Error(
-              'One or more operate sites not found or not accessible for this company',
+              'One or more operate sites not found or not accessible for this business',
             );
           }
 
@@ -274,9 +274,9 @@ export class UserManagementService {
         active: false, // Inactive until they complete account setup
       });
 
-      // Add user to company if specified
-      if (company) {
-        await company.updateOne({
+      // Add user to business if specified
+      if (business) {
+        await business.updateOne({
           $push: {
             members: {
               user: newUser.id,
@@ -304,8 +304,8 @@ export class UserManagementService {
       delete userResponse.refreshToken;
       delete userResponse.activeCode;
 
-      const creationMessage = company
-        ? 'User created successfully and added to company'
+      const creationMessage = business
+        ? 'User created successfully and added to business'
         : 'User created successfully';
 
       return {
@@ -323,7 +323,7 @@ export class UserManagementService {
   async updateUser(
     userId: string,
     updateData: UpdateUserRequest,
-    companyId?: string,
+    businessId?: string,
     actingUser?: IUser,
   ) {
     try {
@@ -337,38 +337,38 @@ export class UserManagementService {
         throw new Error('User not found');
       }
 
-      // If companyId is provided, validate that user belongs to that company
-      let company: ICompanyDocument | null = null;
+      // If businessId is provided, validate that user belongs to that business
+      let business: IBusinessDocument | null = null;
       let actingRoleName: RoleName | null = null;
-      if (companyId) {
-        company = await Company.findOne({
-          _id: companyId,
+      if (businessId) {
+        business = await Business.findOne({
+          _id: businessId,
           isActive: true,
         }).populate('members.role');
 
-        if (!company) {
-          throw new Error('Company not found');
+        if (!business) {
+          throw new Error('Business not found');
         }
 
         const targetRoleName = await getUserRoleName(
-          company,
+          business,
           normalizeId(user._id),
         );
 
         if (!targetRoleName) {
-          throw new Error('User not found in the specified company');
+          throw new Error('User not found in the specified business');
         }
 
         const actingUserId = normalizeId((actingUser as any)?._id ?? null);
-        actingRoleName = await getUserRoleName(company, actingUserId);
+        actingRoleName = await getUserRoleName(business, actingUserId);
 
         if (actingUserId && !actingRoleName) {
-          throw new Error('Acting user is not authorized for this company');
+          throw new Error('Acting user is not authorized for this business');
         }
 
         if (actingRoleName === RoleName.MANAGER) {
           if (targetRoleName === RoleName.OWNER) {
-            throw new Error('Managers cannot manage company owners');
+            throw new Error('Managers cannot manage business owners');
           }
 
           if (targetRoleName === RoleName.MANAGER) {
@@ -391,7 +391,7 @@ export class UserManagementService {
           throw new Error('Role not found');
         }
 
-        if (company && actingRoleName === RoleName.MANAGER) {
+        if (business && actingRoleName === RoleName.MANAGER) {
           if (role.name === RoleName.MANAGER || role.name === RoleName.OWNER) {
             throw new Error('Managers cannot assign owner or manager roles');
           }
@@ -403,7 +403,7 @@ export class UserManagementService {
       if (
         updateData.operateSiteIds &&
         updateData.operateSiteIds.length > 0 &&
-        companyId
+        businessId
       ) {
         // Check if all operate site IDs are valid ObjectIds
         for (const siteId of updateData.operateSiteIds) {
@@ -412,16 +412,16 @@ export class UserManagementService {
           }
         }
 
-        // Check if all operate sites belong to the company and are active
+        // Check if all operate sites belong to the business and are active
         const operateSites = await OperateSite.find({
           _id: { $in: updateData.operateSiteIds },
-          company: companyId,
+          business: businessId,
           isActive: true,
         });
 
         if (operateSites.length !== updateData.operateSiteIds.length) {
           throw new Error(
-            'One or more operate sites not found or not accessible for this company',
+            'One or more operate sites not found or not accessible for this business',
           );
         }
 
@@ -448,11 +448,11 @@ export class UserManagementService {
         .populate('role', 'name description permissions')
         .select('-password -refreshToken -activeCode');
 
-      // Update company member role if needed
-      if (company && updateData.role) {
-        await Company.updateOne(
+      // Update business member role if needed
+      if (business && updateData.role) {
+        await Business.updateOne(
           {
-            _id: companyId,
+            _id: businessId,
             'members.user': userId,
           },
           {
@@ -462,10 +462,10 @@ export class UserManagementService {
       }
 
       // Update operate site access if specified
-      if (updateData.operateSiteIds !== undefined && companyId) {
-        // Remove user from all operate sites in this company first
+      if (updateData.operateSiteIds !== undefined && businessId) {
+        // Remove user from all operate sites in this business first
         await OperateSite.updateMany(
-          { company: companyId },
+          { business: businessId },
           { $pull: { members: userId } },
         );
 
@@ -509,8 +509,8 @@ export class UserManagementService {
     }
   }
 
-  // Delete user (soft delete) with optional company validation
-  async deleteUser(userId: string, companyId?: string, actingUser?: IUser) {
+  // Delete user (soft delete) with optional business validation
+  async deleteUser(userId: string, businessId?: string, actingUser?: IUser) {
     try {
       if (!Types.ObjectId.isValid(userId)) {
         throw new Error('Invalid user ID format');
@@ -522,51 +522,51 @@ export class UserManagementService {
         throw new Error('User not found');
       }
 
-      // If companyId is provided, validate that user belongs to that company
-      if (companyId) {
-        const company = await Company.findOne({
-          _id: companyId,
+      // If businessId is provided, validate that user belongs to that business
+      if (businessId) {
+        const business = await Business.findOne({
+          _id: businessId,
           isActive: true,
         }).populate('members.role');
 
-        if (!company) {
-          throw new Error('Company not found');
+        if (!business) {
+          throw new Error('Business not found');
         }
 
         const targetRoleName = await getUserRoleName(
-          company,
+          business,
           normalizeId(user._id),
         );
 
         if (!targetRoleName) {
-          throw new Error('User not found in the specified company');
+          throw new Error('User not found in the specified business');
         }
 
         const actingUserId = normalizeId((actingUser as any)?._id ?? null);
-        const actingRoleName = await getUserRoleName(company, actingUserId);
+        const actingRoleName = await getUserRoleName(business, actingUserId);
 
         if (actingUserId && !actingRoleName) {
-          throw new Error('Acting user is not authorized for this company');
+          throw new Error('Acting user is not authorized for this business');
         }
 
         if (actingRoleName === RoleName.MANAGER) {
           if (targetRoleName === RoleName.OWNER) {
-            throw new Error('Managers cannot delete company owners');
+            throw new Error('Managers cannot delete business owners');
           }
 
           if (targetRoleName === RoleName.MANAGER) {
-            throw new Error('Only company owners can delete company managers');
+            throw new Error('Only business owners can delete business managers');
           }
         } else if (
           targetRoleName === RoleName.MANAGER &&
           actingRoleName !== RoleName.OWNER
         ) {
-          throw new Error('Only company owners can delete company managers');
+          throw new Error('Only business owners can delete business managers');
         }
 
-        // Remove user from company members
-        await Company.updateOne(
-          { _id: companyId },
+        // Remove user from business members
+        await Business.updateOne(
+          { _id: businessId },
           {
             $pull: {
               members: { user: userId },

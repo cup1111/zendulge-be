@@ -1,55 +1,56 @@
 import { Request, Response, NextFunction } from 'express';
-import Company from '../model/company';
+import Business from '../model/business';
 import { AuthorizationException, BadRequestException } from '../exceptions';
 
 interface AuthenticatedRequest extends Request {
   user?: any;
-  company?: any;
-  userCompanies?: string[];
-  userRoleInCompany?: string;
+  business?: any;
+  userBusinesses?: string[];
+  userRoleInBusiness?: string;
 }
 
 /**
- * Middleware to validate company access from route parameter
+ * Middleware to validate business access from route parameter
  * This should be used AFTER authenticationTokenMiddleware
  */
-export const validateCompanyAccess = async (
+export const validateBusinessAccess = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const companyId = req.params.id || req.params.companyId;
+    const businessId = req.params.id || req.params.businessId;
     const user = req.user;
 
-    if (!companyId) {
-      throw new BadRequestException('Company ID is required');
+    if (!businessId) {
+      throw new BadRequestException('Business ID is required');
     }
 
     if (!user) {
       throw new AuthorizationException('User not authenticated');
     }
 
-    // Check if user has access to this company via database
-    const company = await Company.findOne({
-      _id: companyId,
+    // Check if user has access to this business via database
+    const business = await Business.findOne({
+      _id: businessId,
       $or: [
         { owner: user._id }, // User is owner
         { 'members.user': user._id }, // User is member
       ],
     });
 
-    if (!company) {
+    if (!business) {
       throw new AuthorizationException(
-        'Cannot access this company or company does not exist',
+        'Cannot access this business or business does not exist',
       );
     }
 
-    // Attach company to request for use in controllers
-    req.company = company;
+    // Attach business to request for use in controllers
+    req.business = business;
 
     next();
   } catch (error) {
     next(error);
   }
 };
+

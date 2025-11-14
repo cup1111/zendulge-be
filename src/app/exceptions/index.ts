@@ -17,14 +17,14 @@ export {
 export {
   NotFoundException,
   UserNotFoundException,
-  CompanyNotFoundException,
+  BusinessNotFoundException,
 } from './notFoundException';
 
 // Conflict exceptions (409)
 export {
   ConflictException,
   EmailAlreadyExistsException,
-  CompanyAlreadyExistsException,
+  BusinessAlreadyExistsException,
   AccountAlreadyActivatedException,
 } from './conflictException';
 

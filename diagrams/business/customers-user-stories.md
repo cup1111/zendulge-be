@@ -4,7 +4,7 @@
 
 ### US-C001: Owner Views Customers
 **As a** business owner  
-**I want to** view all customers in my company  
+**I want to** view all customers in my business  
 **So that** I have complete visibility of my customer base
 
 **Acceptance Criteria:**
@@ -54,7 +54,7 @@
 
 ### US-C005: Manager Views Customers
 **As a** manager  
-**I want to** view all customers in the company  
+**I want to** view all customers in the business  
 **So that** I can understand the customer base for business planning
 
 **Acceptance Criteria:**

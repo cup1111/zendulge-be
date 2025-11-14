@@ -2,11 +2,11 @@ import request from 'supertest';
 import app from '../setup/app';
 import testDB from '../setup/db';
 
-describe('Company Users Endpoint', () => {
+describe('Business Users Endpoint', () => {
 
   it('should return 401 without authentication token', async () => {
     const res = await request(app.application)
-      .get('/api/v1/company/123/users');
+      .get('/api/v1/business/123/users');
 
     expect(res.statusCode).toBe(401);
     expect(res.body.success).toBe(false);
@@ -15,7 +15,7 @@ describe('Company Users Endpoint', () => {
   it('should require authentication middleware', async () => {
     // Test that the endpoint exists and requires auth
     const res = await request(app.application)
-      .get('/api/v1/company/nonexistent/users')
+      .get('/api/v1/business/nonexistent/users')
       .set('Authorization', 'Bearer invalid-token');
 
     // Should get 401 for invalid token, not 404 for missing route
@@ -24,11 +24,11 @@ describe('Company Users Endpoint', () => {
   });
 
   it('should not include the owner or the current user in the users list', async () => {
-    const company = testDB.defaultCompany;
+    const business = testDB.defaultBusiness;
     const user = testDB.defaultUser;
-    const companyId = company.id || company._id;
+    const businessId = business.id || business._id;
 
-    if (!company.members || company.members.length === 0) {
+    if (!business.members || business.members.length === 0) {
       // You may want to add a member here using your builder or service logic
       // This is a placeholder for actual member seeding logic
       return;
@@ -36,14 +36,14 @@ describe('Company Users Endpoint', () => {
 
     // Simulate a request as the current user (owner)
     const res = await request(app.application)
-      .get(`/api/v1/company/${companyId}/users`)
+      .get(`/api/v1/business/${businessId}/users`)
       .set('Authorization', 'Bearer test-token')
       .expect(200);
 
     // Owner should not be in the list
     const users = res.body;
     expect(Array.isArray(users)).toBe(true);
-    const ownerId = (company.owner && company.owner.toString()) || (user._id && user._id.toString());
+    const ownerId = (business.owner && business.owner.toString()) || (user._id && user._id.toString());
     // Remove yourself (the current user) from the list as well
     const foundOwner = users.find(u => u._id && u._id.toString() === ownerId);
     expect(foundOwner).toBeUndefined();
@@ -51,7 +51,7 @@ describe('Company Users Endpoint', () => {
     expect(foundSelf).toBeUndefined();
     // There should be only members
     for (const u of users) {
-      expect(u.companyRole).toBe('member');
+      expect(u.businessRole).toBe('member');
     }
   });
 

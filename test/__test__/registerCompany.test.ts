@@ -1,7 +1,7 @@
 import request from 'supertest';
 import app from '../setup/app';
 import UserBuilder from './builders/userBuilder';
-import CompanyBuilder from './builders/companyBuilder';
+import BusinessBuilder from './builders/businessBuilder';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import db from '../setup/db';
 
@@ -9,19 +9,19 @@ import db from '../setup/db';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const mockEmailService = require('../../src/app/services/emailService');
 
-describe('Register Company', () => {
+describe('Register Business', () => {
 
 
-  it('should register a company if valid data provided', async () => {
+  it('should register a business if valid data provided', async () => {
     const testData = {
-      email: 'companytest@example.com',
+      email: 'businesstest@example.com',
       password: 'TestPassword123',
       firstName: 'John',
       lastName: 'Doe',
       jobTitle: 'CEO',
-      companyName: 'Test Company Ltd',
-      companyEmail: 'contact@testcompany.com',
-      companyDescription: 'A test company for testing purposes',
+      businessName: 'Test Business Ltd',
+      businessEmail: 'contact@testbusiness.com',
+      businessDescription: 'A test business for testing purposes',
       categories: ['Beauty & Wellness'],
       businessAddress: {
         street: '123 Test Street',
@@ -31,10 +31,10 @@ describe('Register Company', () => {
         country: 'Australia',
       },
       abn: '51824753556', // Valid ABN for testing
-      companyWebsite: 'https://testcompany.com',
-      facebookUrl: 'https://facebook.com/testcompany',
-      twitterUrl: 'https://twitter.com/testcompany',
-      logo: 'https://testcompany.com/logo.png',
+      businessWebsite: 'https://testbusiness.com',
+      facebookUrl: 'https://facebook.com/testbusiness',
+      twitterUrl: 'https://twitter.com/testbusiness',
+      logo: 'https://testbusiness.com/logo.png',
     };
 
     const res = await request(app.application)
@@ -46,7 +46,7 @@ describe('Register Company', () => {
     expect(res.body.user.email).toBe(testData.email);
     expect(res.body.user.firstName).toBe(testData.firstName);
     expect(res.body.user.lastName).toBe(testData.lastName);
-    expect(res.body.company.name).toBe(testData.companyName);
+    expect(res.body.business.name).toBe(testData.businessName);
     expect(res.body.message).toBe('Registration successful. Please check your email to verify your account.');
   });
 
@@ -64,9 +64,9 @@ describe('Register Company', () => {
       firstName: 'John',
       lastName: 'Doe',
       jobTitle: 'CEO',
-      companyName: 'Existing Company',
-      companyEmail: 'contact@existing.com',
-      companyDescription: 'An existing company for testing',
+      businessName: 'Existing Business',
+      businessEmail: 'contact@existing.com',
+      businessDescription: 'An existing business for testing',
       categories: ['Professional Services'],
       businessAddress: {
         street: '456 Existing Street',
@@ -75,7 +75,7 @@ describe('Register Company', () => {
         postcode: '2000',
         country: 'Australia',
       },
-      companyWebsite: 'https://existing.com',
+      businessWebsite: 'https://existing.com',
     };
     const res = await request(app.application)
       .post('/api/v1/business-register')
@@ -99,9 +99,9 @@ describe('Register Company', () => {
       firstName: 'John',
       lastName: 'Doe',
       jobTitle: 'CEO',
-      companyName: 'Inactive User Company',
-      companyEmail: 'contact@inactive.com',
-      companyDescription: 'A company for inactive user testing',
+      businessName: 'Inactive User Business',
+      businessEmail: 'contact@inactive.com',
+      businessDescription: 'A business for inactive user testing',
       categories: ['Health & Fitness'],
       businessAddress: {
         street: '789 Inactive Street',
@@ -110,7 +110,7 @@ describe('Register Company', () => {
         postcode: '4000',
         country: 'Australia',
       },
-      companyWebsite: 'https://inactive.com',
+      businessWebsite: 'https://inactive.com',
     };
     const res = await request(app.application)
       .post('/api/v1/business-register')
@@ -123,18 +123,18 @@ describe('Register Company', () => {
     expect(res.body.user.lastName).toBe(testData.lastName);
   });
 
-  it('should return 409 if company name already exists', async () => {
-    // Use builder to create a company with the same name and required fields
+  it('should return 409 if business name already exists', async () => {
+    // Use builder to create a business with the same name and required fields
     const owner = await new UserBuilder()
-      .withEmail('owner@company.com')
+      .withEmail('owner@business.com')
       .withActive(true)
       .withFirstName('Owner')
       .withLastName('User')
       .save();
-    await new CompanyBuilder()
-      .withName('Existing Company Name')
-      .withEmail('contact@newcompany.com')
-      .withServiceCategory('Technology')
+    await new BusinessBuilder()
+      .withName('Existing Business Name')
+      .withEmail('contact@newbusiness.com')
+      .withCategories(['Technology'])
       .withBusinessAddress({
         street: '999 New Street',
         city: 'Perth',
@@ -152,9 +152,9 @@ describe('Register Company', () => {
       firstName: 'John',
       lastName: 'Doe',
       jobTitle: 'CEO',
-      companyName: 'Existing Company Name',
-      companyEmail: 'contact@newcompany.com',
-      companyDescription: 'A company with existing name for testing',
+      businessName: 'Existing Business Name',
+      businessEmail: 'contact@newbusiness.com',
+      businessDescription: 'A business with existing name for testing',
       categories: ['Technology'],
       businessAddress: {
         street: '999 New Street',
@@ -163,7 +163,7 @@ describe('Register Company', () => {
         postcode: '6000',
         country: 'Australia',
       },
-      companyWebsite: 'https://newcompany.com',
+      businessWebsite: 'https://newbusiness.com',
       abn: '51824753556',
     };
     const res = await request(app.application)
@@ -171,13 +171,13 @@ describe('Register Company', () => {
       .send(testData);
     expect(res.statusCode).toBe(409);
     expect(res.body.success).toBe(false);
-    expect(res.body.message).toBe('Company already registered');
+    expect(res.body.message).toBe('Business already registered');
   });
 
   it('should return 422 for missing required fields', async () => {
     const invalidData = {
       email: 'test@example.com',
-      // Missing password, name, and companyName
+      // Missing password, name, and businessName
     };
 
     const res = await request(app.application)
@@ -195,7 +195,7 @@ describe('Register Company', () => {
       password: 'TestPassword123',
       firstName: 'John',
       lastName: 'Doe',
-      companyName: 'Test Company',
+      businessName: 'Test Business',
     };
 
     const res = await request(app.application)
@@ -213,7 +213,7 @@ describe('Register Company', () => {
       password: '123', // Too weak
       firstName: 'John',
       lastName: 'Doe',
-      companyName: 'Test Company',
+      businessName: 'Test Business',
     };
 
     const res = await request(app.application)

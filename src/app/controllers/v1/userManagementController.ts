@@ -5,8 +5,8 @@ import { IUserDocument } from '../../model/user';
 
 // Extended request interface for user management
 interface UserManagementRequest extends Request {
-  userType?: 'company_member';
-  company?: any;
+  userType?: 'business_member';
+  business?: any;
   user?: IUserDocument;
 }
 
@@ -17,9 +17,9 @@ export const getUserById = async (
 ) => {
   try {
     const userId = req.params.userId || req.params.id; // Support both userId and id params
-    const companyId = req.params.id || req.company?.id; // Company ID from URL path
+    const businessId = req.params.id || req.business?.id; // Business ID from URL path
 
-    const result = await userManagementService.getUserById(userId, companyId);
+    const result = await userManagementService.getUserById(userId, businessId);
     res.status(200).json(result.data);
   } catch (error) {
     winstonLogger.error(`Get user by ID controller error: ${error}`);
@@ -45,11 +45,11 @@ export const createUserWithRole = async (
   res: Response,
 ) => {
   try {
-    // Add company ID from URL path to user data
+    // Add business ID from URL path to user data
     const userData = { ...req.body };
-    const companyId = req.params.id || req.company?.id; // Company ID from URL path
-    if (companyId) {
-      userData.companyId = companyId;
+    const businessId = req.params.id || req.business?.id; // Business ID from URL path
+    if (businessId) {
+      userData.businessId = businessId;
     }
 
     const result = await userManagementService.createUserWithRole(userData);
@@ -77,12 +77,12 @@ export const createUserWithRole = async (
 export const updateUser = async (req: UserManagementRequest, res: Response) => {
   try {
     const userId = req.params.userId || req.params.id; // Support both userId and id params
-    const companyId = req.params.id || req.company?.id; // Company ID from URL path
+    const businessId = req.params.id || req.business?.id; // Business ID from URL path
 
     const result = await userManagementService.updateUser(
       userId,
       req.body,
-      companyId,
+      businessId,
       req.user,
     );
     res.status(200).json(result.data);
@@ -96,7 +96,7 @@ export const updateUser = async (req: UserManagementRequest, res: Response) => {
       } else if (
         error.message.includes('not authorized') ||
         error.message.includes('Managers cannot') ||
-        error.message.includes('Only company owners') ||
+        error.message.includes('Only business owners') ||
         error.message.includes('not found')
       ) {
         statusCode = 403;
@@ -130,11 +130,11 @@ export const getAllRoles = async (req: Request, res: Response) => {
 export const deleteUser = async (req: UserManagementRequest, res: Response) => {
   try {
     const userId = req.params.userId || req.params.id; // Support both userId and id params
-    const companyId = req.params.id || req.company?.id; // Company ID from URL path
+    const businessId = req.params.id || req.business?.id; // Business ID from URL path
 
     const result = await userManagementService.deleteUser(
       userId,
-      companyId,
+      businessId,
       req.user,
     );
     res.status(200).json({ success: true, message: result.message });
@@ -151,7 +151,7 @@ export const deleteUser = async (req: UserManagementRequest, res: Response) => {
       } else if (
         error.message.includes('not authorized') ||
         error.message.includes('Managers cannot') ||
-        error.message.includes('Only company owners') ||
+        error.message.includes('Only business owners') ||
         error.message.includes('not found')
       ) {
         statusCode = 403;

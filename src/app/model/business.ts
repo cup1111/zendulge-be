@@ -2,13 +2,13 @@ import mongoose, { Schema, Types, Document } from 'mongoose';
 import { IUser } from './user';
 import { IRole } from './role';
 
-export interface ICompanyMember {
+export interface IBusinessMember {
   user: Types.ObjectId | Document & IUser;
   role: Types.ObjectId | Document & IRole;
   joinedAt?: Date;
 }
 
-export interface ICompany {
+export interface IBusiness {
   name: string;
   email: string;
   description?: string;
@@ -26,84 +26,84 @@ export interface ICompany {
   facebookUrl?: string;
   twitterUrl?: string;
   logo?: string;
-  owner: Types.ObjectId; // Reference to User who created the company
-  members?: ICompanyMember[]; // Other users who can access this company with their roles
-  customers?: Types.ObjectId[]; // Customers who have interacted with the company
+  owner: Types.ObjectId; // Reference to User who created the business
+  members?: IBusinessMember[]; // Other users who can access this business with their roles
+  customers?: Types.ObjectId[]; // Customers who have interacted with the business
   isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export type ICompanyDocument = ICompany & Document & {
+export type IBusinessDocument = IBusiness & Document & {
   _id: mongoose.Types.ObjectId;
-  addMember: (userId: Types.ObjectId, roleId: Types.ObjectId) => Promise<ICompanyDocument>;
-  removeMember: (userId: Types.ObjectId) => Promise<ICompanyDocument>;
+  addMember: (userId: Types.ObjectId, roleId: Types.ObjectId) => Promise<IBusinessDocument>;
+  removeMember: (userId: Types.ObjectId) => Promise<IBusinessDocument>;
   hasAccess: (userId: Types.ObjectId) => boolean;
   transferOwnership: (
     newOwnerId: Types.ObjectId,
     oldOwnerRoleId: Types.ObjectId,
-  ) => Promise<ICompanyDocument>;
+  ) => Promise<IBusinessDocument>;
   updateMemberRole: (
     userId: Types.ObjectId,
     newRoleId: Types.ObjectId,
-  ) => Promise<ICompanyDocument>;
+  ) => Promise<IBusinessDocument>;
   getMemberRole: (userId: Types.ObjectId) => Types.ObjectId | null;
-  getMembersByRole: (roleId: Types.ObjectId) => ICompanyMember[];
-  isCompanyOwner: (userId: Types.ObjectId) => boolean;
+  getMembersByRole: (roleId: Types.ObjectId) => IBusinessMember[];
+  isBusinessOwner: (userId: Types.ObjectId) => boolean;
 };
-export interface ICompanyModel extends mongoose.Model<ICompanyDocument> {
+export interface IBusinessModel extends mongoose.Model<IBusinessDocument> {
   findByOwner(
     ownerId: Types.ObjectId,
-  ): mongoose.Query<ICompanyDocument[], ICompanyDocument>;
+  ): mongoose.Query<IBusinessDocument[], IBusinessDocument>;
   findByUser(
     userId: Types.ObjectId,
-  ): mongoose.Query<ICompanyDocument[], ICompanyDocument>;
+  ): mongoose.Query<IBusinessDocument[], IBusinessDocument>;
   search(
     searchTerm: string,
     userId?: Types.ObjectId,
-  ): mongoose.Query<ICompanyDocument[], ICompanyDocument>;
+  ): mongoose.Query<IBusinessDocument[], IBusinessDocument>;
   isNameTaken(
     name: string,
     excludeId?: Types.ObjectId,
-  ): Promise<ICompanyDocument | null>;
+  ): Promise<IBusinessDocument | null>;
   isAbnTaken(
     abn: string,
     excludeId?: Types.ObjectId,
-  ): Promise<ICompanyDocument | null>;
-  addMember: (userId: Types.ObjectId, roleId: Types.ObjectId) => Promise<ICompanyDocument>;
-  removeMember: (userId: Types.ObjectId) => Promise<ICompanyDocument>;
+  ): Promise<IBusinessDocument | null>;
+  addMember: (userId: Types.ObjectId, roleId: Types.ObjectId) => Promise<IBusinessDocument>;
+  removeMember: (userId: Types.ObjectId) => Promise<IBusinessDocument>;
   hasAccess: (userId: Types.ObjectId) => boolean;
   transferOwnership: (
     newOwnerId: Types.ObjectId,
     oldOwnerRoleId: Types.ObjectId,
-  ) => Promise<ICompanyDocument>;
+  ) => Promise<IBusinessDocument>;
   updateMemberRole: (
     userId: Types.ObjectId,
     newRoleId: Types.ObjectId,
-  ) => Promise<ICompanyDocument>;
+  ) => Promise<IBusinessDocument>;
   getMemberRole: (userId: Types.ObjectId) => Types.ObjectId | null;
-  getMembersByRole: (roleId: Types.ObjectId) => ICompanyMember[];
-  isCompanyOwner: (userId: Types.ObjectId) => boolean;
+  getMembersByRole: (roleId: Types.ObjectId) => IBusinessMember[];
+  isBusinessOwner: (userId: Types.ObjectId) => boolean;
 }
 
-const companySchema = new Schema<ICompanyDocument>(
+const businessSchema = new Schema<IBusinessDocument>(
   {
     name: {
       type: String,
-      required: [true, 'Company name is required'],
+      required: [true, 'Business name is required'],
       trim: true,
-      minlength: [2, 'Company name must be at least 2 characters long'],
-      maxlength: [100, 'Company name cannot exceed 100 characters'],
+      minlength: [2, 'Business name must be at least 2 characters long'],
+      maxlength: [100, 'Business name cannot exceed 100 characters'],
       validate: {
         validator: function (v: string) {
           return /^[a-zA-Z0-9\s\-&.,()]+$/.test(v);
         },
-        message: 'Company name contains invalid characters',
+        message: 'Business name contains invalid characters',
       },
     },
     email: {
       type: String,
-      required: [true, 'Company email is required'],
+      required: [true, 'Business email is required'],
       trim: true,
       lowercase: true,
       validate: {
@@ -116,13 +116,13 @@ const companySchema = new Schema<ICompanyDocument>(
     description: {
       type: String,
       trim: true,
-      maxlength: [500, 'Company description cannot exceed 500 characters'],
+      maxlength: [500, 'Business description cannot exceed 500 characters'],
       validate: {
         validator: function (v: string) {
           return !v || v.length >= 10;
         },
         message:
-          'Company description must be at least 10 characters if provided',
+                    'Business description must be at least 10 characters if provided',
       },
     },
     categories: {
@@ -187,13 +187,13 @@ const companySchema = new Schema<ICompanyDocument>(
         validator: function (v: string) {
           return (
             !v ||
-            /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/.test(
-              v,
-            )
+                        /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/.test(
+                          v,
+                        )
           );
         },
         message:
-          'Please provide a valid website URL (must include http:// or https://)',
+                    'Please provide a valid website URL (must include http:// or https://)',
       },
     },
     facebookUrl: {
@@ -303,7 +303,7 @@ const companySchema = new Schema<ICompanyDocument>(
 );
 
 // Pre-save middleware
-companySchema.pre('save', function (next) {
+businessSchema.pre('save', function (next) {
   // Format ABN - remove spaces and convert to uppercase
   if (this.abn) {
     this.abn = this.abn.replace(/\s/g, '').toUpperCase();
@@ -312,7 +312,7 @@ companySchema.pre('save', function (next) {
   // Remove duplicate members (same user)
   if (this.members && this.members.length > 0) {
     const uniqueMembers = new Map();
-    this.members.forEach((member: ICompanyMember) => {
+    this.members.forEach((member: IBusinessMember) => {
       const userId = member.user.toString();
       if (!uniqueMembers.has(userId)) {
         uniqueMembers.set(userId, member);
@@ -323,20 +323,20 @@ companySchema.pre('save', function (next) {
 
   // Validate member limit
   if (this.members && this.members.length > 100) {
-    return next(new Error('Company cannot have more than 100 members'));
+    return next(new Error('Business cannot have more than 100 members'));
   }
 
   next();
 });
 
 // Indexes for better performance
-companySchema.index({ owner: 1, isActive: 1 });
-companySchema.index({ name: 1 });
-companySchema.index({ abn: 1 }, { sparse: true }); // Sparse index for optional ABN field
-companySchema.index({ name: 'text', description: 'text' }); // Text search index
+businessSchema.index({ owner: 1, isActive: 1 });
+businessSchema.index({ name: 1 });
+businessSchema.index({ abn: 1 }, { sparse: true }); // Sparse index for optional ABN field
+businessSchema.index({ name: 'text', description: 'text' }); // Text search index
 
 // Virtual to populate owner details
-companySchema.virtual('ownerDetails', {
+businessSchema.virtual('ownerDetails', {
   ref: 'users',
   localField: 'owner',
   foreignField: '_id',
@@ -344,27 +344,27 @@ companySchema.virtual('ownerDetails', {
 });
 
 // Virtual to populate member details
-companySchema.virtual('memberDetails', {
+businessSchema.virtual('memberDetails', {
   ref: 'users',
   localField: 'members',
   foreignField: '_id',
 });
 
-// Static method to find companies by owner
-companySchema.statics.findByOwner = function (ownerId: Types.ObjectId) {
+// Static method to find businesses by owner
+businessSchema.statics.findByOwner = function (ownerId: Types.ObjectId) {
   return this.find({ owner: ownerId, isActive: true }).sort({ createdAt: -1 });
 };
 
-// Static method to find companies where user is owner or member
-companySchema.statics.findByUser = function (userId: Types.ObjectId) {
+// Static method to find businesses where user is owner or member
+businessSchema.statics.findByUser = function (userId: Types.ObjectId) {
   return this.find({
     $or: [{ owner: userId }, { 'members.user': userId }],
     isActive: true,
   }).sort({ createdAt: -1 });
 };
 
-// Static method to search companies by name or description
-companySchema.statics.search = function (
+// Static method to search businesses by name or description
+businessSchema.statics.search = function (
   searchTerm: string,
   userId?: Types.ObjectId,
 ) {
@@ -380,8 +380,8 @@ companySchema.statics.search = function (
   return this.find(query).sort({ score: { $meta: 'textScore' } });
 };
 
-// Static method to check if company name exists
-companySchema.statics.isNameTaken = function (
+// Static method to check if business name exists
+businessSchema.statics.isNameTaken = function (
   name: string,
   excludeId?: Types.ObjectId,
 ) {
@@ -398,7 +398,7 @@ companySchema.statics.isNameTaken = function (
 };
 
 // Static method to check if ABN is already registered
-companySchema.statics.isAbnTaken = function (
+businessSchema.statics.isAbnTaken = function (
   abn: string,
   excludeId?: Types.ObjectId,
 ) {
@@ -418,20 +418,20 @@ companySchema.statics.isAbnTaken = function (
 };
 
 // Instance method to add member
-companySchema.methods.addMember = function (
+businessSchema.methods.addMember = function (
   userId: Types.ObjectId,
   roleId: Types.ObjectId,
 ) {
 
   // Check if already a member
-  const isAlreadyMember = this.members.some((member: ICompanyMember) =>
+  const isAlreadyMember = this.members.some((member: IBusinessMember) =>
     (member.user as Types.ObjectId).equals(userId as any),
   );
 
   if (!isAlreadyMember) {
     // Check member limit
     if (this.members.length >= 100) {
-      throw new Error('Company has reached maximum member limit (100)');
+      throw new Error('Business has reached maximum member limit (100)');
     }
 
     this.members.push({
@@ -446,23 +446,23 @@ companySchema.methods.addMember = function (
 };
 
 // Instance method to remove member
-companySchema.methods.removeMember = function (userId: Types.ObjectId) {
+businessSchema.methods.removeMember = function (userId: Types.ObjectId) {
   this.members = this.members.filter(
-    (member: ICompanyMember) => !(member.user as Types.ObjectId).equals(userId as any),
+    (member: IBusinessMember) => !(member.user as Types.ObjectId).equals(userId as any),
   );
   return this.save();
 };
 
 // Instance method to check if user has access (owner or member)
-companySchema.methods.hasAccess = function (userId: Types.ObjectId) {
+businessSchema.methods.hasAccess = function (userId: Types.ObjectId) {
   return (
     (this.owner as Types.ObjectId).equals(userId as any) ||
-    this.members.some((member: ICompanyMember) => (member.user as Types.ObjectId).equals(userId as any))
+        this.members.some((member: IBusinessMember) => (member.user as Types.ObjectId).equals(userId as any))
   );
 };
 
 // Instance method to transfer ownership
-companySchema.methods.transferOwnership = function (
+businessSchema.methods.transferOwnership = function (
   newOwnerId: Types.ObjectId,
   oldOwnerRoleId: Types.ObjectId,
 ) {
@@ -470,12 +470,12 @@ companySchema.methods.transferOwnership = function (
 
   // Remove new owner from members if they are a member
   this.members = this.members.filter(
-    (member: ICompanyMember) => !(member.user as Types.ObjectId).equals(newOwnerId as any),
+    (member: IBusinessMember) => !(member.user as Types.ObjectId).equals(newOwnerId as any),
   );
 
   // Add old owner as member with specified role
   if (
-    !this.members.some((member: ICompanyMember) =>
+    !this.members.some((member: IBusinessMember) =>
       (member.user as Types.ObjectId).equals(oldOwnerId as any),
     )
   ) {
@@ -491,16 +491,16 @@ companySchema.methods.transferOwnership = function (
 };
 
 // Instance method to update member role
-companySchema.methods.updateMemberRole = function (
+businessSchema.methods.updateMemberRole = function (
   userId: Types.ObjectId,
   newRoleId: Types.ObjectId,
 ) {
-  const memberToUpdate = this.members.find((member: ICompanyMember) =>
+  const memberToUpdate = this.members.find((member: IBusinessMember) =>
     (member.user as Types.ObjectId).equals(userId as any),
   );
 
   if (!memberToUpdate) {
-    throw new Error('User is not a member of this company');
+    throw new Error('User is not a member of this business');
   }
 
   memberToUpdate.role = newRoleId;
@@ -508,8 +508,8 @@ companySchema.methods.updateMemberRole = function (
 };
 
 // Instance method to get member role
-companySchema.methods.getMemberRole = function (userId: Types.ObjectId) {
-  const foundMember = this.members.find((member: ICompanyMember) =>
+businessSchema.methods.getMemberRole = function (userId: Types.ObjectId) {
+  const foundMember = this.members.find((member: IBusinessMember) =>
     (member.user as Types.ObjectId).equals(userId as any),
   );
 
@@ -517,18 +517,19 @@ companySchema.methods.getMemberRole = function (userId: Types.ObjectId) {
 };
 
 // Instance method to get members by role
-companySchema.methods.getMembersByRole = function (roleId: Types.ObjectId) {
-  return this.members.filter((member: ICompanyMember) =>
+businessSchema.methods.getMembersByRole = function (roleId: Types.ObjectId) {
+  return this.members.filter((member: IBusinessMember) =>
     (member.role as Types.ObjectId).equals(roleId as any),
   );
 };
 
-companySchema.methods.isCompanyOwner = function (userId: Types.ObjectId) {
+businessSchema.methods.isBusinessOwner = function (userId: Types.ObjectId) {
   return (this.owner as Types.ObjectId).equals(userId as any);
 };
 
-const Company = mongoose.model<ICompanyDocument, ICompanyModel>(
-  'companies',
-  companySchema,
+const Business = mongoose.model<IBusinessDocument, IBusinessModel>(
+  'businesses',
+  businessSchema,
 );
-export default Company;
+export default Business;
+

@@ -1,6 +1,6 @@
 import request from 'supertest';
 import app from '../setup/app';
-import CompanyBuilder from './builders/companyBuilder';
+import BusinessBuilder from './builders/businessBuilder';
 import OperateSiteBuilder from './builders/operateSiteBuilder';
 import UserBuilder from './builders/userBuilder';
 import Role from '../../src/app/model/role';
@@ -10,7 +10,7 @@ import { RoleName } from '../../src/app/enum/roles';
 
 let ownerUser: any;
 let managerUser: any;
-let company: any;
+let business: any;
 let operateSite: any;
 let service: any;
 let deal: any;
@@ -43,7 +43,7 @@ describe('Deal status management', () => {
       .withActive(true)
       .save();
 
-    company = await new CompanyBuilder()
+    business = await new BusinessBuilder()
       .withOwner(ownerUser._id)
       .withContact(ownerUser._id)
       .withMember(ownerUser._id, ownerRole._id)
@@ -51,7 +51,7 @@ describe('Deal status management', () => {
       .save();
 
     operateSite = await new OperateSiteBuilder()
-      .withCompany(company._id)
+      .withBusiness(business._id)
       .withName('Deal Status Site')
       .save();
     operateSite.members = [ownerUser._id, managerUser._id];
@@ -62,7 +62,7 @@ describe('Deal status management', () => {
       category: 'Wellness',
       duration: 60,
       basePrice: 120,
-      company: company._id.toString(),
+      business: business._id.toString(),
       status: 'active',
     });
 
@@ -79,7 +79,7 @@ describe('Deal status management', () => {
       endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       currentBookings: 0,
       status: 'active',
-      company: company._id.toString(),
+      business: business._id.toString(),
       service: service._id.toString(),
       createdBy: ownerUser._id.toString(),
     });
@@ -88,9 +88,9 @@ describe('Deal status management', () => {
     managerToken = await loginAndGetToken('manager-deal@example.com', 'ManagerDealPass123');
   });
 
-  it('allows the company owner to set status to inactive', async () => {
+  it('allows the business owner to set status to inactive', async () => {
     const response = await request(app.getApp())
-      .patch(`/api/v1/company/${company._id}/deals/${deal._id}/status`)
+      .patch(`/api/v1/business/${business._id}/deals/${deal._id}/status`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({ status: 'inactive' })
       .expect(200);
@@ -103,7 +103,7 @@ describe('Deal status management', () => {
     await Deal.updateOne({ _id: deal._id }, { status: 'inactive' });
 
     const response = await request(app.getApp())
-      .patch(`/api/v1/company/${company._id}/deals/${deal._id}/status`)
+      .patch(`/api/v1/business/${business._id}/deals/${deal._id}/status`)
       .set('Authorization', `Bearer ${managerToken}`)
       .send({ status: 'active' })
       .expect(200);
@@ -114,7 +114,7 @@ describe('Deal status management', () => {
 
   it('rejects status values other than active or inactive', async () => {
     const response = await request(app.getApp())
-      .patch(`/api/v1/company/${company._id}/deals/${deal._id}/status`)
+      .patch(`/api/v1/business/${business._id}/deals/${deal._id}/status`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({ status: 'expired' })
       .expect(422);
@@ -129,7 +129,7 @@ describe('Deal status management', () => {
     const endDate = new Date(startDate);
 
     const response = await request(app.getApp())
-      .post(`/api/v1/company/${company._id}/deals`)
+      .post(`/api/v1/business/${business._id}/deals`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
         title: 'Invalid Date Deal',
@@ -155,7 +155,7 @@ describe('Deal status management', () => {
     tomorrow.setDate(tomorrow.getDate() + 1);
 
     const response = await request(app.getApp())
-      .post(`/api/v1/company/${company._id}/deals`)
+      .post(`/api/v1/business/${business._id}/deals`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
         title: 'Past Start Date Deal',
@@ -180,7 +180,7 @@ describe('Deal status management', () => {
     const isoUtc = `${yesterday.toISOString().split('T')[0]}T00:00:00.000Z`;
 
     const response = await request(app.getApp())
-      .patch(`/api/v1/company/${company._id}/deals/${deal._id}`)
+      .patch(`/api/v1/business/${business._id}/deals/${deal._id}`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
         startDate: isoUtc,
@@ -193,7 +193,7 @@ describe('Deal status management', () => {
 
   it('normalizes discount to zero when price exceeds original price', async () => {
     const response = await request(app.getApp())
-      .patch(`/api/v1/company/${company._id}/deals/${deal._id}`)
+      .patch(`/api/v1/business/${business._id}/deals/${deal._id}`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
         price: deal.originalPrice + 50,
@@ -206,14 +206,15 @@ describe('Deal status management', () => {
   });
 
   it('rejects updating a deal when end date is before or equal to start date', async () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Get the deal's startDate and set endDate to the same date
+    const startDate = new Date(deal.startDate);
+    const endDateSameAsStart = new Date(startDate);
 
     const response = await request(app.getApp())
-      .patch(`/api/v1/company/${company._id}/deals/${deal._id}`)
+      .patch(`/api/v1/business/${business._id}/deals/${deal._id}`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
-        endDate: `${today.toISOString().split('T')[0]}T00:00:00.000Z`,
+        endDate: endDateSameAsStart.toISOString(),
       })
       .expect(400);
 

@@ -1,10 +1,10 @@
 import { body } from 'express-validator';
 
-export const updateCompanyValidation = [
+export const updateBusinessValidation = [
   body('name')
     .optional()
     .isLength({ min: 1, max: 100 })
-    .withMessage('Company name must be between 1 and 100 characters')
+    .withMessage('Business name must be between 1 and 100 characters')
     .trim(),
 
   body('email')
@@ -85,3 +85,4 @@ export const updateCompanyValidation = [
     .withMessage('Invalid Twitter URL')
     .trim(),
 ];
+

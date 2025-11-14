@@ -115,20 +115,21 @@ export const userIdValidation = [
   param('userId').isMongoId().withMessage('Please provide a valid user ID'),
 ];
 
-// Validation for company ID parameter
-export const companyIdValidation = [
-  param('id').isMongoId().withMessage('Please provide a valid company ID'),
+// Validation for business ID parameter
+export const businessIdValidation = [
+  param('id').isMongoId().withMessage('Please provide a valid business ID'),
 ];
 
-// Combined validation for company and user ID parameters
-export const companyAndUserIdValidation = [
-  param('id').isMongoId().withMessage('Please provide a valid company ID'),
+// Combined validation for business and user ID parameters
+export const businessAndUserIdValidation = [
+  param('id').isMongoId().withMessage('Please provide a valid business ID'),
   param('userId').isMongoId().withMessage('Please provide a valid user ID'),
 ];
 
-// Combined validation for company user role update
-export const companyUserRoleValidation = [
-  param('id').isMongoId().withMessage('Please provide a valid company ID'),
+// Combined validation for business user role update
+export const businessUserRoleValidation = [
+  param('id').isMongoId().withMessage('Please provide a valid business ID'),
   param('userId').isMongoId().withMessage('Please provide a valid user ID'),
   body('role').isMongoId().withMessage('Please provide a valid role ID'),
 ];
+

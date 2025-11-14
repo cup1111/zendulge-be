@@ -4,21 +4,21 @@
 
 ```mermaid
 flowchart TD
-    StartBiz[Business Wants to Register] --> InputBiz[Business Owner Enters:<br/>• Email Address<br/>• Password & Name<br/>• Job Title<br/>• Company Name<br/>• Company Description<br/>• Company Website]
+    StartBiz[Business Wants to Register] --> InputBiz[Business Owner Enters:<br/>• Email Address<br/>• Password & Name<br/>• Job Title<br/>• Business Name<br/>• Business Description<br/>• Business Website]
 
     InputBiz --> ValidateBiz{Is Information Valid?}
 
-    ValidateBiz -->|Invalid| ValidationFailBiz[Show Validation Errors:<br/>• Invalid email/website format<br/>• Password too weak<br/>• Missing company details]
+    ValidateBiz -->|Invalid| ValidationFailBiz[Show Validation Errors:<br/>• Invalid email/website format<br/>• Password too weak<br/>• Missing business details]
 
     ValidateBiz -->|Valid| CheckEmailBiz{Email Already Used?}
 
     CheckEmailBiz -->|Email Exists| EmailExistsBiz[Registration Failed:<br/>&quot;Email already registered&quot;]
 
-    CheckEmailBiz -->|Email Available| CheckCompany{Company Name Already Used?}
+    CheckEmailBiz -->|Email Available| CheckBusiness{Business Name Already Used?}
 
-    CheckCompany -->|Company Exists| CompanyExists[Registration Failed:<br/>&quot;Company already registered<br/>Please contact support&quot;]
+    CheckBusiness -->|Business Exists| BusinessExists[Registration Failed:<br/>&quot;Business already registered<br/>Please contact support&quot;]
 
-    CheckCompany -->|Company Available| CreateBizAccount[Create Business Account<br/>• Save business details<br/>• Save company information<br/>• Generate activation code<br/>• Set account as inactive]
+    CheckBusiness -->|Business Available| CreateBizAccount[Create Business Account<br/>• Save business details<br/>• Save business information<br/>• Generate activation code<br/>• Set account as inactive]
 
     CreateBizAccount --> SendEmailBiz[Send Activation Email<br/>Business owner receives activation link]
 
@@ -26,7 +26,7 @@ flowchart TD
 
     ValidationFailBiz --> EndBiz[Business tries again]
     EmailExistsBiz --> EndBiz
-    CompanyExists --> EndBiz
+    BusinessExists --> EndBiz
     SuccessBiz --> EndBiz
 
     %% Styling
@@ -37,8 +37,8 @@ flowchart TD
     classDef decisionClass fill:#ffe0b2,stroke:#e65100,stroke-width:2px,color:#000000
 
     class StartBiz startClass
-    class ValidationFailBiz,EmailExistsBiz,CompanyExists errorClass
+    class ValidationFailBiz,EmailExistsBiz,BusinessExists errorClass
     class CreateBizAccount,SendEmailBiz,SuccessBiz successClass
     class InputBiz processClass
-    class ValidateBiz,CheckEmailBiz,CheckCompany decisionClass
+    class ValidateBiz,CheckEmailBiz,CheckBusiness decisionClass
 ```

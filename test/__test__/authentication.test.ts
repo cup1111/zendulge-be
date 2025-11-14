@@ -1,7 +1,7 @@
 import request from 'supertest';
 import app from '../setup/app';
 import UserBuilder from './builders/userBuilder';
-import CompanyBuilder from './builders/companyBuilder';
+import BusinessBuilder from './builders/businessBuilder';
 import { config } from '../../src/app/config/app';
 
 const jwt = require('jsonwebtoken');
@@ -83,10 +83,10 @@ describe('Authentication', () => {
       expect(res.body.errors).toBeDefined();
     });
 
-    // CRITICAL COMPANY ID BUG PREVENTION TESTS
-    it('should return JWT with valid company ID strings (preventing company ID {} bug)', async () => {
+    // CRITICAL BUSINESS ID BUG PREVENTION TESTS
+    it('should return JWT with valid business ID strings (preventing business ID {} bug)', async () => {
       process.env.JWT_SECRET = 'test_jwt_secret';
-      // Create user and company in DB
+      // Create user and business in DB
       const user = await new UserBuilder()
         .withEmail(validUserCredentials.email)
         .withPassword(validUserCredentials.password)
@@ -94,8 +94,8 @@ describe('Authentication', () => {
         .withFirstName('Test')
         .withLastName('User')
         .save();
-      await new CompanyBuilder()
-        .withName('Test Company')
+      await new BusinessBuilder()
+        .withName('Test Business')
         .withOwner(user.id)
         .withContact(user.id)
         .save();
@@ -107,26 +107,26 @@ describe('Authentication', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.accessToken).toBeDefined();
-      // Decode JWT token to verify company ID format
+      // Decode JWT token to verify business ID format
       const decoded = jwt.verify(res.body.data.accessToken, config.accessSecret);
       expect(decoded).toBeDefined();
-      expect(decoded.companies).toBeDefined();
-      expect(Array.isArray(decoded.companies)).toBe(true);
-      if (decoded.companies.length > 0) {
-        const firstCompany = decoded.companies[0];
-        expect(firstCompany).toBeDefined();
-        expect(firstCompany.id).toBeDefined();
-        expect(firstCompany.name).toBeDefined();
-        expect(typeof firstCompany.id).toBe('string');
-        expect(firstCompany.id).not.toBe('');
-        expect(firstCompany.id).not.toBe('{}');
-        expect(firstCompany.id).toMatch(/^[0-9a-fA-F]{24}$/);
-        expect(firstCompany.id).toBeTruthy();
+      expect(decoded.businesses).toBeDefined();
+      expect(Array.isArray(decoded.businesses)).toBe(true);
+      if (decoded.businesses.length > 0) {
+        const firstBusiness = decoded.businesses[0];
+        expect(firstBusiness).toBeDefined();
+        expect(firstBusiness.id).toBeDefined();
+        expect(firstBusiness.name).toBeDefined();
+        expect(typeof firstBusiness.id).toBe('string');
+        expect(firstBusiness.id).not.toBe('');
+        expect(firstBusiness.id).not.toBe('{}');
+        expect(firstBusiness.id).toMatch(/^[0-9a-fA-F]{24}$/);
+        expect(firstBusiness.id).toBeTruthy();
       }
     });
 
-    it('should validate all company IDs in JWT when user has multiple companies', async () => {
-      // Create user and multiple companies in DB
+    it('should validate all business IDs in JWT when user has multiple businesses', async () => {
+      // Create user and multiple businesses in DB
       const user = await new UserBuilder()
         .withEmail(validUserCredentials.email)
         .withPassword(validUserCredentials.password)
@@ -134,13 +134,13 @@ describe('Authentication', () => {
         .withFirstName('Test')
         .withLastName('User')
         .save();
-      await new CompanyBuilder()
-        .withName('Company 1')
+      await new BusinessBuilder()
+        .withName('Business 1')
         .withOwner(user._id)
         .withContact(user._id)
         .save();
-      await new CompanyBuilder()
-        .withName('Company 2')
+      await new BusinessBuilder()
+        .withName('Business 2')
         .withOwner(user._id)
         .withContact(user._id)
         .save();
@@ -152,17 +152,17 @@ describe('Authentication', () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.accessToken).toBeDefined();
-      // Decode JWT token to verify all company ID formats
+      // Decode JWT token to verify all business ID formats
       const decoded = jwt.verify(res.body.data.accessToken, config.accessSecret);
-      if (decoded.companies && decoded.companies.length > 0) {
-        for (const company of decoded.companies) {
-          expect(company.id).toBeDefined();
-          expect(typeof company.id).toBe('string');
-          expect(company.id).not.toBe('');
-          expect(company.id).not.toBe('{}');
-          expect(company.id).toMatch(/^[0-9a-fA-F]{24}$/);
-          expect(company.id).toBeTruthy();
-          expect(company.name).toBeTruthy();
+      if (decoded.businesses && decoded.businesses.length > 0) {
+        for (const business of decoded.businesses) {
+          expect(business.id).toBeDefined();
+          expect(typeof business.id).toBe('string');
+          expect(business.id).not.toBe('');
+          expect(business.id).not.toBe('{}');
+          expect(business.id).toMatch(/^[0-9a-fA-F]{24}$/);
+          expect(business.id).toBeTruthy();
+          expect(business.name).toBeTruthy();
         }
       }
     });

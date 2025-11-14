@@ -5,7 +5,7 @@ import dealService from '../../services/dealService';
 import { AuthenticatedRequest } from './authController';
 
 export const getDeals = async (req: AuthenticatedRequest, res: Response) => {
-  const { companyId } = req.params;
+  const { businessId } = req.params;
   const user = req.user;
 
   if (!user) {
@@ -13,8 +13,8 @@ export const getDeals = async (req: AuthenticatedRequest, res: Response) => {
   }
 
   try {
-    const deals = await dealService.getDealsByCompany(companyId, user._id.toString());
-    winstonLogger.info(`Deals retrieved for company: ${companyId} by user: ${user.email}`);
+    const deals = await dealService.getDealsByBusiness(businessId, user._id.toString());
+    winstonLogger.info(`Deals retrieved for business: ${businessId} by user: ${user.email}`);
     res.status(200).json({
       success: true,
       message: 'Deals retrieved successfully',
@@ -27,7 +27,7 @@ export const getDeals = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 export const getDealById = async (req: AuthenticatedRequest, res: Response) => {
-  const { companyId, dealId } = req.params;
+  const { businessId, dealId } = req.params;
   const user = req.user;
 
   if (!user) {
@@ -35,8 +35,8 @@ export const getDealById = async (req: AuthenticatedRequest, res: Response) => {
   }
 
   try {
-    const deal = await dealService.getDealById(companyId, dealId, user._id.toString());
-    winstonLogger.info(`Deal ${dealId} retrieved for company: ${companyId} by user: ${user.email}`);
+    const deal = await dealService.getDealById(businessId, dealId, user._id.toString());
+    winstonLogger.info(`Deal ${dealId} retrieved for business: ${businessId} by user: ${user.email}`);
     res.status(200).json({
       success: true,
       message: 'Deal retrieved successfully',
@@ -49,7 +49,7 @@ export const getDealById = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 export const createDeal = async (req: AuthenticatedRequest, res: Response) => {
-  const { companyId } = req.params;
+  const { businessId } = req.params;
   const user = req.user;
 
   if (!user) {
@@ -57,8 +57,8 @@ export const createDeal = async (req: AuthenticatedRequest, res: Response) => {
   }
 
   try {
-    const newDeal = await dealService.createDeal(companyId, user._id.toString(), req.body);
-    winstonLogger.info(`Deal created for company: ${companyId} by user: ${user.email}`);
+    const newDeal = await dealService.createDeal(businessId, user._id.toString(), req.body);
+    winstonLogger.info(`Deal created for business: ${businessId} by user: ${user.email}`);
     res.status(201).json({
       success: true,
       message: 'Deal created successfully',
@@ -71,7 +71,7 @@ export const createDeal = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 export const updateDeal = async (req: AuthenticatedRequest, res: Response) => {
-  const { companyId, dealId } = req.params;
+  const { businessId, dealId } = req.params;
   const user = req.user;
 
   if (!user) {
@@ -79,8 +79,8 @@ export const updateDeal = async (req: AuthenticatedRequest, res: Response) => {
   }
 
   try {
-    const updatedDeal = await dealService.updateDeal(companyId, dealId, user._id.toString(), req.body);
-    winstonLogger.info(`Deal ${dealId} updated for company: ${companyId} by user: ${user.email}`);
+    const updatedDeal = await dealService.updateDeal(businessId, dealId, user._id.toString(), req.body);
+    winstonLogger.info(`Deal ${dealId} updated for business: ${businessId} by user: ${user.email}`);
     res.status(200).json({
       success: true,
       message: 'Deal updated successfully',
@@ -93,7 +93,7 @@ export const updateDeal = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 export const deleteDeal = async (req: AuthenticatedRequest, res: Response) => {
-  const { companyId, dealId } = req.params;
+  const { businessId, dealId } = req.params;
   const user = req.user;
 
   if (!user) {
@@ -101,8 +101,8 @@ export const deleteDeal = async (req: AuthenticatedRequest, res: Response) => {
   }
 
   try {
-    await dealService.deleteDeal(companyId, dealId, user._id.toString());
-    winstonLogger.info(`Deal ${dealId} deleted for company: ${companyId} by user: ${user.email}`);
+    await dealService.deleteDeal(businessId, dealId, user._id.toString());
+    winstonLogger.info(`Deal ${dealId} deleted for business: ${businessId} by user: ${user.email}`);
     res.status(200).json({
       success: true,
       message: 'Deal deleted successfully',
@@ -114,7 +114,7 @@ export const deleteDeal = async (req: AuthenticatedRequest, res: Response) => {
 };
 
 export const updateDealStatus = async (req: AuthenticatedRequest, res: Response) => {
-  const { companyId, dealId } = req.params;
+  const { businessId, dealId } = req.params;
   const { status } = req.body;
   const user = req.user;
 
@@ -123,8 +123,8 @@ export const updateDealStatus = async (req: AuthenticatedRequest, res: Response)
   }
 
   try {
-    const updatedDeal = await dealService.updateDealStatus(companyId, dealId, user._id.toString(), status);
-    winstonLogger.info(`Deal ${dealId} status updated to ${status} for company: ${companyId} by user: ${user.email}`);
+    const updatedDeal = await dealService.updateDealStatus(businessId, dealId, user._id.toString(), status);
+    winstonLogger.info(`Deal ${dealId} status updated to ${status} for business: ${businessId} by user: ${user.email}`);
     res.status(200).json({
       success: true,
       message: 'Deal status updated successfully',

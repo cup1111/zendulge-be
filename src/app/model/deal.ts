@@ -16,7 +16,7 @@ export interface IDeal {
   status: 'active' | 'inactive' | 'expired' | 'sold_out';
   images?: string[];
   tags?: string[];
-  company: string; // Company ID reference
+  business: string; // Business ID reference
   service: string; // Service ID reference (required)
   createdBy: string; // User ID who created the deal
 }
@@ -98,10 +98,10 @@ const dealSchema = new Schema<IDealDocument>({
     trim: true,
     maxlength: 30,
   }],
-  company: {
+  business: {
     type: String,
     required: true,
-    ref: 'companies',
+    ref: 'businesses',
   },
   service: {
     type: String,
@@ -118,10 +118,10 @@ const dealSchema = new Schema<IDealDocument>({
 });
 
 // Index for better query performance
-dealSchema.index({ company: 1, status: 1 });
-dealSchema.index({ company: 1, 'operatingSite': 1 });
-dealSchema.index({ company: 1, service: 1 });
-dealSchema.index({ company: 1, createdBy: 1 });
+dealSchema.index({ business: 1, status: 1 });
+dealSchema.index({ business: 1, 'operatingSite': 1 });
+dealSchema.index({ business: 1, service: 1 });
+dealSchema.index({ business: 1, createdBy: 1 });
 dealSchema.index({ category: 1 });
 dealSchema.index({ startDate: 1, endDate: 1 });
 

@@ -31,10 +31,10 @@ export const createOperateSite = async (
     operatingHours,
     specialInstruction,
   } = req.body;
-  const { id: companyId } = req.params;
+  const { id: businessId } = req.params;
 
-  if (!companyId) {
-    throw new ValidationException('Company ID is required');
+  if (!businessId) {
+    throw new ValidationException('Business ID is required');
   }
 
   // Validate required fields
@@ -64,7 +64,7 @@ export const createOperateSite = async (
     address,
     phoneNumber,
     emailAddress,
-    company: companyId,
+    business: businessId,
     longitude,
     latitude,
     operatingHours,
@@ -85,15 +85,15 @@ export const getOperateSites = async (
   req: AuthBusinessRequest,
   res: Response,
 ): Promise<void> => {
-  const { id: companyId } = req.params;
+  const { id: businessId } = req.params;
   const { isActive, page = 1, limit = 10 } = req.query;
   const user = req.user;
 
-  if (!companyId) {
-    throw new ValidationException('Company ID is required');
+  if (!businessId) {
+    throw new ValidationException('Business ID is required');
   }
 
-  const filter: Record<string, unknown> = { company: companyId };
+  const filter: Record<string, unknown> = { business: businessId };
   if (user && !req.business?.isBusinessOwner(user._id)) {
     filter.members = user.id;
   }
@@ -130,17 +130,17 @@ export const getOperateSiteById = async (
   req: AuthenticatedRequest,
   res: Response,
 ): Promise<void> => {
-  const { id: companyId, operateSiteId } = req.params;
+  const { id: businessId, operateSiteId } = req.params;
 
-  if (!companyId || !operateSiteId) {
+  if (!businessId || !operateSiteId) {
     throw new ValidationException(
-      'Company ID and Operate Site ID are required',
+      'Business ID and Operate Site ID are required',
     );
   }
 
   const operateSite = await OperateSite.findOne({
     _id: operateSiteId,
-    company: companyId,
+    business: businessId,
   }).populate('members', 'firstName lastName email phoneNumber active');
 
   if (!operateSite) {
@@ -157,12 +157,12 @@ export const updateOperateSite = async (
   req: AuthenticatedRequest,
   res: Response,
 ): Promise<void> => {
-  const { id: companyId, operateSiteId } = req.params;
+  const { id: businessId, operateSiteId } = req.params;
   const updateData = req.body;
 
-  if (!companyId || !operateSiteId) {
+  if (!businessId || !operateSiteId) {
     throw new ValidationException(
-      'Company ID and Operate Site ID are required',
+      'Business ID and Operate Site ID are required',
     );
   }
 
@@ -181,7 +181,7 @@ export const updateOperateSite = async (
   }
 
   const operateSite = await OperateSite.findOneAndUpdate(
-    { _id: operateSiteId, company: companyId },
+    { _id: operateSiteId, business: businessId },
     updateData,
     { new: true, runValidators: true },
   );
@@ -201,17 +201,17 @@ export const deleteOperateSite = async (
   req: AuthenticatedRequest,
   res: Response,
 ): Promise<void> => {
-  const { id: companyId, operateSiteId } = req.params;
+  const { id: businessId, operateSiteId } = req.params;
 
-  if (!companyId || !operateSiteId) {
+  if (!businessId || !operateSiteId) {
     throw new ValidationException(
-      'Company ID and Operate Site ID are required',
+      'Business ID and Operate Site ID are required',
     );
   }
 
   const operateSite = await OperateSite.findOneAndDelete({
     _id: operateSiteId,
-    company: companyId,
+    business: businessId,
   });
 
   if (!operateSite) {
@@ -228,17 +228,17 @@ export const toggleOperateSiteStatus = async (
   req: AuthenticatedRequest,
   res: Response,
 ): Promise<void> => {
-  const { id: companyId, operateSiteId } = req.params;
+  const { id: businessId, operateSiteId } = req.params;
 
-  if (!companyId || !operateSiteId) {
+  if (!businessId || !operateSiteId) {
     throw new ValidationException(
-      'Company ID and Operate Site ID are required',
+      'Business ID and Operate Site ID are required',
     );
   }
 
   const operateSite = await OperateSite.findOne({
     _id: operateSiteId,
-    company: companyId,
+    business: businessId,
   });
 
   if (!operateSite) {
@@ -290,17 +290,17 @@ export const getOperateSiteStatus = async (
   req: AuthenticatedRequest,
   res: Response,
 ): Promise<void> => {
-  const { id: companyId, operateSiteId } = req.params;
+  const { id: businessId, operateSiteId } = req.params;
 
-  if (!companyId || !operateSiteId) {
+  if (!businessId || !operateSiteId) {
     throw new ValidationException(
-      'Company ID and Operate Site ID are required',
+      'Business ID and Operate Site ID are required',
     );
   }
 
   const operateSite = await OperateSite.findOne({
     _id: operateSiteId,
-    company: companyId,
+    business: businessId,
   });
 
   if (!operateSite) {

@@ -71,7 +71,7 @@ import {
 } from '../../validation/dealValidation';
 import {
   createUserWithRoleValidation,
-  companyAndUserIdValidation,
+  businessAndUserIdValidation,
   updateUserValidation,
 } from '../../validation/userManagementValidation';
 import { handleValidationErrors } from '../../validation/validationHandler';
@@ -324,7 +324,7 @@ router.get(
   authorizeUserManagementAction(
     [RoleName.OWNER, RoleName.MANAGER, RoleName.EMPLOYEE],
   ),
-  companyAndUserIdValidation,
+  businessAndUserIdValidation,
   handleValidationErrors,
   getUserById,
 );
@@ -360,7 +360,7 @@ router.delete(
   authorizeUserManagementAction(
     [RoleName.OWNER, RoleName.MANAGER],
   ),
-  companyAndUserIdValidation,
+  businessAndUserIdValidation,
   handleValidationErrors,
   deleteUser,
 );

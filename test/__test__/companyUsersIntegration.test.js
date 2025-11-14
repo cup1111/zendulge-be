@@ -47,7 +47,7 @@ describe('Business Users Endpoint Integration', () => {
     // Create operate site
     testOperateSite = await new OperateSiteBuilder()
       .withName('Test Site Integration')
-      .withCompany(testBusiness._id)
+      .withBusiness(testBusiness._id)
       .save();
     // Create member user
     testUser = await new UserBuilder()

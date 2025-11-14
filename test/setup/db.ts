@@ -29,7 +29,7 @@ async function createDefaultData(): Promise<void> {
   // Seed roles
   await new RoleBuilder()
     .withName(RoleName.OWNER)
-    .withDescription('Business owner who can manage their company')
+    .withDescription('Business owner who can manage their business')
     .withActive(true)
     .save();
   await new RoleBuilder()
@@ -39,7 +39,7 @@ async function createDefaultData(): Promise<void> {
     .save();
   await new RoleBuilder()
     .withName(RoleName.EMPLOYEE)
-    .withDescription('Employee with limited access to company resources')
+    .withDescription('Employee with limited access to business resources')
     .withActive(true)
     .save();
   await new RoleBuilder()

@@ -18,7 +18,7 @@ describe('GET /api/v1/business/:businessId/me/role', () => {
       .save();
     const ownerRole = await Role.findOne({ name: RoleName.OWNER });
     const business = await new BusinessBuilder()
-      .withName('Owner Test Company')
+      .withName('Owner Test Business')
       .withOwner(owner._id)
       .withContact(owner._id)
       .withMember(owner._id, ownerRole?._id)
@@ -54,7 +54,7 @@ describe('GET /api/v1/business/:businessId/me/role', () => {
       .save();
     const memberRole = await Role.findOne({ name: RoleName.EMPLOYEE });
     const business = await new BusinessBuilder()
-      .withName('Member Test Company')
+      .withName('Member Test Business')
       .withOwner(owner._id)
       .withContact(owner._id)
       .withMember(member._id, memberRole?._id)

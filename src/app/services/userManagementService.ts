@@ -61,7 +61,7 @@ async function filterMembersBySiteAccess(
 
   // Get current user's site access
   const userSiteIds = await OperateSite.find({
-    company: businessId,
+    business: businessId,
     members: currentUserId,
   }).distinct('_id');
 
@@ -71,7 +71,7 @@ async function filterMembersBySiteAccess(
   const memberUserIds = validMembers.map(m => m.user._id);
 
   const accessibleMemberIds = await OperateSite.find({
-    company: businessId,
+    business: businessId,
     _id: { $in: userSiteIds },
     members: { $in: memberUserIds },
   }).distinct('members');
@@ -160,7 +160,7 @@ export class UserManagementService {
     );
 
     const sites = await OperateSite.find({
-      company: business._id,
+      business: business._id,
       members: { $in: memberIds },
     })
       .select('_id name address members')
@@ -244,7 +244,7 @@ export class UserManagementService {
           // Check if all operate sites belong to the business and are active
           const operateSites = await OperateSite.find({
             _id: { $in: userData.operateSiteIds },
-            company: userData.businessId,
+            business: userData.businessId,
             isActive: true,
           });
 
@@ -415,7 +415,7 @@ export class UserManagementService {
         // Check if all operate sites belong to the business and are active
         const operateSites = await OperateSite.find({
           _id: { $in: updateData.operateSiteIds },
-          company: businessId,
+          business: businessId,
           isActive: true,
         });
 
@@ -465,7 +465,7 @@ export class UserManagementService {
       if (updateData.operateSiteIds !== undefined && businessId) {
         // Remove user from all operate sites in this business first
         await OperateSite.updateMany(
-          { company: businessId },
+          { business: businessId },
           { $pull: { members: userId } },
         );
 

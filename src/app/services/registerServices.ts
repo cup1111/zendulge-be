@@ -32,9 +32,9 @@ export interface IBusinessRegistration {
   jobTitle?: string;
 
   // Business data
-  companyName: string;
-  companyEmail: string;
-  companyDescription?: string;
+  businessName: string;
+  businessEmail: string;
+  businessDescription?: string;
   categories: string[];
   businessAddress: {
     street: string;
@@ -44,7 +44,7 @@ export interface IBusinessRegistration {
     country?: string;
   };
   abn?: string;
-  companyWebsite?: string;
+  businessWebsite?: string;
   facebookUrl?: string;
   twitterUrl?: string;
   logo?: string;
@@ -67,13 +67,13 @@ export const businessRegister = async (
     firstName,
     lastName,
     jobTitle,
-    companyName,
-    companyEmail,
-    companyDescription,
+    businessName,
+    businessEmail,
+    businessDescription,
     categories,
     businessAddress,
     abn,
-    companyWebsite,
+    businessWebsite,
     facebookUrl,
     twitterUrl,
     logo,
@@ -114,7 +114,7 @@ export const businessRegister = async (
   }
 
   // Check if business name already exists
-  const existingBusiness = await Business.isNameTaken(companyName);
+  const existingBusiness = await Business.isNameTaken(businessName);
   if (existingBusiness) {
     throw new BusinessAlreadyExistsException();
   }
@@ -130,9 +130,9 @@ export const businessRegister = async (
 
   // Prepare business data
   const businessData = {
-    name: companyName,
-    email: companyEmail,
-    description: companyDescription,
+    name: businessName,
+    email: businessEmail,
+    description: businessDescription,
     categories,
     businessAddress: {
       ...businessAddress,
@@ -140,7 +140,7 @@ export const businessRegister = async (
     },
     contact: userId, // The registering user becomes the contact person
     abn,
-    website: companyWebsite,
+    website: businessWebsite,
     facebookUrl,
     twitterUrl,
     logo,

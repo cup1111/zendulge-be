@@ -31,23 +31,23 @@ export const businessRegistrationValidation = [
     .isLength({ max: 100 })
     .withMessage('Job title must be less than 100 characters'),
 
-  // Company fields
-  body('companyName')
+  // Business fields
+  body('businessName')
     .trim()
     .isLength({ min: 2, max: 100 })
-    .withMessage('Company name must be between 2 and 100 characters'),
+    .withMessage('Business name must be between 2 and 100 characters'),
 
-  body('companyEmail')
+  body('businessEmail')
     .isEmail()
     .normalizeEmail()
-    .withMessage('Please provide a valid company email address'),
+    .withMessage('Please provide a valid business email address'),
 
-  body('companyDescription')
+  body('businessDescription')
     .optional()
     .trim()
     .isLength({ min: 10, max: 500 })
     .withMessage(
-      'Company description must be between 10 and 500 characters if provided',
+      'Business description must be between 10 and 500 characters if provided',
     ),
 
   body('categories')
@@ -97,7 +97,7 @@ export const businessRegistrationValidation = [
     .matches(/^\d{11}$/)
     .withMessage('ABN must be 11 digits'),
 
-  body('companyWebsite')
+  body('businessWebsite')
     .optional()
     .isURL()
     .withMessage('Please provide a valid website URL'),

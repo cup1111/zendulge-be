@@ -13,7 +13,7 @@ export const getDeals = async (req: AuthenticatedRequest, res: Response) => {
   }
 
   try {
-    const deals = await dealService.getDealsByCompany(businessId, user._id.toString());
+    const deals = await dealService.getDealsByBusiness(businessId, user._id.toString());
     winstonLogger.info(`Deals retrieved for business: ${businessId} by user: ${user.email}`);
     res.status(200).json({
       success: true,

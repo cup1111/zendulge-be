@@ -51,7 +51,7 @@ describe('Deal status management', () => {
       .save();
 
     operateSite = await new OperateSiteBuilder()
-      .withCompany(business._id)
+      .withBusiness(business._id)
       .withName('Deal Status Site')
       .save();
     operateSite.members = [ownerUser._id, managerUser._id];
@@ -62,7 +62,7 @@ describe('Deal status management', () => {
       category: 'Wellness',
       duration: 60,
       basePrice: 120,
-      company: business._id.toString(),
+      business: business._id.toString(),
       status: 'active',
     });
 
@@ -79,7 +79,7 @@ describe('Deal status management', () => {
       endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       currentBookings: 0,
       status: 'active',
-      company: business._id.toString(),
+      business: business._id.toString(),
       service: service._id.toString(),
       createdBy: ownerUser._id.toString(),
     });

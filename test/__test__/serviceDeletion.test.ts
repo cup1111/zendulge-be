@@ -40,7 +40,7 @@ describe('Service safeguards', () => {
             .save();
 
         operateSite = await new OperateSiteBuilder()
-            .withCompany(business._id)
+            .withBusiness(business._id)
             .withName('Service Safeguard Site')
             .save();
 
@@ -60,7 +60,7 @@ describe('Service safeguards', () => {
             duration: 60,
             basePrice: 150,
             description: 'General cleaning service',
-            company: business._id.toString(),
+            business: business._id.toString(),
             status: 'active',
         });
 
@@ -82,7 +82,7 @@ describe('Service safeguards', () => {
             duration: 120,
             basePrice: 400,
             description: 'Post-construction cleanup',
-            company: business._id.toString(),
+            business: business._id.toString(),
             status: 'active',
         });
 
@@ -99,7 +99,7 @@ describe('Service safeguards', () => {
             endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             currentBookings: 0,
             status: 'active',
-            company: business._id.toString(),
+            business: business._id.toString(),
             service: service._id.toString(),
             createdBy: ownerUser._id.toString(),
         });
@@ -124,7 +124,7 @@ describe('Service safeguards', () => {
             duration: 90,
             basePrice: 220,
             description: 'Premium cleaning package',
-            company: business._id.toString(),
+            business: business._id.toString(),
             status: 'active',
         });
 
@@ -140,7 +140,7 @@ describe('Service safeguards', () => {
             endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
             currentBookings: 0,
             status: 'active',
-            company: business._id.toString(),
+            business: business._id.toString(),
             service: service._id.toString(),
             createdBy: ownerUser._id.toString(),
         });
@@ -169,7 +169,7 @@ describe('Service safeguards', () => {
             duration: 180,
             basePrice: 500,
             description: 'Landscaping service for commercial sites',
-            company: business._id.toString(),
+            business: business._id.toString(),
             status: 'active',
         });
 

@@ -17,7 +17,7 @@ export interface IOperateSite {
   emailAddress: string;
   operatingHours: IOperatingHours;
   specialInstruction: string;
-  company: mongoose.Types.ObjectId;
+  business: mongoose.Types.ObjectId;
   members?: mongoose.Types.ObjectId[]; // Array of user IDs who have access to this operate site
   latitude: number;
   longitude: number;
@@ -115,10 +115,10 @@ const operateSiteSchema = new Schema<IOperateSiteDocument>(
       maxlength: [500, 'Special instruction cannot exceed 500 characters'],
       default: '',
     },
-    company: {
+    business: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
-      required: [true, 'Company ID is required'],
+      ref: 'businesses',
+      required: [true, 'Business ID is required'],
       index: true,
     },
     members: [
@@ -152,7 +152,7 @@ const operateSiteSchema = new Schema<IOperateSiteDocument>(
 );
 
 // Indexes for better query performance
-operateSiteSchema.index({ company: 1, isActive: 1 });
+operateSiteSchema.index({ business: 1, isActive: 1 });
 operateSiteSchema.index({ longitude: 1, latitude: 1 }); // For geospatial queries
 operateSiteSchema.index({ name: 'text', address: 'text' }); // For text search
 
@@ -216,14 +216,14 @@ operateSiteSchema.methods.addMember = function (
   userId: Types.ObjectId,
 ) {
   // Check if already a member
-  const isAlreadyMember = this.members.some((member:string) =>
+  const isAlreadyMember = this.members.some((member: string) =>
     member.toString() === userId.toString(),
   );
 
   if (!isAlreadyMember) {
     // Check member limit
     if (this.members.length >= 100) {
-      throw new Error('Company has reached maximum member limit (100)');
+      throw new Error('Business has reached maximum member limit (100)');
     }
 
     this.members.push(userId);

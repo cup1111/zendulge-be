@@ -153,7 +153,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"business@example.com\",\n  \"password\": \"SecurePass123\",\n  \"name\": \"Jane Smith\",\n  \"jobTitle\": \"CEO\",\n  \"companyName\": \"Tech Solutions Inc\",\n  \"companyDescription\": \"Leading technology solutions provider\",\n  \"companyWebsite\": \"https://techsolutions.example.com\"\n}"
+              "raw": "{\n  \"email\": \"business@example.com\",\n  \"password\": \"SecurePass123\",\n  \"name\": \"Jane Smith\",\n  \"jobTitle\": \"CEO\",\n  \"businessName\": \"Tech Solutions Inc\",\n  \"businessDescription\": \"Leading technology solutions provider\",\n  \"businessWebsite\": \"https://techsolutions.example.com\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}{{apiPrefix}}/v1/business-register",
@@ -176,7 +176,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"invalid-email\",\n  \"password\": \"weak\",\n  \"name\": \"A\",\n  \"companyName\": \"X\",\n  \"companyWebsite\": \"invalid-url\"\n}"
+              "raw": "{\n  \"email\": \"invalid-email\",\n  \"password\": \"weak\",\n  \"name\": \"A\",\n  \"businessName\": \"X\",\n  \"businessWebsite\": \"invalid-url\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}{{apiPrefix}}/v1/business-register",
@@ -188,7 +188,7 @@
           "response": []
         },
         {
-          "name": "Business Registration - Company Already Exists (409)",
+          "name": "Business Registration - Business Already Exists (409)",
           "request": {
             "method": "POST",
             "header": [
@@ -199,14 +199,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"business2@example.com\",\n  \"password\": \"SecurePass123\",\n  \"name\": \"Jane Smith\",\n  \"jobTitle\": \"CEO\",\n  \"companyName\": \"Tech Solutions Inc\",\n  \"companyDescription\": \"Leading technology solutions provider\",\n  \"companyWebsite\": \"https://techsolutions.example.com\"\n}"
+              "raw": "{\n  \"email\": \"business2@example.com\",\n  \"password\": \"SecurePass123\",\n  \"name\": \"Jane Smith\",\n  \"jobTitle\": \"CEO\",\n  \"businessName\": \"Tech Solutions Inc\",\n  \"businessDescription\": \"Leading technology solutions provider\",\n  \"businessWebsite\": \"https://techsolutions.example.com\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}{{apiPrefix}}/v1/business-register",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "business-register"]
             },
-            "description": "Try to register with existing company name - should return 409 status"
+            "description": "Try to register with existing business name - should return 409 status"
           },
           "response": []
         }
@@ -711,7 +711,7 @@
           "response": []
         },
         {
-          "name": "Test CompanyAlreadyExistsException (409)",
+          "name": "Test BusinessAlreadyExistsException (409)",
           "request": {
             "method": "POST",
             "header": [
@@ -722,14 +722,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"company@example.com\",\n  \"password\": \"SecurePass123\",\n  \"name\": \"Company User\",\n  \"companyName\": \"Duplicate Company Inc\"\n}"
+              "raw": "{\n  \"email\": \"business@example.com\",\n  \"password\": \"SecurePass123\",\n  \"name\": \"Business User\",\n  \"businessName\": \"Duplicate Business Inc\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}{{apiPrefix}}/v1/business-register",
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "business-register"]
             },
-            "description": "First register, then run again to test CompanyAlreadyExistsException"
+            "description": "First register, then run again to test BusinessAlreadyExistsException"
           },
           "response": []
         }

@@ -20,7 +20,7 @@ export const getServices = async (req: AuthenticatedRequest, res: Response) => {
   }
 
   try {
-    const services = await serviceService.getServicesByCompany(businessId, user._id.toString());
+    const services = await serviceService.getServicesByBusiness(businessId, user._id.toString());
 
     winstonLogger.info(`Services retrieved successfully for business: ${businessId} by user: ${user.email}`);
 

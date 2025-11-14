@@ -133,7 +133,3 @@ export const businessUserRoleValidation = [
   body('role').isMongoId().withMessage('Please provide a valid role ID'),
 ];
 
-// Keep for backward compatibility
-export const companyIdValidation = businessIdValidation;
-export const companyAndUserIdValidation = businessAndUserIdValidation;
-export const companyUserRoleValidation = businessUserRoleValidation;

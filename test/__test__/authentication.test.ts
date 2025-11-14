@@ -95,7 +95,7 @@ describe('Authentication', () => {
         .withLastName('User')
         .save();
       await new BusinessBuilder()
-        .withName('Test Company')
+        .withName('Test Business')
         .withOwner(user.id)
         .withContact(user.id)
         .save();
@@ -135,12 +135,12 @@ describe('Authentication', () => {
         .withLastName('User')
         .save();
       await new BusinessBuilder()
-        .withName('Company 1')
+        .withName('Business 1')
         .withOwner(user._id)
         .withContact(user._id)
         .save();
       await new BusinessBuilder()
-        .withName('Company 2')
+        .withName('Business 2')
         .withOwner(user._id)
         .withContact(user._id)
         .save();

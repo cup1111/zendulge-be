@@ -69,8 +69,8 @@ describe('User Management Endpoints', () => {
       .withMember(otherManagerUser._id, managerRole._id)
       .save();
     // Create operate sites for this business
-    operateSite1 = await new OperateSiteBuilder().withCompany(business._id).withName('Site 1').save();
-    operateSite2 = await new OperateSiteBuilder().withCompany(business._id).withName('Site 2').save();
+    operateSite1 = await new OperateSiteBuilder().withBusiness(business._id).withName('Site 1').save();
+    operateSite2 = await new OperateSiteBuilder().withBusiness(business._id).withName('Site 2').save();
     // Login users
     ownerToken = await loginAndGetToken('owner@example.com', 'OwnerPass123');
     managerToken = await loginAndGetToken('manager@example.com', 'ManagerPass123');
@@ -89,7 +89,7 @@ describe('User Management Endpoints', () => {
         .expect(401);
     });
 
-    it('should return 403 for users without company access', async () => {
+    it('should return 403 for users without business access', async () => {
       await request(app.getApp())
         .post(`/api/v1/business/${business._id}/invite`)
         .set('Authorization', `Bearer ${outsiderToken}`)
@@ -128,7 +128,7 @@ describe('User Management Endpoints', () => {
         .expect(401);
     });
 
-    it('should return 403 for users without company access', async () => {
+    it('should return 403 for users without business access', async () => {
       await request(app.getApp())
         .get(`/api/v1/business/${business._id}/users/${memberUser._id}`)
         .set('Authorization', `Bearer ${outsiderToken}`)
@@ -144,7 +144,7 @@ describe('User Management Endpoints', () => {
         .expect(401);
     });
 
-    it('should return 403 for users without company access', async () => {
+    it('should return 403 for users without business access', async () => {
       await request(app.getApp())
         .patch(`/api/v1/business/${business._id}/users/${memberUser._id}`)
         .set('Authorization', `Bearer ${outsiderToken}`)
@@ -197,7 +197,7 @@ describe('User Management Endpoints', () => {
       expect(response.body.message).toContain('Managers cannot assign owner or manager roles');
     });
 
-    it('should allow manager to update employees in their company', async () => {
+    it('should allow manager to update employees in their business', async () => {
       const response = await request(app.getApp())
         .patch(`/api/v1/business/${business._id}/users/${memberUser._id}`)
         .set('Authorization', `Bearer ${managerToken}`)
@@ -215,7 +215,7 @@ describe('User Management Endpoints', () => {
         .expect(401);
     });
 
-    it('should return 403 for users without company access', async () => {
+    it('should return 403 for users without business access', async () => {
       await request(app.getApp())
         .delete(`/api/v1/business/${business._id}/users/${memberUser._id}`)
         .set('Authorization', `Bearer ${outsiderToken}`)
@@ -240,7 +240,7 @@ describe('User Management Endpoints', () => {
       expect(response.body.message).toContain('Managers cannot delete business owners');
     });
 
-    it('should allow manager to delete employees in their company', async () => {
+    it('should allow manager to delete employees in their business', async () => {
       const response = await request(app.getApp())
         .delete(`/api/v1/business/${business._id}/users/${memberUser._id}`)
         .set('Authorization', `Bearer ${managerToken}`)
@@ -250,7 +250,7 @@ describe('User Management Endpoints', () => {
       expect(response.body.message).toContain('User deleted successfully');
     });
 
-    it('should allow owner to delete managers in their company', async () => {
+    it('should allow owner to delete managers in their business', async () => {
       const response = await request(app.getApp())
         .delete(`/api/v1/business/${business._id}/users/${otherManagerUser._id}`)
         .set('Authorization', `Bearer ${ownerToken}`)
@@ -268,14 +268,14 @@ describe('User Management Endpoints', () => {
         .expect(401);
     });
 
-    it('should return 403 for users without company access', async () => {
+    it('should return 403 for users without business access', async () => {
       await request(app.getApp())
         .get(`/api/v1/business/${business._id}/roles`)
         .set('Authorization', `Bearer ${outsiderToken}`)
         .expect(403);
     });
 
-    it('should return roles for company owners', async () => {
+    it('should return roles for business owners', async () => {
       const response = await request(app.getApp())
         .get(`/api/v1/business/${business._id}/roles`)
         .set('Authorization', `Bearer ${ownerToken}`)

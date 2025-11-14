@@ -20,7 +20,7 @@ export default class OperateSiteBuilder extends BaseBuilder<IOperateSiteDocument
         sunday: { open: '09:00', close: '17:00', isClosed: false },
       },
       specialInstruction: '',
-      company: new mongoose.Types.ObjectId(), // Should be set with .withCompany()
+      business: new mongoose.Types.ObjectId(), // Should be set with .withBusiness()
       latitude: 0,
       longitude: 0,
       isActive: true,
@@ -29,8 +29,8 @@ export default class OperateSiteBuilder extends BaseBuilder<IOperateSiteDocument
     };
   }
 
-  withCompany(companyId: any): OperateSiteBuilder {
-    this.properties.company = companyId;
+  withBusiness(businessId: any): OperateSiteBuilder {
+    this.properties.business = businessId;
     return this;
   }
 

@@ -51,7 +51,7 @@ describe('Business Users Endpoint', () => {
     expect(foundSelf).toBeUndefined();
     // There should be only members
     for (const u of users) {
-      expect(u.companyRole).toBe('member');
+      expect(u.businessRole).toBe('member');
     }
   });
 

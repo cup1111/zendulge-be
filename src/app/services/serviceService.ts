@@ -3,10 +3,10 @@ import Business from '../model/business';
 import Deal from '../model/deal';
 import { ConflictException } from '../exceptions';
 
-const getServicesByCompany = async (companyId: string, userId: string) => {
+const getServicesByBusiness = async (businessId: string, userId: string) => {
   // Verify user has access to the business
   const business = await Business.findOne({
-    _id: companyId,
+    _id: businessId,
     $or: [
       { owner: userId },
       { 'members.user': userId },
@@ -17,15 +17,15 @@ const getServicesByCompany = async (companyId: string, userId: string) => {
     throw new Error('Business not found or access denied');
   }
 
-  // Get all services for the company
-  const services = await Service.find({ company: companyId });
+  // Get all services for the business
+  const services = await Service.find({ business: businessId });
   return services;
 };
 
-const getServiceById = async (companyId: string, serviceId: string, userId: string) => {
+const getServiceById = async (businessId: string, serviceId: string, userId: string) => {
   // Verify user has access to the business
   const business = await Business.findOne({
-    _id: companyId,
+    _id: businessId,
     $or: [
       { owner: userId },
       { 'members.user': userId },
@@ -38,7 +38,7 @@ const getServiceById = async (companyId: string, serviceId: string, userId: stri
 
   const service = await Service.findOne({
     _id: serviceId,
-    company: companyId,
+    business: businessId,
   });
 
   if (!service) {
@@ -48,10 +48,10 @@ const getServiceById = async (companyId: string, serviceId: string, userId: stri
   return service;
 };
 
-const createService = async (companyId: string, userId: string, serviceData: any) => {
+const createService = async (businessId: string, userId: string, serviceData: any) => {
   // Verify user is owner of the business
   const business = await Business.findOne({
-    _id: companyId,
+    _id: businessId,
     owner: userId,
   });
 
@@ -67,7 +67,7 @@ const createService = async (companyId: string, userId: string, serviceData: any
     basePrice: serviceData.basePrice,
     description: serviceData.description,
     status: serviceData.status || 'active',
-    company: companyId,
+    business: businessId,
   };
 
   // Remove undefined values
@@ -81,10 +81,10 @@ const createService = async (companyId: string, userId: string, serviceData: any
   return service;
 };
 
-const updateService = async (companyId: string, serviceId: string, userId: string, updateData: any) => {
+const updateService = async (businessId: string, serviceId: string, userId: string, updateData: any) => {
   // Verify user is owner of the business
   const business = await Business.findOne({
-    _id: companyId,
+    _id: businessId,
     owner: userId,
   });
 
@@ -94,7 +94,7 @@ const updateService = async (companyId: string, serviceId: string, userId: strin
 
   const service = await Service.findOne({
     _id: serviceId,
-    company: companyId,
+    business: businessId,
   });
 
   if (!service) {
@@ -106,7 +106,7 @@ const updateService = async (companyId: string, serviceId: string, userId: strin
 
   if (isDeactivating) {
     const hasActiveDeals = await Deal.exists({
-      company: companyId,
+      business: businessId,
       service: serviceId,
       status: 'active',
     });
@@ -138,10 +138,10 @@ const updateService = async (companyId: string, serviceId: string, userId: strin
   return service;
 };
 
-const deleteService = async (companyId: string, serviceId: string, userId: string) => {
+const deleteService = async (businessId: string, serviceId: string, userId: string) => {
   // Verify user is owner of the business
   const business = await Business.findOne({
-    _id: companyId,
+    _id: businessId,
     owner: userId,
   });
 
@@ -150,7 +150,7 @@ const deleteService = async (companyId: string, serviceId: string, userId: strin
   }
 
   const hasRelatedDeals = await Deal.exists({
-    company: companyId,
+    business: businessId,
     service: serviceId,
   });
 
@@ -162,7 +162,7 @@ const deleteService = async (companyId: string, serviceId: string, userId: strin
 
   const service = await Service.findOneAndDelete({
     _id: serviceId,
-    company: companyId,
+    business: businessId,
   });
 
   if (!service) {
@@ -173,7 +173,7 @@ const deleteService = async (companyId: string, serviceId: string, userId: strin
 };
 
 export default {
-  getServicesByCompany,
+  getServicesByBusiness,
   getServiceById,
   createService,
   updateService,

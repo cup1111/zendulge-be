@@ -6,7 +6,7 @@ export interface IService {
   duration: number; // Duration in minutes
   basePrice: number;
   description?: string;
-  company: string; // Company ID reference
+  business: string; // Business ID reference
   status: 'active' | 'inactive';
 }
 
@@ -41,10 +41,10 @@ const serviceSchema = new Schema<IServiceDocument>({
     trim: true,
     maxlength: 500,
   },
-  company: {
+  business: {
     type: String,
     required: true,
-    ref: 'companies',
+    ref: 'businesses',
   },
   status: {
     type: String,

@@ -4,7 +4,7 @@
 
 ### US-U001: Owner Views Users
 **As a** business owner  
-**I want to** view all users in my company  
+**I want to** view all users in my business  
 **So that** I have complete visibility of my workforce
 
 **Acceptance Criteria:**
@@ -28,7 +28,7 @@
 
 ### US-U003: Owner Edits User
 **As a** business owner  
-**I want to** edit any user in my company  
+**I want to** edit any user in my business  
 **So that** I can manage user information and roles
 
 **Acceptance Criteria:**
@@ -41,7 +41,7 @@
 
 ### US-U004: Owner Deletes User
 **As a** business owner  
-**I want to** delete any user from my company  
+**I want to** delete any user from my business  
 **So that** I can remove users who are no longer needed
 
 **Acceptance Criteria:**
@@ -49,7 +49,7 @@
 - When I view any user in User Management
 - Then I should see a "Delete" button
 - And I can confirm deletion
-- And the user is removed from the company
+- And the user is removed from the business
 - But I cannot delete myself (the owner)
 
 ## Manager User Stories

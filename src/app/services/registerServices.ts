@@ -6,6 +6,7 @@ import {
   EmailAlreadyExistsException,
   BusinessAlreadyExistsException,
 } from '../exceptions';
+import { BusinessStatus } from '../enum/businessStatus';
 
 // Helper function to generate activation code and send email
 const generateAndSendActivationEmail = async (user: any) => {
@@ -145,7 +146,7 @@ export const businessRegister = async (
     twitterUrl,
     logo,
     owner: userId,
-    isActive: true,
+    status: BusinessStatus.PENDING, // New businesses start with pending status
   };
 
   // Create the business

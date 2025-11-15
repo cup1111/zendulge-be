@@ -1,5 +1,6 @@
 import { transformLeanResult } from '../src/lib/mongoUtils';
 import { Types } from 'mongoose';
+import { BusinessStatus } from '../src/app/enum/businessStatus';
 
 describe('transformLeanResult', () => {
   describe('Basic transformation', () => {
@@ -155,7 +156,7 @@ describe('transformLeanResult', () => {
       const leanResult = {
         _id: businessId,
         name: 'Zendulge Technologies Pty Ltd',
-        isActive: true,
+        status: BusinessStatus.ACTIVE,
         __v: 0,
       };
 
@@ -164,7 +165,7 @@ describe('transformLeanResult', () => {
       expect(result).toEqual({
         id: '68ef86207cff14ca10c2fa38',
         name: 'Zendulge Technologies Pty Ltd',
-        isActive: true,
+        status: BusinessStatus.ACTIVE,
       });
 
       // Critical: ID must be a string, not an object
@@ -266,7 +267,7 @@ describe('transformLeanResult', () => {
       const leanBusinessResult = {
         _id: businessId,
         name: 'Zendulge Technologies Pty Ltd',
-        isActive: true,
+        status: BusinessStatus.ACTIVE,
         __v: 0,
       };
 

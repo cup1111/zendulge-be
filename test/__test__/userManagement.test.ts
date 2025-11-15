@@ -67,6 +67,7 @@ describe('User Management Endpoints', () => {
       .withMember(memberUser._id, employeeRole._id)
       .withMember(managerUser._id, managerRole._id)
       .withMember(otherManagerUser._id, managerRole._id)
+      .withActive()
       .save();
     // Create operate sites for this business
     operateSite1 = await new OperateSiteBuilder().withBusiness(business._id).withName('Site 1').save();

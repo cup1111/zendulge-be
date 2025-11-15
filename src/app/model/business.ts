@@ -1,6 +1,7 @@
 import mongoose, { Schema, Types, Document } from 'mongoose';
 import { IUser } from './user';
 import { IRole } from './role';
+import { BusinessStatus } from '../enum/businessStatus';
 
 export interface IBusinessMember {
   user: Types.ObjectId | Document & IUser;
@@ -29,7 +30,7 @@ export interface IBusiness {
   owner: Types.ObjectId; // Reference to User who created the business
   members?: IBusinessMember[]; // Other users who can access this business with their roles
   customers?: Types.ObjectId[]; // Customers who have interacted with the business
-  isActive: boolean;
+  status: BusinessStatus;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -122,7 +123,7 @@ const businessSchema = new Schema<IBusinessDocument>(
           return !v || v.length >= 10;
         },
         message:
-                    'Business description must be at least 10 characters if provided',
+          'Business description must be at least 10 characters if provided',
       },
     },
     categories: {
@@ -187,13 +188,13 @@ const businessSchema = new Schema<IBusinessDocument>(
         validator: function (v: string) {
           return (
             !v ||
-                        /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/.test(
-                          v,
-                        )
+            /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/.test(
+              v,
+            )
           );
         },
         message:
-                    'Please provide a valid website URL (must include http:// or https://)',
+          'Please provide a valid website URL (must include http:// or https://)',
       },
     },
     facebookUrl: {
@@ -290,9 +291,11 @@ const businessSchema = new Schema<IBusinessDocument>(
         ref: 'users',
       },
     ],
-    isActive: {
-      type: Boolean,
-      default: true,
+    status: {
+      type: String,
+      enum: Object.values(BusinessStatus),
+      default: BusinessStatus.PENDING,
+      index: true,
     },
   },
   {
@@ -330,7 +333,7 @@ businessSchema.pre('save', function (next) {
 });
 
 // Indexes for better performance
-businessSchema.index({ owner: 1, isActive: 1 });
+businessSchema.index({ owner: 1, status: 1 });
 businessSchema.index({ name: 1 });
 businessSchema.index({ abn: 1 }, { sparse: true }); // Sparse index for optional ABN field
 businessSchema.index({ name: 'text', description: 'text' }); // Text search index
@@ -352,14 +355,14 @@ businessSchema.virtual('memberDetails', {
 
 // Static method to find businesses by owner
 businessSchema.statics.findByOwner = function (ownerId: Types.ObjectId) {
-  return this.find({ owner: ownerId, isActive: true }).sort({ createdAt: -1 });
+  return this.find({ owner: ownerId, status: BusinessStatus.ACTIVE }).sort({ createdAt: -1 });
 };
 
 // Static method to find businesses where user is owner or member
 businessSchema.statics.findByUser = function (userId: Types.ObjectId) {
   return this.find({
     $or: [{ owner: userId }, { 'members.user': userId }],
-    isActive: true,
+    status: BusinessStatus.ACTIVE,
   }).sort({ createdAt: -1 });
 };
 
@@ -370,7 +373,7 @@ businessSchema.statics.search = function (
 ) {
   const query: any = {
     $text: { $search: searchTerm },
-    isActive: true,
+    status: BusinessStatus.ACTIVE,
   };
 
   if (userId) {
@@ -387,7 +390,7 @@ businessSchema.statics.isNameTaken = function (
 ) {
   const query: any = {
     name: new RegExp(`^${name}$`, 'i'), // Case insensitive
-    isActive: true,
+    status: BusinessStatus.ACTIVE,
   };
 
   if (excludeId) {
@@ -407,7 +410,7 @@ businessSchema.statics.isAbnTaken = function (
   const cleanAbn = abn.replace(/\s/g, '').toUpperCase();
   const query: any = {
     abn: cleanAbn,
-    isActive: true,
+    status: BusinessStatus.ACTIVE,
   };
 
   if (excludeId) {
@@ -457,7 +460,7 @@ businessSchema.methods.removeMember = function (userId: Types.ObjectId) {
 businessSchema.methods.hasAccess = function (userId: Types.ObjectId) {
   return (
     (this.owner as Types.ObjectId).equals(userId as any) ||
-        this.members.some((member: IBusinessMember) => (member.user as Types.ObjectId).equals(userId as any))
+    this.members.some((member: IBusinessMember) => (member.user as Types.ObjectId).equals(userId as any))
   );
 };
 

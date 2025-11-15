@@ -7,6 +7,7 @@ import Deal from '../model/deal';
 import Role from '../model/role';
 import config from '../config/app';
 import { RoleName } from '../enum/roles';
+import { BusinessStatus } from '../enum/businessStatus';
 
 /* eslint-disable no-console */
 
@@ -104,7 +105,7 @@ const createServicesIfNotExists = async (business: any) => {
       basePrice: 80.00,
       description: 'Standard cleaning service for residential properties',
       business: business.id,
-      status: 'active',
+      status: BusinessStatus.ACTIVE,
     },
     {
       name: 'Deep Cleaning Service',
@@ -113,7 +114,7 @@ const createServicesIfNotExists = async (business: any) => {
       basePrice: 200.00,
       description: 'Comprehensive deep cleaning including all areas',
       business: business.id,
-      status: 'active',
+      status: BusinessStatus.ACTIVE,
     },
     {
       name: 'Office Cleaning',
@@ -122,7 +123,7 @@ const createServicesIfNotExists = async (business: any) => {
       basePrice: 150.00,
       description: 'Professional office cleaning service',
       business: business.id,
-      status: 'active',
+      status: BusinessStatus.ACTIVE,
     },
     {
       name: 'Carpet Cleaning',
@@ -131,7 +132,7 @@ const createServicesIfNotExists = async (business: any) => {
       basePrice: 120.00,
       description: 'Professional carpet and upholstery cleaning',
       business: business.id,
-      status: 'active',
+      status: BusinessStatus.ACTIVE,
     },
     {
       name: 'Window Cleaning',
@@ -140,7 +141,7 @@ const createServicesIfNotExists = async (business: any) => {
       basePrice: 60.00,
       description: 'Interior and exterior window cleaning service',
       business: business.id,
-      status: 'active',
+      status: BusinessStatus.ACTIVE,
     },
     {
       name: 'Post-Construction Cleanup',
@@ -193,7 +194,7 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
       endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       maxBookings: 50,
       currentBookings: 12,
-      status: 'active',
+      status: BusinessStatus.ACTIVE,
       tags: ['spring', 'cleaning', 'special'],
       business: business.id,
     },
@@ -211,7 +212,7 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
       endDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
       maxBookings: 20,
       currentBookings: 5,
-      status: 'active',
+      status: BusinessStatus.ACTIVE,
       tags: ['office', 'commercial', 'deep-clean'],
       business: business.id,
     },
@@ -229,7 +230,7 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
       endDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
       maxBookings: 30,
       currentBookings: 8,
-      status: 'active',
+      status: BusinessStatus.ACTIVE,
       tags: ['carpet', 'upholstery', 'stain-removal'],
       business: business.id,
     },
@@ -325,7 +326,7 @@ const createBusinessIfNotExists = async (businessOwner: any) => {
     facebookUrl: 'https://facebook.com/zendulge',
     twitterUrl: 'https://twitter.com/zendulge',
     owner: businessOwner.id,
-    isActive: true,
+    status: 'active',
   };
 
   let business = await Business.findOne({ name: businessData.name });
@@ -515,6 +516,90 @@ const seedCompleteBusinessSetup = async () => {
       console.log('✅ Added customerWithBusiness to business.customers');
     } else {
       console.log('ℹ️  customerWithBusiness already in business.customers');
+    }
+
+    // Create a Pending Business
+    const pendingBusinessOwnerData = {
+      email: 'pendingowner@zendulge.com',
+      password: 'zxc123!',
+      firstName: 'Pending',
+      lastName: 'Owner',
+      phoneNumber: '+61412345690',
+      jobTitle: 'Business Owner',
+      userName: 'pendingowner',
+      active: true,
+      role: ownerRole.id,
+    };
+    const pendingBusinessOwner = await createUserIfNotExists(pendingBusinessOwnerData, 'Pending Business Owner user');
+
+    const pendingBusinessData = {
+      name: 'Pending Business Pty Ltd',
+      email: 'pending@business.com',
+      description: 'This business is pending verification',
+      categories: ['Pending Category'],
+      businessAddress: {
+        street: '789 Pending Street',
+        city: 'Melbourne',
+        state: 'VIC',
+        postcode: '3000',
+        country: 'Australia',
+      },
+      contact: pendingBusinessOwner.id,
+      abn: '12345678901',
+      website: 'https://pendingbusiness.com',
+      owner: pendingBusinessOwner.id,
+      status: BusinessStatus.PENDING,
+    };
+
+    let pendingBusiness = await Business.findOne({ name: pendingBusinessData.name });
+    if (!pendingBusiness) {
+      pendingBusiness = new Business(pendingBusinessData);
+      await pendingBusiness.save();
+      console.log('✅ Created pending business: Pending Business Pty Ltd');
+    } else {
+      console.log('ℹ️  Pending business already exists: Pending Business Pty Ltd');
+    }
+
+    // Create a Disabled Business
+    const disabledBusinessOwnerData = {
+      email: 'disabledowner@zendulge.com',
+      password: 'zxc123!',
+      firstName: 'Disabled',
+      lastName: 'Owner',
+      phoneNumber: '+61412345691',
+      jobTitle: 'Business Owner',
+      userName: 'disabledowner',
+      active: true,
+      role: ownerRole.id,
+    };
+    const disabledBusinessOwner = await createUserIfNotExists(disabledBusinessOwnerData, 'Disabled Business Owner user');
+
+    const disabledBusinessData = {
+      name: 'Disabled Business Pty Ltd',
+      email: 'disabled@business.com',
+      description: 'This business has been disabled',
+      categories: ['Disabled Category'],
+      businessAddress: {
+        street: '456 Disabled Street',
+        city: 'Melbourne',
+        state: 'VIC',
+        postcode: '3000',
+        country: 'Australia',
+      },
+      contact: disabledBusinessOwner.id,
+      abn: '98765432109',
+      website: 'https://disabledbusiness.com',
+      owner: disabledBusinessOwner.id,
+      status: BusinessStatus.DISABLED,
+    };
+
+    let disabledBusiness = await Business.findOne({ name: disabledBusinessData.name });
+    if (!disabledBusiness) {
+      disabledBusiness = new Business(disabledBusinessData);
+      await disabledBusiness.save();
+      console.log('✅ Created disabled business: Disabled Business Pty Ltd');
+    } else {
+      console.log('ℹ️  Disabled business already exists: Disabled Business Pty Ltd');
     }
 
     process.exit(0);

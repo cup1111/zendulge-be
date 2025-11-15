@@ -5,6 +5,7 @@ import OperateSite from '../model/operateSite';
 import { winstonLogger } from '../../loaders/logger';
 import { Types } from 'mongoose';
 import { RoleName } from '../enum/roles';
+import { BusinessStatus } from '../enum/businessStatus';
 import { getUserRoleName, normalizeId } from './userManagementUtils';
 
 // Interface for service input types
@@ -107,7 +108,7 @@ export class UserManagementService {
         const userInBusiness = await Business.findOne({
           _id: businessId,
           $or: [{ owner: (user as any)._id }, { 'members.user': (user as any)._id }],
-          isActive: true,
+          status: BusinessStatus.ACTIVE,
         });
 
         if (!userInBusiness) {
@@ -226,7 +227,7 @@ export class UserManagementService {
 
         business = await Business.findOne({
           _id: userData.businessId,
-          isActive: true,
+          status: BusinessStatus.ACTIVE,
         });
         if (!business) {
           throw new Error('Business not found');
@@ -343,7 +344,7 @@ export class UserManagementService {
       if (businessId) {
         business = await Business.findOne({
           _id: businessId,
-          isActive: true,
+          status: BusinessStatus.ACTIVE,
         }).populate('members.role');
 
         if (!business) {
@@ -526,7 +527,7 @@ export class UserManagementService {
       if (businessId) {
         const business = await Business.findOne({
           _id: businessId,
-          isActive: true,
+          status: BusinessStatus.ACTIVE,
         }).populate('members.role');
 
         if (!business) {

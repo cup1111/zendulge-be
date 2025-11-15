@@ -65,7 +65,7 @@ const updateBusiness = async (businessId: string, userId: string, updateData: an
     // Disable all active deals for this business
     await Deal.updateMany(
       { business: businessId, status: 'active' },
-      { status: 'inactive' }
+      { status: 'inactive' },
     );
   }
 

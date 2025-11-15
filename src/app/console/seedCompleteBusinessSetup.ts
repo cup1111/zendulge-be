@@ -321,7 +321,7 @@ const createBusinessIfNotExists = async (businessOwner: any) => {
       country: 'Australia',
     },
     contact: businessOwner.id,
-    abn: '51824753556', // Valid ABN format for testing
+    abn: '51824753556', // Valid 11-digit ABN for testing
     website: 'https://zendulge.com',
     facebookUrl: 'https://facebook.com/zendulge',
     twitterUrl: 'https://twitter.com/zendulge',
@@ -545,7 +545,7 @@ const seedCompleteBusinessSetup = async () => {
         country: 'Australia',
       },
       contact: pendingBusinessOwner.id,
-      abn: '12345678901',
+      abn: '53000000770', // Valid 11-digit ABN (checksum validated)
       website: 'https://pendingbusiness.com',
       owner: pendingBusinessOwner.id,
       status: BusinessStatus.PENDING,
@@ -587,7 +587,7 @@ const seedCompleteBusinessSetup = async () => {
         country: 'Australia',
       },
       contact: disabledBusinessOwner.id,
-      abn: '98765432109',
+      abn: '53000000851', // Valid 11-digit ABN (checksum validated)
       website: 'https://disabledbusiness.com',
       owner: disabledBusinessOwner.id,
       status: BusinessStatus.DISABLED,

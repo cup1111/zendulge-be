@@ -520,7 +520,7 @@ const seedCompleteBusinessSetup = async () => {
 
     // Create a Pending Business
     const pendingBusinessOwnerData = {
-      email: 'pendingowner@zendulge.com',
+      email: 'businesspending@zendulge.com',
       password: 'zxc123!',
       firstName: 'Pending',
       lastName: 'Owner',
@@ -563,7 +563,7 @@ const seedCompleteBusinessSetup = async () => {
 
     // Create a Disabled Business
     const disabledBusinessOwnerData = {
-      email: 'disabledowner@zendulge.com',
+      email: 'businessdisabled@zendulge.com',
       password: 'zxc123!',
       firstName: 'Disabled',
       lastName: 'Owner',

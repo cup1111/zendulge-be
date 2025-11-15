@@ -3,6 +3,8 @@ import app from '../setup/app';
 import UserBuilder from './builders/userBuilder';
 import BusinessBuilder from './builders/businessBuilder';
 import { config } from '../../src/app/config/app';
+import { BusinessStatus } from '../../src/app/enum/businessStatus';
+import Business from '../../src/app/model/business';
 
 const jwt = require('jsonwebtoken');
 
@@ -165,6 +167,126 @@ describe('Authentication', () => {
           expect(business.name).toBeTruthy();
         }
       }
+    });
+
+    it('should include all businesses in JWT token with their status (active, pending, disabled)', async () => {
+      // Create user with active, pending, and disabled businesses
+      const user = await new UserBuilder()
+        .withEmail(validUserCredentials.email)
+        .withPassword(validUserCredentials.password)
+        .withActive(true)
+        .withFirstName('Test')
+        .withLastName('User')
+        .save();
+
+      // Create active business
+      const activeBusiness = await new BusinessBuilder()
+        .withName('Active Business')
+        .withOwner(user._id)
+        .withContact(user._id)
+        .withActive()
+        .save();
+
+      // Create pending business
+      const pendingBusiness = await new BusinessBuilder()
+        .withName('Pending Business')
+        .withOwner(user._id)
+        .withContact(user._id)
+        .withPending()
+        .save();
+
+      // Create disabled business
+      const disabledBusiness = await new BusinessBuilder()
+        .withName('Disabled Business')
+        .withOwner(user._id)
+        .withContact(user._id)
+        .withDisabled()
+        .save();
+
+      const res = await request(app.application)
+        .post('/api/v1/login')
+        .send(validUserCredentials);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.accessToken).toBeDefined();
+
+      // Decode JWT token
+      const decoded = jwt.verify(res.body.data.accessToken, config.accessSecret);
+      expect(decoded.businesses).toBeDefined();
+      expect(Array.isArray(decoded.businesses)).toBe(true);
+
+      // Should include all businesses with their status
+      expect(decoded.businesses.length).toBe(3);
+
+      // Verify all businesses are included with correct status
+      const businessMap = decoded.businesses.reduce((acc: any, b: any) => {
+        acc[b.name] = b;
+        return acc;
+      }, {});
+
+      expect(businessMap['Active Business']).toBeDefined();
+      expect(businessMap['Active Business'].status).toBe(BusinessStatus.ACTIVE);
+      expect(businessMap['Active Business'].id).toBe(activeBusiness._id.toString());
+
+      expect(businessMap['Pending Business']).toBeDefined();
+      expect(businessMap['Pending Business'].status).toBe(BusinessStatus.PENDING);
+      expect(businessMap['Pending Business'].id).toBe(pendingBusiness._id.toString());
+
+      expect(businessMap['Disabled Business']).toBeDefined();
+      expect(businessMap['Disabled Business'].status).toBe(BusinessStatus.DISABLED);
+      expect(businessMap['Disabled Business'].id).toBe(disabledBusiness._id.toString());
+    });
+
+    it('should default to ACTIVE status when business status is missing', async () => {
+      // Create user with a business that has no status (should default to ACTIVE)
+      const user = await new UserBuilder()
+        .withEmail('fallback@test.com')
+        .withPassword(validUserCredentials.password)
+        .withActive(true)
+        .withFirstName('Test')
+        .withLastName('User')
+        .save();
+
+      // Create business without explicit status
+      const businessWithoutStatus = await Business.findOneAndUpdate(
+        {
+          owner: user._id,
+          name: 'Business Without Status',
+        },
+        {
+          $set: {
+            owner: user._id,
+            name: 'Business Without Status',
+            email: 'test@business.com',
+            contact: user._id,
+            abn: '53000000770',
+            businessAddress: {
+              street: '123 Test St',
+              city: 'Melbourne',
+              state: 'VIC',
+              postcode: '3000',
+              country: 'Australia',
+            },
+          },
+          $unset: { status: '' },
+        },
+        { upsert: true, new: true }
+      );
+
+      const res = await request(app.application)
+        .post('/api/v1/login')
+        .send({
+          email: 'fallback@test.com',
+          password: validUserCredentials.password,
+        });
+
+      expect(res.statusCode).toBe(200);
+      const decoded = jwt.verify(res.body.data.accessToken, config.accessSecret);
+
+      const business = decoded.businesses.find((b: any) => b.id === businessWithoutStatus._id.toString());
+      expect(business).toBeDefined();
+      expect(business.status).toBe(BusinessStatus.ACTIVE);
     });
   });
 

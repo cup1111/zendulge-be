@@ -75,14 +75,24 @@ export const updateBusinessValidation = [
 
   body('facebookUrl')
     .optional()
-    .isURL()
-    .withMessage('Invalid Facebook URL')
-    .trim(),
+    .trim()
+    .custom((value) => {
+      if (!value || value === '') {
+        return true;
+      }
+      return /^https?:\/\/(www\.)?facebook\.com\/.+/.test(value);
+    })
+    .withMessage('Invalid Facebook URL'),
 
   body('twitterUrl')
     .optional()
-    .isURL()
-    .withMessage('Invalid Twitter URL')
-    .trim(),
+    .trim()
+    .custom((value) => {
+      if (!value || value === '') {
+        return true;
+      }
+      return /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/.+/.test(value);
+    })
+    .withMessage('Invalid Twitter URL'),
 ];
 

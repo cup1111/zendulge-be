@@ -559,6 +559,7 @@ const seedCompleteBusinessSetup = async () => {
     } else {
       console.log('ℹ️  Pending business already exists: Pending Business Pty Ltd');
     }
+    await pendingBusiness.addMember(new Types.ObjectId(pendingBusinessOwner.id), ownerRole.id);
 
     // Create a Disabled Business
     const disabledBusinessOwnerData = {
@@ -601,6 +602,7 @@ const seedCompleteBusinessSetup = async () => {
     } else {
       console.log('ℹ️  Disabled business already exists: Disabled Business Pty Ltd');
     }
+    await disabledBusiness.addMember(new Types.ObjectId(disabledBusinessOwner.id), ownerRole.id);
 
     process.exit(0);
   } catch (error) {

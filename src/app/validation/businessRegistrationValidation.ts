@@ -104,12 +104,24 @@ export const businessRegistrationValidation = [
 
   body('facebookUrl')
     .optional()
-    .matches(/^https?:\/\/(www\.)?facebook\.com\/.+/)
+    .trim()
+    .custom((value) => {
+      if (!value || value === '') {
+        return true;
+      }
+      return /^https?:\/\/(www\.)?facebook\.com\/.+/.test(value);
+    })
     .withMessage('Please provide a valid Facebook URL'),
 
   body('twitterUrl')
     .optional()
-    .matches(/^https?:\/\/(www\.)?(twitter\.com|x\.com)\/.+/)
+    .trim()
+    .custom((value) => {
+      if (!value || value === '') {
+        return true;
+      }
+      return /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/.+/.test(value);
+    })
     .withMessage('Please provide a valid Twitter/X URL'),
 
   body('logo')

@@ -1,5 +1,6 @@
 import BaseBuilder from './baseBuilder';
 import Business, { IBusinessDocument } from '../../../src/app/model/business';
+import { BusinessStatus } from '../../../src/app/enum/businessStatus';
 
 export default class BusinessBuilder extends BaseBuilder<IBusinessDocument> {
     constructor(defaultValues: boolean = true) {
@@ -22,7 +23,7 @@ export default class BusinessBuilder extends BaseBuilder<IBusinessDocument> {
             twitterUrl: 'https://twitter.com/testbusiness',
             logo: 'https://testbusiness.com/logo.png',
             owner: null,
-            isActive: true,
+            status: BusinessStatus.ACTIVE,
         };
     }
 
@@ -100,13 +101,29 @@ export default class BusinessBuilder extends BaseBuilder<IBusinessDocument> {
         return this;
     }
 
-    withInactive(): BusinessBuilder {
-        this.properties.isActive = false;
+    withStatus(status: BusinessStatus): BusinessBuilder {
+        this.properties.status = status;
+        return this;
+    }
+
+    withPending(): BusinessBuilder {
+        this.properties.status = BusinessStatus.PENDING;
+        return this;
+    }
+
+    withDisabled(): BusinessBuilder {
+        this.properties.status = BusinessStatus.DISABLED;
         return this;
     }
 
     withActive(): BusinessBuilder {
-        this.properties.isActive = true;
+        this.properties.status = BusinessStatus.ACTIVE;
+        return this;
+    }
+
+    // Deprecated: use withStatus(BusinessStatus.PENDING) or withDisabled() instead
+    withInactive(): BusinessBuilder {
+        this.properties.status = BusinessStatus.DISABLED;
         return this;
     }
 

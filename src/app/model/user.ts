@@ -9,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 import { winstonLogger } from '../../loaders/logger';
 import { transformLeanResult } from '../../lib/mongoUtils';
 import type { IRoleDocument } from './role';
+import { BusinessStatus } from '../enum/businessStatus';
 
 
 export interface IUser extends mongoose.Document {
@@ -182,10 +183,10 @@ userSchema.methods.generateAuthToken = async function () {
   const Business = mongoose.model('businesses');
   const userBusinesses = await Business.find({
     $or: [{ owner: user.id }, { 'members.user': user.id }],
-    isActive: true,
   })
-    .select('_id name')
+    .select('_id name status')
     .lean();
+
 
   // Transform lean results to ensure consistent id field
   const transformedBusinesses = transformLeanResult(userBusinesses);
@@ -199,6 +200,7 @@ userSchema.methods.generateAuthToken = async function () {
     businesses: transformedBusinesses.map((b: any) => ({
       id: b.id,
       name: b.name,
+      status: b.status || BusinessStatus.ACTIVE,
     })),
   };
 

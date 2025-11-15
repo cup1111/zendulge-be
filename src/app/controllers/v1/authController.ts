@@ -8,6 +8,7 @@ import {
   BusinessNotFoundException,
 } from '../../exceptions';
 import { winstonLogger } from '../../../loaders/logger';
+import { BusinessStatus } from '../../enum/businessStatus';
 import { RoleName } from '../../enum/roles';
 import { config } from '../../config/app';
 import userService from '../../services/userService';
@@ -229,7 +230,7 @@ export const deleteAccount = async (req: AuthenticatedRequest, res: Response) =>
         { owner: userId },
         { 'members.user': userId },
       ],
-      isActive: true,
+      status: { $in: [BusinessStatus.ACTIVE, BusinessStatus.PENDING] }, // Include active and pending businesses
     });
 
     // Check if user is owner of any businesses
@@ -237,17 +238,17 @@ export const deleteAccount = async (req: AuthenticatedRequest, res: Response) =>
       (business) => business.owner.toString() === userId,
     );
 
-    // If user is an owner, check if all businesses are deactivated
+    // If user is an owner, check if all businesses are disabled
     if (ownedBusinesses.length > 0) {
       const activeBusinesses = ownedBusinesses.filter(
-        (business) => business.isActive === true,
+        (business) => business.status === BusinessStatus.ACTIVE,
       );
 
       if (activeBusinesses.length > 0) {
         return res.status(400).json({
           success: false,
           message:
-            'Cannot delete account. Please deactivate all your businesses first.',
+            'Cannot delete account. Please disable all your active businesses first.',
         });
       }
     }
@@ -255,8 +256,8 @@ export const deleteAccount = async (req: AuthenticatedRequest, res: Response) =>
     // Remove user from all businesses (as owner or member)
     for (const business of userBusinesses) {
       if (business.owner.toString() === userId) {
-        // User is owner - already deactivated, just ensure it's set
-        business.isActive = false;
+        // User is owner - set status to disabled
+        business.status = BusinessStatus.DISABLED;
       } else {
         // User is member - remove from members
         business.members = business.members?.filter(

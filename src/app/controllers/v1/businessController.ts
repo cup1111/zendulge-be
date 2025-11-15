@@ -49,15 +49,22 @@ export const updateBusinessInfo = async (req: AuthenticatedRequest, res: Respons
   }
 
   try {
-    const updatedBusiness = await businessService.updateBusiness(businessId, user._id.toString(), req.body);
+    const { business: updatedBusiness, abnChanged } = await businessService.updateBusiness(businessId, user._id.toString(), req.body);
 
     winstonLogger.info(`Business updated successfully: ${businessId} by user: ${user.email}`);
 
-    res.status(200).json({
+    const response: any = {
       success: true,
       message: 'Business information updated successfully',
       data: updatedBusiness.toJSON(),
-    });
+    };
+
+    // If ABN changed, add warning message
+    if (abnChanged) {
+      response.warning = 'ABN has been changed. All deals have been disabled and the business status has been set to pending. Please contact support to re-verify your business.';
+    }
+
+    res.status(200).json(response);
   } catch (error) {
     winstonLogger.error(`Error updating business: ${error}`);
     throw error;

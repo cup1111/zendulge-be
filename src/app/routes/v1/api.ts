@@ -232,8 +232,9 @@ router.patch(
   updateDealStatus,
 );
 
-// Public deals listing (home page)
+// Public deals listing (home page) and details
 router.get('/public/deals', publicDealController.listPublicDeals);
+router.get('/public/deals/:dealId', publicDealController.getPublicDealById);
 
 // Operate Site routes (protected)
 router.post(

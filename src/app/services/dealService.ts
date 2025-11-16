@@ -3,6 +3,7 @@ import Business from '../model/business';
 import Service from '../model/service';
 import OperateSite from '../model/operateSite';
 import { BadRequestException } from '../exceptions';
+import { BusinessStatus } from '../enum/businessStatus';
 
 const toUtcMidnight = (date: Date): Date =>
   new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
@@ -585,6 +586,86 @@ const updateDealStatus = async (businessId: string, dealId: string, userId: stri
   return deal;
 };
 
+// Public listing: only deals from ACTIVE businesses and active/current deals
+const listPublicDeals = async (filters: {
+  category?: string;
+  limit?: number;
+  skip?: number;
+} = {}) => {
+  const { category, limit = 20, skip = 0 } = filters;
+
+  const now = new Date();
+  const match: any = {
+    status: 'active',
+    startDate: { $lte: now },
+    endDate: { $gte: now },
+  };
+  if (category) {
+    match.category = category;
+  }
+
+  const pipeline: any[] = [
+    { $match: match },
+    // Convert string ids to ObjectId for lookups
+    {
+      $addFields: {
+        businessObjId: { $toObjectId: '$business' },
+        serviceObjId: { $toObjectId: '$service' },
+      },
+    },
+    {
+      $lookup: {
+        from: 'businesses',
+        localField: 'businessObjId',
+        foreignField: '_id',
+        as: 'business',
+      },
+    },
+    { $unwind: '$business' },
+    {
+      $match: {
+        'business.status': BusinessStatus.ACTIVE,
+      },
+    },
+    {
+      $lookup: {
+        from: 'services',
+        localField: 'serviceObjId',
+        foreignField: '_id',
+        as: 'service',
+      },
+    },
+    { $unwind: '$service' },
+    {
+      $project: {
+        _id: 1,
+        title: 1,
+        description: 1,
+        category: 1,
+        price: 1,
+        originalPrice: 1,
+        duration: 1,
+        startDate: 1,
+        endDate: 1,
+        discount: 1,
+        business: { _id: '$business._id', name: '$business.name', status: '$business.status' },
+        service: {
+          _id: '$service._id',
+          name: '$service.name',
+          category: '$service.category',
+          basePrice: '$service.basePrice',
+          duration: '$service.duration',
+        },
+      },
+    },
+    { $sort: { startDate: 1 } },
+    { $skip: skip },
+    { $limit: limit },
+  ];
+
+  return Deal.aggregate(pipeline);
+};
+
 export default {
   getDealsByBusiness,
   getDealById,
@@ -592,4 +673,5 @@ export default {
   updateDeal,
   deleteDeal,
   updateDealStatus,
+  listPublicDeals,
 };

@@ -69,6 +69,7 @@ import {
   updateDealValidation,
   updateDealStatusValidation,
 } from '../../validation/dealValidation';
+import publicDealController from '../../controllers/v1/publicDealController';
 import {
   createUserWithRoleValidation,
   businessAndUserIdValidation,
@@ -230,6 +231,9 @@ router.patch(
   handleValidationErrors,
   updateDealStatus,
 );
+
+// Public deals listing (home page)
+router.get('/public/deals', publicDealController.listPublicDeals);
 
 // Operate Site routes (protected)
 router.post(

@@ -80,6 +80,7 @@ import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
 import { validateBusinessAccess } from '../../middleware/businessAccessMiddleware';
 import { RoleName } from '../../enum/roles';
 import { authorizeUserManagementAction } from '../../middleware/userManagementAccessMiddleware';
+import { uploadMulter, uploadImage } from '../../controllers/v1/uploadController';
 
 const router = express.Router();
 
@@ -235,6 +236,14 @@ router.patch(
 // Public deals listing (home page) and details
 router.get('/public/deals', publicDealController.listPublicDeals);
 router.get('/public/deals/:dealId', publicDealController.getPublicDealById);
+
+// Uploads - server-side multipart upload to S3
+router.post(
+  '/upload',
+  // authenticationTokenMiddleware,
+  uploadMulter.single('file'),
+  uploadImage,
+);
 
 // Operate Site routes (protected)
 router.post(

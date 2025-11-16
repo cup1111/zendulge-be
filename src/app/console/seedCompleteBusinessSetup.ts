@@ -73,6 +73,7 @@ const createSitesIfNoExists = async (business: any) => {
   // Create operate sites
   let operateSite1 = await OperateSite.findOne({
     name: operateSite1Data.name,
+    business: business.id,
   });
   if (!operateSite1) {
     operateSite1 = new OperateSite(operateSite1Data);
@@ -84,6 +85,7 @@ const createSitesIfNoExists = async (business: any) => {
 
   let operateSite2 = await OperateSite.findOne({
     name: operateSite2Data.name,
+    business: business.id,
   });
   if (!operateSite2) {
     operateSite2 = new OperateSite(operateSite2Data);
@@ -561,6 +563,56 @@ const seedCompleteBusinessSetup = async () => {
     }
     await pendingBusiness.addMember(new Types.ObjectId(pendingBusinessOwner.id), ownerRole.id);
 
+    // Create sites for Pending Business
+    const [pendingSite1/* , pendingSite2 */] = await createSitesIfNoExists(pendingBusiness);
+
+    // Create a Service for Pending Business
+    const pendingServiceName = 'Pending Business Service';
+    let pendingService = await Service.findOne({ name: pendingServiceName, business: pendingBusiness.id });
+    if (!pendingService) {
+      pendingService = new Service({
+        name: pendingServiceName,
+        category: 'General',
+        duration: 60,
+        basePrice: 100.0,
+        description: 'Service for pending business (not visible to customers until verification).',
+        business: pendingBusiness.id,
+        status: 'inactive',
+      });
+      await pendingService.save();
+      console.log(`✅ Created service: ${pendingServiceName}`);
+    } else {
+      console.log(`ℹ️  Service already exists: ${pendingServiceName}`);
+    }
+
+    // Create a Deal for Pending Business
+    const pendingDealTitle = 'pendingBusinessDeal - Intro Offer';
+    let pendingDeal = await Deal.findOne({ title: pendingDealTitle, business: pendingBusiness.id });
+    if (!pendingDeal) {
+      pendingDeal = new Deal({
+        title: pendingDealTitle,
+        description: 'Deal seeded for pending business (should be hidden from customers).',
+        category: 'General',
+        price: 49.0,
+        originalPrice: 79.0,
+        duration: 60,
+        operatingSite: [pendingSite1.id],
+        service: pendingService.id,
+        createdBy: pendingBusinessOwner.id,
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        maxBookings: 10,
+        currentBookings: 0,
+        status: 'inactive',
+        tags: ['pending', 'seed'],
+        business: pendingBusiness.id,
+      });
+      await pendingDeal.save();
+      console.log(`✅ Created deal: ${pendingDealTitle}`);
+    } else {
+      console.log(`ℹ️  Deal already exists: ${pendingDealTitle}`);
+    }
+
     // Create a Disabled Business
     const disabledBusinessOwnerData = {
       email: 'businessdisabled@zendulge.com',
@@ -603,6 +655,56 @@ const seedCompleteBusinessSetup = async () => {
       console.log('ℹ️  Disabled business already exists: Disabled Business Pty Ltd');
     }
     await disabledBusiness.addMember(new Types.ObjectId(disabledBusinessOwner.id), ownerRole.id);
+
+    // Create sites for Disabled Business
+    const [disabledSite1/* , disabledSite2 */] = await createSitesIfNoExists(disabledBusiness);
+
+    // Create a Service for Disabled Business
+    const disabledServiceName = 'Disabled Business Service';
+    let disabledService = await Service.findOne({ name: disabledServiceName, business: disabledBusiness.id });
+    if (!disabledService) {
+      disabledService = new Service({
+        name: disabledServiceName,
+        category: 'General',
+        duration: 60,
+        basePrice: 110.0,
+        description: 'Service for disabled business (business is disabled).',
+        business: disabledBusiness.id,
+        status: 'inactive',
+      });
+      await disabledService.save();
+      console.log(`✅ Created service: ${disabledServiceName}`);
+    } else {
+      console.log(`ℹ️  Service already exists: ${disabledServiceName}`);
+    }
+
+    // Create a Deal for Disabled Business
+    const disabledDealTitle = 'disabledBusinessDeal - Intro Offer';
+    let disabledDeal = await Deal.findOne({ title: disabledDealTitle, business: disabledBusiness.id });
+    if (!disabledDeal) {
+      disabledDeal = new Deal({
+        title: disabledDealTitle,
+        description: 'Deal seeded for disabled business (business is disabled).',
+        category: 'General',
+        price: 59.0,
+        originalPrice: 89.0,
+        duration: 60,
+        operatingSite: [disabledSite1.id],
+        service: disabledService.id,
+        createdBy: disabledBusinessOwner.id,
+        startDate: new Date(),
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        maxBookings: 10,
+        currentBookings: 0,
+        status: 'inactive',
+        tags: ['disabled', 'seed'],
+        business: disabledBusiness.id,
+      });
+      await disabledDeal.save();
+      console.log(`✅ Created deal: ${disabledDealTitle}`);
+    } else {
+      console.log(`ℹ️  Deal already exists: ${disabledDealTitle}`);
+    }
 
     process.exit(0);
   } catch (error) {

@@ -173,7 +173,7 @@ operateSiteSchema
 operateSiteSchema.set('toJSON', { virtuals: true });
 operateSiteSchema.set('toObject', { virtuals: true });
 
-// Pre-save middleware to validate coordinates
+// Pre-save middleware to validate coordinates and store location field for geospatial index
 operateSiteSchema.pre(
   'save',
   function (
@@ -186,6 +186,11 @@ operateSiteSchema.pre(
     if (this.latitude < -90 || this.latitude > 90) {
       return next(new Error('Latitude must be between -90 and 90'));
     }
+    // Store location as a real field (not just virtual) for geospatial indexing
+    (this as any).location = {
+      type: 'Point',
+      coordinates: [this.longitude, this.latitude],
+    };
     next();
   },
 );

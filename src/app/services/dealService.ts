@@ -653,9 +653,47 @@ const listPublicDeals = async (filters: {
 } = {}) => {
   const { category, title, limit = 20, skip = 0, latitude, longitude, radiusKm } = filters;
 
+  // If location filtering is needed, first find operating sites within radius
+  let nearbySiteIds: mongoose.Types.ObjectId[] | undefined;
+  if (latitude != null && longitude != null && radiusKm != null) {
+    const OperateSite = mongoose.model('operateSites');
+    const radiusInMeters = Math.max(1, radiusKm) * 1000;
+
+    // $geoNear must be the first stage
+    // The location field is now stored in the database (via pre-save hook) for geospatial indexing
+    const nearbySites = await OperateSite.aggregate([
+      {
+        $geoNear: {
+          near: { type: 'Point', coordinates: [longitude, latitude] },
+          distanceField: 'distance',
+          maxDistance: radiusInMeters,
+          spherical: true,
+          query: { isActive: true },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+        },
+      },
+    ]);
+
+    nearbySiteIds = nearbySites.map((site: any) => site._id);
+
+    // If no sites found within radius, return empty results
+    if (nearbySiteIds.length === 0) {
+      return [];
+    }
+  }
+
   const match: any = {
     status: 'active',
   };
+
+  // If location filtering is enabled, only include deals with operating sites in radius
+  if (nearbySiteIds && nearbySiteIds.length > 0) {
+    match.operatingSite = { $in: nearbySiteIds };
+  }
 
   // If category is provided as slug, look it up to get ObjectId
   let categoryObjectId: mongoose.Types.ObjectId | undefined;
@@ -728,37 +766,54 @@ const listPublicDeals = async (filters: {
         },
       ]
       : []),
-    // Optionally filter by proximity using operate sites
-    ...(latitude != null && longitude != null && radiusKm != null
+    // Lookup operating sites for display (and distance if location filtering is enabled)
+    {
+      $lookup: {
+        from: 'operateSites',
+        localField: 'operatingSite',
+        foreignField: '_id',
+        as: 'sites',
+      },
+    },
+    // Filter to only active sites if location filtering is enabled, we already filtered by nearbySiteIds
+    ...(nearbySiteIds && nearbySiteIds.length > 0
       ? [
         {
-          $lookup: {
-            from: 'operateSites',
-            localField: 'operatingSite',
-            foreignField: '_id',
-            as: 'sites',
-          },
-        },
-        { $unwind: '$sites' },
-        {
           $addFields: {
-            siteLocation: {
-              type: 'Point',
-              coordinates: ['$sites.longitude', '$sites.latitude'],
+            sites: {
+              $filter: {
+                input: '$sites',
+                as: 'site',
+                cond: {
+                  $and: [
+                    { $eq: ['$$site.isActive', true] },
+                    { $in: ['$$site._id', nearbySiteIds] },
+                  ],
+                },
+              },
             },
           },
         },
+        // Only keep deals that have at least one site within radius
         {
-          $geoNear: {
-            near: { type: 'Point', coordinates: [longitude, latitude] },
-            distanceField: 'distance',
-            maxDistance: Math.max(1, radiusKm) * 1000,
-            spherical: true,
-            query: { 'sites.isActive': true },
+          $match: {
+            'sites.0': { $exists: true },
           },
         },
       ]
-      : []),
+      : [
+        {
+          $addFields: {
+            sites: {
+              $filter: {
+                input: '$sites',
+                as: 'site',
+                cond: { $eq: ['$$site.isActive', true] },
+              },
+            },
+          },
+        },
+      ]),
     {
       $project: {
         _id: 1,

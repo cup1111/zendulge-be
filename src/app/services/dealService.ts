@@ -653,11 +653,8 @@ const listPublicDeals = async (filters: {
 } = {}) => {
   const { category, title, limit = 20, skip = 0, latitude, longitude, radiusKm } = filters;
 
-  const now = new Date();
-  const oneDayFromNow = new Date(now.getTime() + 48 * 60 * 60 * 1000);
   const match: any = {
     status: 'active',
-    // startDate: { $lte: oneDayFromNow },
   };
 
   // If category is provided as slug, look it up to get ObjectId

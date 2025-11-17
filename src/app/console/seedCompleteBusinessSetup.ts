@@ -375,10 +375,24 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     });
 
     if (!existingDeal) {
-      const deal = new Deal(dealData);
+      // Ensure operatingSite IDs are strings (schema expects [String])
+      const normalizedDealData = {
+        ...dealData,
+        operatingSite: Array.isArray(dealData.operatingSite)
+          ? dealData.operatingSite.map((id: any) => String(id))
+          : [String(dealData.operatingSite)],
+      };
+      const deal = new Deal(normalizedDealData);
       await deal.save();
       console.log(`✅ Created deal: ${dealData.title}`);
     } else {
+      // Update existing deal to ensure operatingSite IDs are strings
+      if (existingDeal.operatingSite) {
+        existingDeal.operatingSite = Array.isArray(existingDeal.operatingSite)
+          ? existingDeal.operatingSite.map((id: any) => String(id))
+          : [String(existingDeal.operatingSite)];
+        await existingDeal.save();
+      }
       console.log(`ℹ️  Deal already exists: ${dealData.title}`);
     }
   }
@@ -593,6 +607,22 @@ const seedCompleteBusinessSetup = async () => {
 
     await createServicesIfNotExists(business);
     await createDealsIfNotExists(business, MelbourneCBDOperateSite, SydneyOperateSite, businessOwner);
+
+    // Ensure all existing deals have operatingSite IDs as strings for proper matching
+    const allDeals = await Deal.find({ business: business.id });
+    for (const deal of allDeals) {
+      if (deal.operatingSite && Array.isArray(deal.operatingSite)) {
+        // Check if any ID is not already a string
+        const hasNonStringIds = deal.operatingSite.some((id: any) => typeof id !== 'string');
+
+        if (hasNonStringIds) {
+          // Normalize all IDs to strings
+          deal.operatingSite = deal.operatingSite.map((id: any) => String(id));
+          await deal.save();
+          console.log(`✅ Updated operatingSite IDs for deal: ${deal.title}`);
+        }
+      }
+    }
 
     await business.addMember(new Types.ObjectId(businessOwner.id), ownerRole.id);
     await business.addMember(new Types.ObjectId(invitedAllManagerUser.id), managerRole.id);

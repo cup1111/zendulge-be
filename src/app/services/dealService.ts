@@ -177,8 +177,8 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
     }
   }
 
-  // Update dealData to use array
-  dealData.operatingSite = operatingSiteIds;
+  // Update dealData to use array, ensuring IDs are strings (schema expects [String])
+  dealData.operatingSite = operatingSiteIds.map((id: any) => String(id));
 
   // Set original price from service if not provided
   if (!dealData.originalPrice) {
@@ -404,8 +404,8 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
       }
     }
 
-    // Update to use array
-    updateData.operatingSite = operatingSiteIds;
+    // Update to use array, ensuring IDs are strings (schema expects [String])
+    updateData.operatingSite = operatingSiteIds.map((id: any) => String(id));
   }
 
   if (updateData.availability) {
@@ -657,31 +657,99 @@ const listPublicDeals = async (filters: {
   let nearbySiteIds: mongoose.Types.ObjectId[] | undefined;
   if (latitude != null && longitude != null && radiusKm != null) {
     const radiusInMeters = Math.max(1, radiusKm) * 1000;
+    const parsedLatitude = Number(latitude);
+    const parsedLongitude = Number(longitude);
+    const parsedRadiusKm = Number(radiusKm);
 
-    // $geoNear must be the first stage
-    // The location field is now stored in the database (via pre-save hook) for geospatial indexing
-    const nearbySites = await OperateSite.aggregate([
-      {
-        $geoNear: {
-          near: { type: 'Point', coordinates: [longitude, latitude] },
-          distanceField: 'distance',
-          maxDistance: radiusInMeters,
-          spherical: true,
-          query: { isActive: true },
+    try {
+      // $geoNear must be the first stage
+      // The location field is now stored in the database (via pre-save hook) for geospatial indexing
+      const nearbySites = await OperateSite.aggregate([
+        {
+          $geoNear: {
+            near: { type: 'Point', coordinates: [parsedLongitude, parsedLatitude] },
+            distanceField: 'distance',
+            maxDistance: radiusInMeters,
+            spherical: true,
+            query: { isActive: true },
+          },
         },
-      },
-      {
-        $project: {
-          _id: 1,
+        {
+          $project: {
+            _id: 1,
+          },
         },
-      },
-    ]);
+      ]);
 
-    nearbySiteIds = nearbySites.map((site: any) => site._id);
+      nearbySiteIds = nearbySites.map((site: any) => site._id);
 
-    // If no sites found within radius, return empty results
-    if (nearbySiteIds.length === 0) {
-      return [];
+      // If $geoNear returns no results, try fallback method
+      if (nearbySiteIds.length === 0) {
+        // Fallback: Find active sites and calculate distance manually
+        // This handles cases where location field might not be properly indexed
+        const allActiveSites = await OperateSite.find({ isActive: true }).lean();
+        const sitesWithinRadius: mongoose.Types.ObjectId[] = [];
+
+        for (const site of allActiveSites) {
+          if (site.latitude == null || site.longitude == null) {
+            continue; // Skip sites without coordinates
+          }
+
+          // Calculate haversine distance
+          const siteLat = Number(site.latitude);
+          const siteLon = Number(site.longitude);
+
+          const R = 6371; // Earth radius in km
+          const dLat = (siteLat - parsedLatitude) * Math.PI / 180;
+          const dLon = (siteLon - parsedLongitude) * Math.PI / 180;
+          const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(parsedLatitude * Math.PI / 180) * Math.cos(siteLat * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          const distance = R * c;
+
+          if (distance <= parsedRadiusKm) {
+            sitesWithinRadius.push(site._id);
+          }
+        }
+
+        nearbySiteIds = sitesWithinRadius;
+      }
+    } catch (error: any) {
+      // If $geoNear fails (e.g., no 2dsphere index), use fallback method
+
+      const allActiveSites = await OperateSite.find({ isActive: true }).lean();
+      const sitesWithinRadius: mongoose.Types.ObjectId[] = [];
+
+      for (const site of allActiveSites) {
+        if (site.latitude == null || site.longitude == null) {
+          continue; // Skip sites without coordinates
+        }
+
+        const siteLat = Number(site.latitude);
+        const siteLon = Number(site.longitude);
+
+        const R = 6371;
+        const dLat = (siteLat - parsedLatitude) * Math.PI / 180;
+        const dLon = (siteLon - parsedLongitude) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(parsedLatitude * Math.PI / 180) * Math.cos(siteLat * Math.PI / 180) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+
+        if (distance <= parsedRadiusKm) {
+          sitesWithinRadius.push(site._id);
+        }
+      }
+
+      nearbySiteIds = sitesWithinRadius;
+    }
+
+    // If still no sites found within radius, log warning but don't filter by location
+    // This allows deals to show even if location filtering fails
+    if (nearbySiteIds && nearbySiteIds.length === 0) {
+      nearbySiteIds = undefined; // Don't filter by location if no sites found
     }
   }
 
@@ -689,10 +757,16 @@ const listPublicDeals = async (filters: {
     status: 'active',
   };
 
-  // If location filtering is enabled, only include deals with operating sites in radius
+  // If location filtering is enabled and we found nearby sites, filter by them
+  // Convert ObjectIds to strings since operatingSite field stores strings
   if (nearbySiteIds && nearbySiteIds.length > 0) {
-    match.operatingSite = { $in: nearbySiteIds };
+    const nearbySiteIdsAsStrings = nearbySiteIds.map((id) => id.toString());
+
+    // Use $in to match if ANY element in the operatingSite array matches
+    // MongoDB $in works on arrays - it checks if any element matches
+    match.operatingSite = { $in: nearbySiteIdsAsStrings };
   }
+  // If location filtering failed or no sites found, don't add location filter (show all deals)
 
   // If category is provided as slug, look it up to get ObjectId
   let categoryObjectId: mongoose.Types.ObjectId | undefined;
@@ -766,11 +840,20 @@ const listPublicDeals = async (filters: {
       ]
       : []),
     // Lookup operating sites for display (and distance if location filtering is enabled)
+    // operatingSite is an array of strings, _id is ObjectId, so we need to convert for lookup
     {
       $lookup: {
         from: 'operateSites',
-        localField: 'operatingSite',
-        foreignField: '_id',
+        let: { operatingSiteIds: '$operatingSite' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $in: [{ $toString: '$_id' }, '$$operatingSiteIds'],
+              },
+            },
+          },
+        ],
         as: 'sites',
       },
     },

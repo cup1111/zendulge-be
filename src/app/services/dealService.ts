@@ -746,10 +746,9 @@ const listPublicDeals = async (filters: {
       nearbySiteIds = sitesWithinRadius;
     }
 
-    // If still no sites found within radius, log warning but don't filter by location
-    // This allows deals to show even if location filtering fails
-    if (nearbySiteIds && nearbySiteIds.length === 0) {
-      nearbySiteIds = undefined; // Don't filter by location if no sites found
+    // Initialize as empty array if still undefined
+    if (nearbySiteIds === undefined) {
+      nearbySiteIds = [];
     }
   }
 
@@ -757,16 +756,22 @@ const listPublicDeals = async (filters: {
     status: 'active',
   };
 
-  // If location filtering is enabled and we found nearby sites, filter by them
+  // If location filtering is enabled, always apply the filter
+  // If nearbySiteIds is empty array, it will result in no matches (correct behavior)
   // Convert ObjectIds to strings since operatingSite field stores strings
-  if (nearbySiteIds && nearbySiteIds.length > 0) {
-    const nearbySiteIdsAsStrings = nearbySiteIds.map((id) => id.toString());
-
-    // Use $in to match if ANY element in the operatingSite array matches
-    // MongoDB $in works on arrays - it checks if any element matches
-    match.operatingSite = { $in: nearbySiteIdsAsStrings };
+  if (nearbySiteIds !== undefined) {
+    if (nearbySiteIds.length === 0) {
+      // No sites within radius, so return no deals
+      // Set match to an impossible condition to return empty results
+      match.operatingSite = { $in: [] };
+    } else {
+      const nearbySiteIdsAsStrings = nearbySiteIds.map((id) => id.toString());
+      // Use $in to match if ANY element in the operatingSite array matches
+      // MongoDB $in works on arrays - it checks if any element matches
+      match.operatingSite = { $in: nearbySiteIdsAsStrings };
+    }
   }
-  // If location filtering failed or no sites found, don't add location filter (show all deals)
+  // If location filtering is not enabled (nearbySiteIds is undefined), show all deals
 
   // If category is provided as slug, look it up to get ObjectId
   let categoryObjectId: mongoose.Types.ObjectId | undefined;

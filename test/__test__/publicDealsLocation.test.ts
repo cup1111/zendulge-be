@@ -638,5 +638,177 @@ describe('Public deals listing with location filtering', () => {
     // Should NOT include pending business deal
     expect(titles).not.toEqual(expect.arrayContaining(['Pending Business Deal']));
   });
+
+  it('should return correct results based on radius distance (1km, 2km, 5km = 0 results, 10km-100km = 1 result)', async () => {
+    // User location from actual API usage
+    const USER_LAT = -33.9090378022738;
+    const USER_LON = 151.23673539028317;
+
+    // Sydney site coordinates from seed data (matches seedCompleteBusinessSetup.ts)
+    const SYDNEY_SITE_LAT = -33.8690;
+    const SYDNEY_SITE_LON = 151.2095;
+
+    // Setup: Create the seed data structure for this test
+    const ownerRole = await Role.findOne({ name: RoleName.OWNER });
+    expect(ownerRole).toBeTruthy();
+
+    // Create categories
+    const commercialCategory = await new CategoryBuilder()
+      .withName('Commercial')
+      .withSlug('commercial')
+      .withIcon('🏢')
+      .withActive()
+      .save();
+
+    // Create business owner
+    const owner = await new UserBuilder()
+      .withEmail('seed-test-owner@example.com')
+      .withPassword('OwnerPass123!')
+      .withActive(true)
+      .save();
+
+    // Create active business
+    const business = await new BusinessBuilder()
+      .withName('Zendulge')
+      .withOwner(owner._id)
+      .withMember(owner._id, ownerRole!._id)
+      .withStatus(BusinessStatus.ACTIVE)
+      .save();
+
+    // Create Sydney operate site (matches seed data coordinates)
+    const sydneySite = await new OperateSiteBuilder()
+      .withBusiness(business._id)
+      .withName('Zendulge Sydney CBD')
+      .withLatitude(SYDNEY_SITE_LAT)
+      .withLongitude(SYDNEY_SITE_LON)
+      .save();
+
+    // Ensure location field is set for geospatial queries
+    const siteAny = sydneySite as any;
+    siteAny.location = {
+      type: 'Point',
+      coordinates: [SYDNEY_SITE_LON, SYDNEY_SITE_LAT],
+    };
+    await sydneySite.save();
+
+    // Create Office Cleaning service
+    const officeService = await new ServiceBuilder()
+      .withName('Office Cleaning')
+      .withCategory('Commercial')
+      .withDuration(120)
+      .withBasePrice(150)
+      .withBusiness(business._id)
+      .withActive()
+      .save();
+
+    // Create Office Deep Clean deal (matches seed data)
+    const now = new Date();
+    const future = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000); // 60 days from now
+
+    await new DealBuilder()
+      .withTitle('Office Deep Clean')
+      .withDescription('Professional office cleaning service perfect for post-construction cleanup or quarterly deep cleaning. Includes carpet cleaning and sanitization.')
+      .withCategory(commercialCategory._id)
+      .withPrice(300)
+      .withOriginalPrice(400)
+      .withDuration(240)
+      .withOperatingSite(sydneySite._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withMaxBookings(20)
+      .withCurrentBookings(5)
+      .withActive()
+      .withBusiness(business._id)
+      .withService(officeService._id)
+      .withCreatedBy(owner._id)
+      .save();
+
+    // Test 1km - should return 0 results
+    const res1km = await request(app.getApp())
+      .get('/api/v1/public/deals')
+      .query({
+        latitude: USER_LAT.toString(),
+        longitude: USER_LON.toString(),
+        radiusKm: '1',
+      })
+      .expect(200);
+
+    expect(res1km.body.success).toBe(true);
+    expect(Array.isArray(res1km.body.data)).toBe(true);
+    expect(res1km.body.data.length).toBe(0);
+
+    // Test 2km - should return 0 results
+    const res2km = await request(app.getApp())
+      .get('/api/v1/public/deals')
+      .query({
+        latitude: USER_LAT.toString(),
+        longitude: USER_LON.toString(),
+        radiusKm: '2',
+      })
+      .expect(200);
+
+    expect(res2km.body.success).toBe(true);
+    expect(Array.isArray(res2km.body.data)).toBe(true);
+    expect(res2km.body.data.length).toBe(0);
+
+    // Test 5km - should return 0 results
+    const res5km = await request(app.getApp())
+      .get('/api/v1/public/deals')
+      .query({
+        latitude: USER_LAT.toString(),
+        longitude: USER_LON.toString(),
+        radiusKm: '5',
+      })
+      .expect(200);
+
+    expect(res5km.body.success).toBe(true);
+    expect(Array.isArray(res5km.body.data)).toBe(true);
+    expect(res5km.body.data.length).toBe(0);
+
+    // Test 10km - should return 1 result (Office Deep Clean)
+    const res10km = await request(app.getApp())
+      .get('/api/v1/public/deals')
+      .query({
+        latitude: USER_LAT.toString(),
+        longitude: USER_LON.toString(),
+        radiusKm: '10',
+      })
+      .expect(200);
+
+    expect(res10km.body.success).toBe(true);
+    expect(Array.isArray(res10km.body.data)).toBe(true);
+    expect(res10km.body.data.length).toBe(1);
+    expect(res10km.body.data[0].title).toBe('Office Deep Clean');
+
+    // Test 50km - should return 1 result (Office Deep Clean)
+    const res50km = await request(app.getApp())
+      .get('/api/v1/public/deals')
+      .query({
+        latitude: USER_LAT.toString(),
+        longitude: USER_LON.toString(),
+        radiusKm: '50',
+      })
+      .expect(200);
+
+    expect(res50km.body.success).toBe(true);
+    expect(Array.isArray(res50km.body.data)).toBe(true);
+    expect(res50km.body.data.length).toBe(1);
+    expect(res50km.body.data[0].title).toBe('Office Deep Clean');
+
+    // Test 100km - should return 1 result (Office Deep Clean)
+    const res100km = await request(app.getApp())
+      .get('/api/v1/public/deals')
+      .query({
+        latitude: USER_LAT.toString(),
+        longitude: USER_LON.toString(),
+        radiusKm: '100',
+      })
+      .expect(200);
+
+    expect(res100km.body.success).toBe(true);
+    expect(Array.isArray(res100km.body.data)).toBe(true);
+    expect(res100km.body.data.length).toBe(1);
+    expect(res100km.body.data[0].title).toBe('Office Deep Clean');
+  });
 });
 

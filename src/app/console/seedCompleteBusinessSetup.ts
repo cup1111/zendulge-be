@@ -83,10 +83,10 @@ const createSitesIfNoExists = async (business: any) => {
   };
 
   const operateSite2Data = {
-    name: 'Zendulge South Yarra',
-    address: '456 Toorak Road, South Yarra VIC 3141',
-    phoneNumber: '+61398765433',
-    emailAddress: 'southyarra@zendulge.com',
+    name: 'Zendulge Sydney CBD',
+    address: '456 George Street, Sydney NSW 2000',
+    phoneNumber: '+61298765433',
+    emailAddress: 'sydney@zendulge.com',
     operatingHours: {
       monday: { open: '09:00', close: '17:00', isClosed: false },
       tuesday: { open: '09:00', close: '17:00', isClosed: false },
@@ -99,8 +99,10 @@ const createSitesIfNoExists = async (business: any) => {
     specialInstruction:
       'Boutique location specializing in premium consultations. Valet parking available.',
     business: business.id,
-    latitude: -37.8394,
-    longitude: 144.9944,
+    // Actual George Street Sydney CBD coordinates (near Town Hall / Queen Victoria Building)
+    // Distance from user location (-33.9090378022738, 151.23673539028317): ~5.11km (within 5-10km requirement)
+    latitude: -33.8690,
+    longitude: 151.2095,
     isActive: true,
   };
 
@@ -111,22 +113,52 @@ const createSitesIfNoExists = async (business: any) => {
   });
   if (!operateSite1) {
     operateSite1 = new OperateSite(operateSite1Data);
+    // Explicitly set location field for geospatial indexing
+    (operateSite1 as any).location = {
+      type: 'Point',
+      coordinates: [operateSite1Data.longitude, operateSite1Data.latitude],
+    };
     await operateSite1.save();
     console.log('✅ Created operate site: Melbourne CBD');
   } else {
-    console.log('ℹ️  Operate site already exists: Melbourne CBD');
+    // Update existing site to ensure location field is set
+    operateSite1.set(operateSite1Data);
+    (operateSite1 as any).location = {
+      type: 'Point',
+      coordinates: [operateSite1Data.longitude, operateSite1Data.latitude],
+    };
+    await operateSite1.save();
+    console.log('✅ Updated operate site: Melbourne CBD');
   }
 
+  // Try to find by name first, then by old name if it was previously South Yarra
   let operateSite2 = await OperateSite.findOne({
     name: operateSite2Data.name,
     business: business.id,
   });
+
+  // If not found, try to find the old "South Yarra" site to update it
+  if (!operateSite2) {
+    operateSite2 = await OperateSite.findOne({
+      name: 'Zendulge South Yarra',
+      business: business.id,
+    });
+  }
+
   if (!operateSite2) {
     operateSite2 = new OperateSite(operateSite2Data);
     await operateSite2.save();
-    console.log('✅ Created operate site: South Yarra');
+    console.log('✅ Created operate site: Sydney CBD');
   } else {
-    console.log('ℹ️  Operate site already exists: South Yarra');
+    // Update existing site - ensure location field is set for geospatial queries
+    operateSite2.set(operateSite2Data);
+    // Explicitly set location field for geospatial indexing (will also be set by pre-save hook)
+    (operateSite2 as any).location = {
+      type: 'Point',
+      coordinates: [operateSite2Data.longitude, operateSite2Data.latitude],
+    };
+    await operateSite2.save();
+    console.log('✅ Updated operate site to: Sydney CBD');
   }
 
   return [operateSite1, operateSite2];
@@ -141,7 +173,7 @@ const createServicesIfNotExists = async (business: any) => {
       basePrice: 80.00,
       description: 'Standard cleaning service for residential properties',
       business: business.id,
-      status: BusinessStatus.ACTIVE,
+      status: 'active',
     },
     {
       name: 'Deep Cleaning Service',
@@ -150,7 +182,7 @@ const createServicesIfNotExists = async (business: any) => {
       basePrice: 200.00,
       description: 'Comprehensive deep cleaning including all areas',
       business: business.id,
-      status: BusinessStatus.ACTIVE,
+      status: 'active',
     },
     {
       name: 'Office Cleaning',
@@ -159,7 +191,7 @@ const createServicesIfNotExists = async (business: any) => {
       basePrice: 150.00,
       description: 'Professional office cleaning service',
       business: business.id,
-      status: BusinessStatus.ACTIVE,
+      status: 'active',
     },
     {
       name: 'Carpet Cleaning',
@@ -168,7 +200,7 @@ const createServicesIfNotExists = async (business: any) => {
       basePrice: 120.00,
       description: 'Professional carpet and upholstery cleaning',
       business: business.id,
-      status: BusinessStatus.ACTIVE,
+      status: 'active',
     },
     {
       name: 'Window Cleaning',
@@ -177,7 +209,7 @@ const createServicesIfNotExists = async (business: any) => {
       basePrice: 60.00,
       description: 'Interior and exterior window cleaning service',
       business: business.id,
-      status: BusinessStatus.ACTIVE,
+      status: 'active',
     },
     {
       name: 'Post-Construction Cleanup',
@@ -206,7 +238,7 @@ const createServicesIfNotExists = async (business: any) => {
   }
 };
 
-const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: any, SouthYarraoperateSite2: any, businessOwner: any) => {
+const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: any, SydneyOperateSite: any, businessOwner: any) => {
   // Get services to reference them
   const basicCleaningService = await Service.findOne({ name: 'Basic Cleaning Service', business: business.id });
   const deepCleaningService = await Service.findOne({ name: 'Deep Cleaning Service', business: business.id });
@@ -240,7 +272,7 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
       endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       maxBookings: 50,
       currentBookings: 12,
-      status: BusinessStatus.ACTIVE,
+      status: 'active',
       tags: ['spring', 'cleaning', 'special'],
       business: business.id,
     },
@@ -251,14 +283,14 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
       price: 300.00,
       originalPrice: 400.00,
       duration: 240,
-      operatingSite: [SouthYarraoperateSite2.id],
+      operatingSite: [SydneyOperateSite.id],
       service: officeCleaningService?.id,
       createdBy: businessOwner.id,
       startDate: new Date(),
       endDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
       maxBookings: 20,
       currentBookings: 5,
-      status: BusinessStatus.ACTIVE,
+      status: 'active',
       tags: ['office', 'commercial', 'deep-clean'],
       business: business.id,
     },
@@ -276,7 +308,7 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
       endDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
       maxBookings: 30,
       currentBookings: 8,
-      status: BusinessStatus.ACTIVE,
+      status: 'active',
       tags: ['carpet', 'upholstery', 'stain-removal'],
       business: business.id,
     },
@@ -287,7 +319,7 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
       price: 80.00,
       originalPrice: 100.00,
       duration: 60,
-      operatingSite: [SouthYarraoperateSite2.id],
+      operatingSite: [SydneyOperateSite.id],
       service: windowCleaningService?.id,
       createdBy: businessOwner.id,
       startDate: new Date(),
@@ -539,9 +571,28 @@ const seedCompleteBusinessSetup = async () => {
     await createUserIfNotExists(customerNoBusinessUserData, 'customer: Customer No Business');
 
     const business = await createBusinessIfNotExists(businessOwner);
-    const [MelbourneCBDOperateSite, SouthYarraoperateSite2] = await createSitesIfNoExists(business);
+    const [MelbourneCBDOperateSite, SydneyOperateSite] = await createSitesIfNoExists(business);
+
+    // Ensure all operate sites have the location field for geospatial queries
+    // This fixes existing sites that were created before the pre-save hook was added
+    // Update location for all businesses (active, pending, disabled)
+    const allBusinesses = await Business.find({});
+    for (const biz of allBusinesses) {
+      const allSites = await OperateSite.find({ business: biz.id });
+      for (const site of allSites) {
+        const siteAny = site as any;
+        // Always update location field to ensure it's properly set
+        siteAny.location = {
+          type: 'Point',
+          coordinates: [site.longitude, site.latitude],
+        };
+        await site.save();
+        console.log(`✅ Updated location field for operate site: ${site.name} (Business: ${biz.name})`);
+      }
+    }
+
     await createServicesIfNotExists(business);
-    await createDealsIfNotExists(business, MelbourneCBDOperateSite, SouthYarraoperateSite2, businessOwner);
+    await createDealsIfNotExists(business, MelbourneCBDOperateSite, SydneyOperateSite, businessOwner);
 
     await business.addMember(new Types.ObjectId(businessOwner.id), ownerRole.id);
     await business.addMember(new Types.ObjectId(invitedAllManagerUser.id), managerRole.id);
@@ -553,12 +604,12 @@ const seedCompleteBusinessSetup = async () => {
     await business.addMember(new Types.ObjectId(invitedSouthYarraNotActiveEmployee.id), employeeRole.id);
 
     await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedAllManagerUser.id));
-    await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedAllManagerUser.id));
+    await SydneyOperateSite.addMember(new Types.ObjectId(invitedAllManagerUser.id));
     await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedMelbourneCBDEmployee1.id));
     await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedCBDOnlyManager1.id));
     await MelbourneCBDOperateSite.addMember(new Types.ObjectId(invitedCBDOnlyManager2.id));
-    await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedSouthYarraManager.id));
-    await SouthYarraoperateSite2.addMember(new Types.ObjectId(invitedSouthYarraNotActiveEmployee.id));
+    await SydneyOperateSite.addMember(new Types.ObjectId(invitedSouthYarraManager.id));
+    await SydneyOperateSite.addMember(new Types.ObjectId(invitedSouthYarraNotActiveEmployee.id));
 
     // Add customerWithBusiness to business.customers array
     if (!business.customers) {

@@ -656,7 +656,6 @@ const listPublicDeals = async (filters: {
   // If location filtering is needed, first find operating sites within radius
   let nearbySiteIds: mongoose.Types.ObjectId[] | undefined;
   if (latitude != null && longitude != null && radiusKm != null) {
-    const OperateSite = mongoose.model('operateSites');
     const radiusInMeters = Math.max(1, radiusKm) * 1000;
 
     // $geoNear must be the first stage

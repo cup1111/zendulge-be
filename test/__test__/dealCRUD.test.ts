@@ -163,6 +163,227 @@ describe('Deal CRUD operations', () => {
         });
     });
 
+    describe('price validation', () => {
+        it('should reject creating a deal when price is greater than or equal to base price', async () => {
+            const startDate = new Date();
+            const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+            // Try with price equal to base price
+            const response1 = await request(app.getApp())
+                .post(`/api/v1/business/${business._id}/deals`)
+                .set('Authorization', `Bearer ${ownerToken}`)
+                .send({
+                    title: 'Invalid Price Deal 1',
+                    description: 'Deal with price equal to base price',
+                    category: category.slug,
+                    price: 120, // Equal to base price
+                    duration: 60,
+                    operatingSite: [operateSite._id.toString()],
+                    service: service._id.toString(),
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString(),
+                    status: 'active',
+                })
+                .expect(400);
+
+            expect(response1.body.success).toBe(false);
+            expect(response1.body.message).toContain('Deal price must be less than the service base price');
+
+            // Try with price greater than base price
+            const response2 = await request(app.getApp())
+                .post(`/api/v1/business/${business._id}/deals`)
+                .set('Authorization', `Bearer ${ownerToken}`)
+                .send({
+                    title: 'Invalid Price Deal 2',
+                    description: 'Deal with price greater than base price',
+                    category: category.slug,
+                    price: 150, // Greater than base price
+                    duration: 60,
+                    operatingSite: [operateSite._id.toString()],
+                    service: service._id.toString(),
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString(),
+                    status: 'active',
+                })
+                .expect(400);
+
+            expect(response2.body.success).toBe(false);
+            expect(response2.body.message).toContain('Deal price must be less than the service base price');
+        });
+
+        it('should accept creating a deal when price is less than base price', async () => {
+            const startDate = new Date();
+            const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+            const response = await request(app.getApp())
+                .post(`/api/v1/business/${business._id}/deals`)
+                .set('Authorization', `Bearer ${ownerToken}`)
+                .send({
+                    title: 'Valid Price Deal',
+                    description: 'Deal with valid price',
+                    category: category.slug,
+                    price: 90, // Less than base price (120)
+                    duration: 60,
+                    operatingSite: [operateSite._id.toString()],
+                    service: service._id.toString(),
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString(),
+                    status: 'active',
+                })
+                .expect(201);
+
+            expect(response.body.success).toBe(true);
+            expect(response.body.data.price).toBe(90);
+        });
+
+        it('should reject updating a deal when price is greater than or equal to base price', async () => {
+            // Create a deal first with valid price
+            const startDate = new Date();
+            const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+            const createResponse = await request(app.getApp())
+                .post(`/api/v1/business/${business._id}/deals`)
+                .set('Authorization', `Bearer ${ownerToken}`)
+                .send({
+                    title: 'Update Test Deal',
+                    description: 'Deal to update',
+                    category: category.slug,
+                    price: 90,
+                    duration: 60,
+                    operatingSite: [operateSite._id.toString()],
+                    service: service._id.toString(),
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString(),
+                    status: 'active',
+                })
+                .expect(201);
+
+            const dealId = createResponse.body.data._id;
+
+            // Try to update with price equal to base price
+            const updateResponse1 = await request(app.getApp())
+                .patch(`/api/v1/business/${business._id}/deals/${dealId}`)
+                .set('Authorization', `Bearer ${ownerToken}`)
+                .send({
+                    price: 120, // Equal to base price
+                })
+                .expect(400);
+
+            expect(updateResponse1.body.success).toBe(false);
+            expect(updateResponse1.body.message).toContain('Deal price must be less than the service base price');
+
+            // Try to update with price greater than base price
+            const updateResponse2 = await request(app.getApp())
+                .patch(`/api/v1/business/${business._id}/deals/${dealId}`)
+                .set('Authorization', `Bearer ${ownerToken}`)
+                .send({
+                    price: 150, // Greater than base price
+                })
+                .expect(400);
+
+            expect(updateResponse2.body.success).toBe(false);
+            expect(updateResponse2.body.message).toContain('Deal price must be less than the service base price');
+        });
+
+        it('should accept updating a deal when price is less than base price', async () => {
+            // Create a deal first
+            const startDate = new Date();
+            const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+            const createResponse = await request(app.getApp())
+                .post(`/api/v1/business/${business._id}/deals`)
+                .set('Authorization', `Bearer ${ownerToken}`)
+                .send({
+                    title: 'Update Valid Price Deal',
+                    description: 'Deal to update with valid price',
+                    category: category.slug,
+                    price: 90,
+                    duration: 60,
+                    operatingSite: [operateSite._id.toString()],
+                    service: service._id.toString(),
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString(),
+                    status: 'active',
+                })
+                .expect(201);
+
+            const dealId = createResponse.body.data._id;
+
+            // Update with valid price
+            const updateResponse = await request(app.getApp())
+                .patch(`/api/v1/business/${business._id}/deals/${dealId}`)
+                .set('Authorization', `Bearer ${ownerToken}`)
+                .send({
+                    price: 100, // Less than base price (120)
+                })
+                .expect(200);
+
+            expect(updateResponse.body.success).toBe(true);
+            expect(updateResponse.body.data.price).toBe(100);
+        });
+
+        it('should validate price against new service base price when service is updated', async () => {
+            // Create a new service with different base price
+            const newService = await Service.create({
+                name: 'Premium Service',
+                category: 'Wellness',
+                duration: 90,
+                basePrice: 200,
+                business: business._id.toString(),
+                status: BusinessStatus.ACTIVE,
+            });
+
+            // Create a deal with first service
+            const startDate = new Date();
+            const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+            const createResponse = await request(app.getApp())
+                .post(`/api/v1/business/${business._id}/deals`)
+                .set('Authorization', `Bearer ${ownerToken}`)
+                .send({
+                    title: 'Service Update Test Deal',
+                    description: 'Deal to update service',
+                    category: category.slug,
+                    price: 90,
+                    duration: 60,
+                    operatingSite: [operateSite._id.toString()],
+                    service: service._id.toString(),
+                    startDate: startDate.toISOString(),
+                    endDate: endDate.toISOString(),
+                    status: 'active',
+                })
+                .expect(201);
+
+            const dealId = createResponse.body.data._id;
+
+            // Try to update service to new service but price is too high for new service
+            const updateResponse = await request(app.getApp())
+                .patch(`/api/v1/business/${business._id}/deals/${dealId}`)
+                .set('Authorization', `Bearer ${ownerToken}`)
+                .send({
+                    service: newService._id.toString(),
+                    price: 250, // Greater than new service base price (200)
+                })
+                .expect(400);
+
+            expect(updateResponse.body.success).toBe(false);
+            expect(updateResponse.body.message).toContain('Deal price must be less than the service base price');
+
+            // Update service with valid price for new service
+            const validUpdateResponse = await request(app.getApp())
+                .patch(`/api/v1/business/${business._id}/deals/${dealId}`)
+                .set('Authorization', `Bearer ${ownerToken}`)
+                .send({
+                    service: newService._id.toString(),
+                    price: 180, // Less than new service base price (200)
+                })
+                .expect(200);
+
+            expect(validUpdateResponse.body.success).toBe(true);
+            expect(validUpdateResponse.body.data.price).toBe(180);
+        });
+    });
+
     describe('getDeals', () => {
         it('should return deals with all populated fields', async () => {
             // Create a deal first

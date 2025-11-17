@@ -3,11 +3,10 @@ import app from '../setup/app';
 import BusinessBuilder from './builders/businessBuilder';
 import OperateSiteBuilder from './builders/operateSiteBuilder';
 import UserBuilder from './builders/userBuilder';
+import CategoryBuilder from './builders/categoryBuilder';
+import ServiceBuilder from './builders/serviceBuilder';
 import Role from '../../src/app/model/role';
-import Service from '../../src/app/model/service';
-import Category from '../../src/app/model/category';
 import { RoleName } from '../../src/app/enum/roles';
-import { BusinessStatus } from '../../src/app/enum/businessStatus';
 
 describe('Deal CRUD operations', () => {
     let ownerUser: any;
@@ -49,22 +48,23 @@ describe('Deal CRUD operations', () => {
         operateSite.members = [ownerUser._id];
         await operateSite.save();
 
-        // Create a category
-        category = await Category.create({
-            name: 'Test Category',
-            slug: 'test-category',
-            icon: '🧪',
-            isActive: true,
-        });
+        // Create a category using builder
+        category = await new CategoryBuilder()
+            .withName('Test Category')
+            .withSlug('test-category')
+            .withIcon('🧪')
+            .withActive()
+            .save();
 
-        service = await Service.create({
-            name: 'Test Service',
-            category: 'Wellness',
-            duration: 60,
-            basePrice: 120,
-            business: business._id.toString(),
-            status: BusinessStatus.ACTIVE,
-        });
+        // Create a service using builder
+        service = await new ServiceBuilder()
+            .withName('Test Service')
+            .withCategory('Wellness')
+            .withDuration(60)
+            .withBasePrice(120)
+            .withBusiness(business._id)
+            .withActive()
+            .save();
 
         ownerToken = await loginAndGetToken('deal-crud-owner@example.com', 'OwnerCRUD123!');
     });
@@ -323,15 +323,15 @@ describe('Deal CRUD operations', () => {
         });
 
         it('should validate price against new service base price when service is updated', async () => {
-            // Create a new service with different base price
-            const newService = await Service.create({
-                name: 'Premium Service',
-                category: 'Wellness',
-                duration: 90,
-                basePrice: 200,
-                business: business._id.toString(),
-                status: BusinessStatus.ACTIVE,
-            });
+            // Create a new service with different base price using builder
+            const newService = await new ServiceBuilder()
+                .withName('Premium Service')
+                .withCategory('Wellness')
+                .withDuration(90)
+                .withBasePrice(200)
+                .withBusiness(business._id)
+                .withActive()
+                .save();
 
             // Create a deal with first service
             const startDate = new Date();

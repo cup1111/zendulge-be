@@ -3,11 +3,11 @@ import app from '../setup/app';
 import BusinessBuilder from './builders/businessBuilder';
 import OperateSiteBuilder from './builders/operateSiteBuilder';
 import UserBuilder from './builders/userBuilder';
+import CategoryBuilder from './builders/categoryBuilder';
+import ServiceBuilder from './builders/serviceBuilder';
+import DealBuilder from './builders/dealBuilder';
 import Role from '../../src/app/model/role';
-import Service from '../../src/app/model/service';
-import Deal from '../../src/app/model/deal';
 import { RoleName } from '../../src/app/enum/roles';
-import { BusinessStatus } from '../../src/app/enum/businessStatus';
 
 describe('Public deals listing', () => {
   it('returns only active deals from ACTIVE businesses, excluding pending/disabled and non-active deals', async () => {
@@ -34,118 +34,152 @@ describe('Public deals listing', () => {
       .withName('Active Site')
       .save();
 
-    const serviceActive = await Service.create({
-      name: 'Active Service',
-      category: 'Cleaning',
-      duration: 60,
-      basePrice: 100,
-      business: activeBusiness._id.toString(),
-      status: BusinessStatus.ACTIVE,
-    });
+    // Create categories using builder
+    const cleaningCategory = await new CategoryBuilder()
+      .withName('Cleaning')
+      .withSlug('cleaning')
+      .withIcon('🧹')
+      .withActive()
+      .save();
+
+    const commercialCategory = await new CategoryBuilder()
+      .withName('Commercial')
+      .withSlug('commercial')
+      .withIcon('🏢')
+      .withActive()
+      .save();
+
+    const specializedCategory = await new CategoryBuilder()
+      .withName('Specialized')
+      .withSlug('specialized')
+      .withIcon('🔧')
+      .withActive()
+      .save();
+
+    const generalCategory = await new CategoryBuilder()
+      .withName('General')
+      .withSlug('general')
+      .withIcon('📋')
+      .withActive()
+      .save();
+
+    // Create service using builder
+    const serviceActive = await new ServiceBuilder()
+      .withName('Active Service')
+      .withCategory('Cleaning')
+      .withDuration(60)
+      .withBasePrice(100)
+      .withBusiness(activeBusiness._id)
+      .withActive()
+      .save();
 
     const now = new Date();
     const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     const past = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     // These three should be returned
-    await Deal.create({
-      title: 'Spring Cleaning Special',
-      description: 'Active deal',
-      category: 'Cleaning',
-      price: 150,
-      originalPrice: 200,
-      duration: 180,
-      operatingSite: [siteActive._id.toString()],
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'active',
-      business: activeBusiness._id.toString(),
-      service: serviceActive._id.toString(),
-      createdBy: owner._id.toString(),
-    });
-    await Deal.create({
-      title: 'Office Deep Clean',
-      description: 'Active deal',
-      category: 'Commercial',
-      price: 300,
-      originalPrice: 400,
-      duration: 240,
-      operatingSite: [siteActive._id.toString()],
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'active',
-      business: activeBusiness._id.toString(),
-      service: serviceActive._id.toString(),
-      createdBy: owner._id.toString(),
-    });
-    await Deal.create({
-      title: 'Carpet Cleaning Package',
-      description: 'Active deal',
-      category: 'Specialized',
-      price: 120,
-      originalPrice: 150,
-      duration: 90,
-      operatingSite: [siteActive._id.toString()],
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'active',
-      business: activeBusiness._id.toString(),
-      service: serviceActive._id.toString(),
-      createdBy: owner._id.toString(),
-    });
+    await new DealBuilder()
+      .withTitle('Spring Cleaning Special')
+      .withDescription('Active deal')
+      .withCategory(cleaningCategory._id)
+      .withPrice(150)
+      .withOriginalPrice(200)
+      .withDuration(180)
+      .withOperatingSite(siteActive._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(activeBusiness._id)
+      .withService(serviceActive._id)
+      .withCreatedBy(owner._id)
+      .save();
+
+    await new DealBuilder()
+      .withTitle('Office Deep Clean')
+      .withDescription('Active deal')
+      .withCategory(commercialCategory._id)
+      .withPrice(300)
+      .withOriginalPrice(400)
+      .withDuration(240)
+      .withOperatingSite(siteActive._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(activeBusiness._id)
+      .withService(serviceActive._id)
+      .withCreatedBy(owner._id)
+      .save();
+
+    await new DealBuilder()
+      .withTitle('Carpet Cleaning Package')
+      .withDescription('Active deal')
+      .withCategory(specializedCategory._id)
+      .withPrice(120)
+      .withOriginalPrice(150)
+      .withDuration(90)
+      .withOperatingSite(siteActive._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(activeBusiness._id)
+      .withService(serviceActive._id)
+      .withCreatedBy(owner._id)
+      .save();
 
     // These should NOT be returned (different statuses/time)
-    await Deal.create({
-      title: 'Post-Construction Cleanup',
-      description: 'Expired deal',
-      category: 'Specialized',
-      price: 500,
-      originalPrice: 650,
-      duration: 360,
-      operatingSite: [siteActive._id.toString()],
-      startDate: past,
-      endDate: past,
-      currentBookings: 0,
-      status: 'expired',
-      business: activeBusiness._id.toString(),
-      service: serviceActive._id.toString(),
-      createdBy: owner._id.toString(),
-    });
-    await Deal.create({
-      title: 'Window Cleaning Service',
-      description: 'Sold out deal',
-      category: 'Specialized',
-      price: 80,
-      originalPrice: 100,
-      duration: 60,
-      operatingSite: [siteActive._id.toString()],
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'sold_out',
-      business: activeBusiness._id.toString(),
-      service: serviceActive._id.toString(),
-      createdBy: owner._id.toString(),
-    });
-    await Deal.create({
-      title: 'Monthly Maintenance Package',
-      description: 'Inactive deal',
-      category: 'Cleaning',
-      price: 200,
-      originalPrice: 250,
-      duration: 120,
-      operatingSite: [siteActive._id.toString()],
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'inactive',
-      business: activeBusiness._id.toString(),
-      service: serviceActive._id.toString(),
-      createdBy: owner._id.toString(),
-    });
+    await new DealBuilder()
+      .withTitle('Post-Construction Cleanup')
+      .withDescription('Expired deal')
+      .withCategory(specializedCategory._id)
+      .withPrice(500)
+      .withOriginalPrice(650)
+      .withDuration(360)
+      .withOperatingSite(siteActive._id)
+      .withStartDate(past)
+      .withEndDate(past)
+      .withCurrentBookings(0)
+      .withExpired()
+      .withBusiness(activeBusiness._id)
+      .withService(serviceActive._id)
+      .withCreatedBy(owner._id)
+      .save();
+
+    await new DealBuilder()
+      .withTitle('Window Cleaning Service')
+      .withDescription('Sold out deal')
+      .withCategory(specializedCategory._id)
+      .withPrice(80)
+      .withOriginalPrice(100)
+      .withDuration(60)
+      .withOperatingSite(siteActive._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withSoldOut()
+      .withBusiness(activeBusiness._id)
+      .withService(serviceActive._id)
+      .withCreatedBy(owner._id)
+      .save();
+
+    await new DealBuilder()
+      .withTitle('Monthly Maintenance Package')
+      .withDescription('Inactive deal')
+      .withCategory(cleaningCategory._id)
+      .withPrice(200)
+      .withOriginalPrice(250)
+      .withDuration(120)
+      .withOperatingSite(siteActive._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withInactive()
+      .withBusiness(activeBusiness._id)
+      .withService(serviceActive._id)
+      .withCreatedBy(owner._id)
+      .save();
 
     // PENDING business with active deal (should be excluded)
     const pendingBusiness = await new BusinessBuilder()
@@ -158,30 +192,32 @@ describe('Public deals listing', () => {
       .withBusiness(pendingBusiness._id)
       .withName('Pending Site')
       .save();
-    const pendingService = await Service.create({
-      name: 'Pending Service',
-      category: 'General',
-      duration: 60,
-      basePrice: 100,
-      business: pendingBusiness._id.toString(),
-      status: BusinessStatus.PENDING,
-    });
-    await Deal.create({
-      title: 'pendingBusinessDeal - Intro Offer',
-      description: 'Pending business deal',
-      category: 'General',
-      price: 49,
-      originalPrice: 79,
-      duration: 60,
-      operatingSite: [pendingSite._id.toString()],
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'active',
-      business: pendingBusiness._id.toString(),
-      service: pendingService._id.toString(),
-      createdBy: owner._id.toString(),
-    });
+
+    const pendingService = await new ServiceBuilder()
+      .withName('Pending Service')
+      .withCategory('General')
+      .withDuration(60)
+      .withBasePrice(100)
+      .withBusiness(pendingBusiness._id)
+      .withActive()
+      .save();
+
+    await new DealBuilder()
+      .withTitle('pendingBusinessDeal - Intro Offer')
+      .withDescription('Pending business deal')
+      .withCategory(generalCategory._id)
+      .withPrice(49)
+      .withOriginalPrice(79)
+      .withDuration(60)
+      .withOperatingSite(pendingSite._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(pendingBusiness._id)
+      .withService(pendingService._id)
+      .withCreatedBy(owner._id)
+      .save();
 
     // DISABLED business with active deal (should be excluded)
     const disabledBusiness = await new BusinessBuilder()
@@ -194,30 +230,32 @@ describe('Public deals listing', () => {
       .withBusiness(disabledBusiness._id)
       .withName('Disabled Site')
       .save();
-    const disabledService = await Service.create({
-      name: 'Disabled Service',
-      category: 'General',
-      duration: 60,
-      basePrice: 110,
-      business: disabledBusiness._id.toString(),
-      status: BusinessStatus.DISABLED,
-    });
-    await Deal.create({
-      title: 'disabledBusinessDeal - Intro Offer',
-      description: 'Disabled business deal',
-      category: 'General',
-      price: 59,
-      originalPrice: 89,
-      duration: 60,
-      operatingSite: [disabledSite._id.toString()],
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'active',
-      business: disabledBusiness._id.toString(),
-      service: disabledService._id.toString(),
-      createdBy: owner._id.toString(),
-    });
+
+    const disabledService = await new ServiceBuilder()
+      .withName('Disabled Service')
+      .withCategory('General')
+      .withDuration(60)
+      .withBasePrice(110)
+      .withBusiness(disabledBusiness._id)
+      .withActive()
+      .save();
+
+    await new DealBuilder()
+      .withTitle('disabledBusinessDeal - Intro Offer')
+      .withDescription('Disabled business deal')
+      .withCategory(generalCategory._id)
+      .withPrice(59)
+      .withOriginalPrice(89)
+      .withDuration(60)
+      .withOperatingSite(disabledSite._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(disabledBusiness._id)
+      .withService(disabledService._id)
+      .withCreatedBy(owner._id)
+      .save();
 
     const res = await request(app.getApp()).get('/api/v1/public/deals').expect(200);
     expect(res.body.success).toBe(true);

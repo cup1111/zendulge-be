@@ -3,11 +3,12 @@ import app from '../setup/app';
 import BusinessBuilder from './builders/businessBuilder';
 import OperateSiteBuilder from './builders/operateSiteBuilder';
 import UserBuilder from './builders/userBuilder';
+import CategoryBuilder from './builders/categoryBuilder';
+import ServiceBuilder from './builders/serviceBuilder';
+import DealBuilder from './builders/dealBuilder';
 import Role from '../../src/app/model/role';
-import Service from '../../src/app/model/service';
-import Deal from '../../src/app/model/deal';
-import Category from '../../src/app/model/category';
 import OperateSite from '../../src/app/model/operateSite';
+import Deal from '../../src/app/model/deal';
 import { RoleName } from '../../src/app/enum/roles';
 import { BusinessStatus } from '../../src/app/enum/businessStatus';
 
@@ -28,16 +29,13 @@ describe('Public deals listing with location filtering', () => {
     const ownerRole = await Role.findOne({ name: RoleName.OWNER });
     expect(ownerRole).toBeTruthy();
 
-    // Create category
-    let category = await Category.findOne({ slug: 'cleaning' });
-    if (!category) {
-      category = await Category.create({
-        name: 'Cleaning',
-        slug: 'cleaning',
-        icon: '🧹',
-        isActive: true,
-      });
-    }
+    // Create category using builder
+    let category = await new CategoryBuilder()
+      .withName('Cleaning')
+      .withSlug('cleaning')
+      .withIcon('🧹')
+      .withActive()
+      .save();
     expect(category).toBeTruthy();
 
     // Create users
@@ -71,53 +69,53 @@ describe('Public deals listing with location filtering', () => {
     };
     await sydneySite.save();
 
-    const service = await Service.create({
-      name: 'Active Service',
-      category: 'Cleaning',
-      duration: 60,
-      basePrice: 100,
-      business: activeBusiness._id.toString(),
-      status: BusinessStatus.ACTIVE,
-    });
+    const service = await new ServiceBuilder()
+      .withName('Active Service')
+      .withCategory('Cleaning')
+      .withDuration(60)
+      .withBasePrice(100)
+      .withBusiness(activeBusiness._id)
+      .withActive()
+      .save();
 
     const now = new Date();
     const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
     // Create active deal linked to Sydney site
-    const deal1 = await Deal.create({
-      title: 'Sydney Cleaning Deal',
-      description: 'Active deal in Sydney',
-      category: category!._id,
-      price: 90,
-      originalPrice: 120,
-      duration: 180,
-      operatingSite: [sydneySite._id.toString()], // String IDs
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'active',
-      business: activeBusiness._id.toString(),
-      service: service._id.toString(),
-      createdBy: owner._id.toString(),
-    });
+    const deal1 = await new DealBuilder()
+      .withTitle('Sydney Cleaning Deal')
+      .withDescription('Active deal in Sydney')
+      .withCategory(category._id)
+      .withPrice(90)
+      .withOriginalPrice(120)
+      .withDuration(180)
+      .withOperatingSite(sydneySite._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(activeBusiness._id)
+      .withService(service._id)
+      .withCreatedBy(owner._id)
+      .save();
 
     // Create another active deal linked to Sydney site
-    const deal2 = await Deal.create({
-      title: 'Sydney Office Clean',
-      description: 'Another active deal in Sydney',
-      category: category!._id,
-      price: 150,
-      originalPrice: 200,
-      duration: 240,
-      operatingSite: [sydneySite._id.toString()], // String IDs
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'active',
-      business: activeBusiness._id.toString(),
-      service: service._id.toString(),
-      createdBy: owner._id.toString(),
-    });
+    const deal2 = await new DealBuilder()
+      .withTitle('Sydney Office Clean')
+      .withDescription('Another active deal in Sydney')
+      .withCategory(category._id)
+      .withPrice(150)
+      .withOriginalPrice(200)
+      .withDuration(240)
+      .withOperatingSite(sydneySite._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(activeBusiness._id)
+      .withService(service._id)
+      .withCreatedBy(owner._id)
+      .save();
 
     // Create active business with far site (Melbourne)
     const melbourneBusiness = await new BusinessBuilder()
@@ -142,37 +140,37 @@ describe('Public deals listing with location filtering', () => {
     };
     await melbourneSite.save();
 
-    const melbourneService = await Service.create({
-      name: 'Melbourne Service',
-      category: 'Cleaning',
-      duration: 60,
-      basePrice: 100,
-      business: melbourneBusiness._id.toString(),
-      status: BusinessStatus.ACTIVE,
-    });
+    const melbourneService = await new ServiceBuilder()
+      .withName('Melbourne Service')
+      .withCategory('Cleaning')
+      .withDuration(60)
+      .withBasePrice(100)
+      .withBusiness(melbourneBusiness._id)
+      .withActive()
+      .save();
 
     // Create active deal linked to Melbourne site (should NOT appear in results)
-    await Deal.create({
-      title: 'Melbourne Cleaning Deal',
-      description: 'Active deal in Melbourne (too far)',
-      category: category!._id,
-      price: 90,
-      originalPrice: 120,
-      duration: 180,
-      operatingSite: [melbourneSite._id.toString()],
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'active',
-      business: melbourneBusiness._id.toString(),
-      service: melbourneService._id.toString(),
-      createdBy: owner._id.toString(),
-    });
+    await new DealBuilder()
+      .withTitle('Melbourne Cleaning Deal')
+      .withDescription('Active deal in Melbourne (too far)')
+      .withCategory(category._id)
+      .withPrice(90)
+      .withOriginalPrice(120)
+      .withDuration(180)
+      .withOperatingSite(melbourneSite._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(melbourneBusiness._id)
+      .withService(melbourneService._id)
+      .withCreatedBy(owner._id)
+      .save();
 
     // Verify sites are saved with location field
     const savedSydneySite = await OperateSite.findById(sydneySite._id).lean();
     const savedMelbourneSite = await OperateSite.findById(melbourneSite._id).lean();
-    
+
     expect(savedSydneySite).toBeTruthy();
     expect(savedMelbourneSite).toBeTruthy();
     expect(savedSydneySite?.latitude).toBe(SITE_LAT);
@@ -235,15 +233,13 @@ describe('Public deals listing with location filtering', () => {
     const ownerRole = await Role.findOne({ name: RoleName.OWNER });
     expect(ownerRole).toBeTruthy();
 
-    let category = await Category.findOne({ slug: 'cleaning' });
-    if (!category) {
-      category = await Category.create({
-        name: 'Cleaning',
-        slug: 'cleaning',
-        icon: '🧹',
-        isActive: true,
-      });
-    }
+    // Create category using builder
+    const category = await new CategoryBuilder()
+      .withName('Cleaning')
+      .withSlug('cleaning')
+      .withIcon('🧹')
+      .withActive()
+      .save();
     expect(category).toBeTruthy();
 
     const owner = await new UserBuilder()
@@ -266,34 +262,34 @@ describe('Public deals listing with location filtering', () => {
       .withLongitude(SITE_LON)
       .save();
 
-    const service = await Service.create({
-      name: 'Test Service',
-      category: 'Cleaning',
-      duration: 60,
-      basePrice: 100,
-      business: business._id.toString(),
-      status: BusinessStatus.ACTIVE,
-    });
+    const service = await new ServiceBuilder()
+      .withName('Test Service')
+      .withCategory('Cleaning')
+      .withDuration(60)
+      .withBasePrice(100)
+      .withBusiness(business._id)
+      .withActive()
+      .save();
 
     const now = new Date();
     const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-    await Deal.create({
-      title: 'Deal Without Location Filter',
-      description: 'Should appear when no location params',
-      category: category!._id,
-      price: 90,
-      originalPrice: 120,
-      duration: 180,
-      operatingSite: [site._id.toString()],
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'active',
-      business: business._id.toString(),
-      service: service._id.toString(),
-      createdBy: owner._id.toString(),
-    });
+    await new DealBuilder()
+      .withTitle('Deal Without Location Filter')
+      .withDescription('Should appear when no location params')
+      .withCategory(category._id)
+      .withPrice(90)
+      .withOriginalPrice(120)
+      .withDuration(180)
+      .withOperatingSite(site._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(business._id)
+      .withService(service._id)
+      .withCreatedBy(owner._id)
+      .save();
 
     // Test without location parameters
     const res = await request(app.getApp())
@@ -311,15 +307,13 @@ describe('Public deals listing with location filtering', () => {
     const ownerRole = await Role.findOne({ name: RoleName.OWNER });
     expect(ownerRole).toBeTruthy();
 
-    let category = await Category.findOne({ slug: 'cleaning' });
-    if (!category) {
-      category = await Category.create({
-        name: 'Cleaning',
-        slug: 'cleaning',
-        icon: '🧹',
-        isActive: true,
-      });
-    }
+    // Create category using builder
+    const category = await new CategoryBuilder()
+      .withName('Cleaning')
+      .withSlug('cleaning')
+      .withIcon('🧹')
+      .withActive()
+      .save();
     expect(category).toBeTruthy();
 
     const owner = await new UserBuilder()
@@ -346,34 +340,34 @@ describe('Public deals listing with location filtering', () => {
     // Don't set location field to force fallback
     // The fallback should use latitude/longitude directly
 
-    const service = await Service.create({
-      name: 'Fallback Service',
-      category: 'Cleaning',
-      duration: 60,
-      basePrice: 100,
-      business: business._id.toString(),
-      status: BusinessStatus.ACTIVE,
-    });
+    const service = await new ServiceBuilder()
+      .withName('Fallback Service')
+      .withCategory('Cleaning')
+      .withDuration(60)
+      .withBasePrice(100)
+      .withBusiness(business._id)
+      .withActive()
+      .save();
 
     const now = new Date();
     const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-    await Deal.create({
-      title: 'Fallback Test Deal',
-      description: 'Should work with fallback calculation',
-      category: category!._id,
-      price: 90,
-      originalPrice: 120,
-      duration: 180,
-      operatingSite: [site._id.toString()],
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'active',
-      business: business._id.toString(),
-      service: service._id.toString(),
-      createdBy: owner._id.toString(),
-    });
+    await new DealBuilder()
+      .withTitle('Fallback Test Deal')
+      .withDescription('Should work with fallback calculation')
+      .withCategory(category._id)
+      .withPrice(90)
+      .withOriginalPrice(120)
+      .withDuration(180)
+      .withOperatingSite(site._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(business._id)
+      .withService(service._id)
+      .withCreatedBy(owner._id)
+      .save();
 
     // Test with location parameters - fallback should work
     const res = await request(app.getApp())
@@ -397,15 +391,13 @@ describe('Public deals listing with location filtering', () => {
     const ownerRole = await Role.findOne({ name: RoleName.OWNER });
     expect(ownerRole).toBeTruthy();
 
-    let category = await Category.findOne({ slug: 'cleaning' });
-    if (!category) {
-      category = await Category.create({
-        name: 'Cleaning',
-        slug: 'cleaning',
-        icon: '🧹',
-        isActive: true,
-      });
-    }
+    // Create category using builder
+    const category = await new CategoryBuilder()
+      .withName('Cleaning')
+      .withSlug('cleaning')
+      .withIcon('🧹')
+      .withActive()
+      .save();
     expect(category).toBeTruthy();
 
     const owner = await new UserBuilder()
@@ -435,53 +427,53 @@ describe('Public deals listing with location filtering', () => {
     };
     await site.save();
 
-    const service = await Service.create({
-      name: 'Status Service',
-      category: 'Cleaning',
-      duration: 60,
-      basePrice: 100,
-      business: business._id.toString(),
-      status: BusinessStatus.ACTIVE,
-    });
+    const service = await new ServiceBuilder()
+      .withName('Status Service')
+      .withCategory('Cleaning')
+      .withDuration(60)
+      .withBasePrice(100)
+      .withBusiness(business._id)
+      .withActive()
+      .save();
 
     const now = new Date();
     const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
     // Active deal (should appear)
-    await Deal.create({
-      title: 'Active Status Deal',
-      description: 'Should appear',
-      category: category!._id,
-      price: 90,
-      originalPrice: 120,
-      duration: 180,
-      operatingSite: [site._id.toString()],
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'active',
-      business: business._id.toString(),
-      service: service._id.toString(),
-      createdBy: owner._id.toString(),
-    });
+    await new DealBuilder()
+      .withTitle('Active Status Deal')
+      .withDescription('Should appear')
+      .withCategory(category._id)
+      .withPrice(90)
+      .withOriginalPrice(120)
+      .withDuration(180)
+      .withOperatingSite(site._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(business._id)
+      .withService(service._id)
+      .withCreatedBy(owner._id)
+      .save();
 
     // Inactive deal (should NOT appear)
-    await Deal.create({
-      title: 'Inactive Status Deal',
-      description: 'Should NOT appear',
-      category: category!._id,
-      price: 90,
-      originalPrice: 120,
-      duration: 180,
-      operatingSite: [site._id.toString()],
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'inactive',
-      business: business._id.toString(),
-      service: service._id.toString(),
-      createdBy: owner._id.toString(),
-    });
+    await new DealBuilder()
+      .withTitle('Inactive Status Deal')
+      .withDescription('Should NOT appear')
+      .withCategory(category._id)
+      .withPrice(90)
+      .withOriginalPrice(120)
+      .withDuration(180)
+      .withOperatingSite(site._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withInactive()
+      .withBusiness(business._id)
+      .withService(service._id)
+      .withCreatedBy(owner._id)
+      .save();
 
     // Test with location parameters
     const res = await request(app.getApp())
@@ -509,15 +501,13 @@ describe('Public deals listing with location filtering', () => {
     const ownerRole = await Role.findOne({ name: RoleName.OWNER });
     expect(ownerRole).toBeTruthy();
 
-    let category = await Category.findOne({ slug: 'cleaning' });
-    if (!category) {
-      category = await Category.create({
-        name: 'Cleaning',
-        slug: 'cleaning',
-        icon: '🧹',
-        isActive: true,
-      });
-    }
+    // Create category using builder
+    const category = await new CategoryBuilder()
+      .withName('Cleaning')
+      .withSlug('cleaning')
+      .withIcon('🧹')
+      .withActive()
+      .save();
     expect(category).toBeTruthy();
 
     const owner = await new UserBuilder()
@@ -548,35 +538,35 @@ describe('Public deals listing with location filtering', () => {
     };
     await activeSite.save();
 
-    const activeService = await Service.create({
-      name: 'Active Business Service',
-      category: 'Cleaning',
-      duration: 60,
-      basePrice: 100,
-      business: activeBusiness._id.toString(),
-      status: BusinessStatus.ACTIVE,
-    });
+    const activeService = await new ServiceBuilder()
+      .withName('Active Business Service')
+      .withCategory('Cleaning')
+      .withDuration(60)
+      .withBasePrice(100)
+      .withBusiness(activeBusiness._id)
+      .withActive()
+      .save();
 
     const now = new Date();
     const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
     // Active deal from active business (should appear)
-    await Deal.create({
-      title: 'Active Business Deal',
-      description: 'Should appear',
-      category: category!._id,
-      price: 90,
-      originalPrice: 120,
-      duration: 180,
-      operatingSite: [activeSite._id.toString()],
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'active',
-      business: activeBusiness._id.toString(),
-      service: activeService._id.toString(),
-      createdBy: owner._id.toString(),
-    });
+    await new DealBuilder()
+      .withTitle('Active Business Deal')
+      .withDescription('Should appear')
+      .withCategory(category._id)
+      .withPrice(90)
+      .withOriginalPrice(120)
+      .withDuration(180)
+      .withOperatingSite(activeSite._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(activeBusiness._id)
+      .withService(activeService._id)
+      .withCreatedBy(owner._id)
+      .save();
 
     // Pending business
     const pendingBusiness = await new BusinessBuilder()
@@ -600,32 +590,32 @@ describe('Public deals listing with location filtering', () => {
     };
     await pendingSite.save();
 
-    const pendingService = await Service.create({
-      name: 'Pending Business Service',
-      category: 'Cleaning',
-      duration: 60,
-      basePrice: 100,
-      business: pendingBusiness._id.toString(),
-      status: 'active',
-    });
+    const pendingService = await new ServiceBuilder()
+      .withName('Pending Business Service')
+      .withCategory('Cleaning')
+      .withDuration(60)
+      .withBasePrice(100)
+      .withBusiness(pendingBusiness._id)
+      .withActive()
+      .save();
 
     // Active deal from pending business (should NOT appear)
-    await Deal.create({
-      title: 'Pending Business Deal',
-      description: 'Should NOT appear',
-      category: category!._id,
-      price: 90,
-      originalPrice: 120,
-      duration: 180,
-      operatingSite: [pendingSite._id.toString()],
-      startDate: now,
-      endDate: future,
-      currentBookings: 0,
-      status: 'active',
-      business: pendingBusiness._id.toString(),
-      service: pendingService._id.toString(),
-      createdBy: owner._id.toString(),
-    });
+    await new DealBuilder()
+      .withTitle('Pending Business Deal')
+      .withDescription('Should NOT appear')
+      .withCategory(category._id)
+      .withPrice(90)
+      .withOriginalPrice(120)
+      .withDuration(180)
+      .withOperatingSite(pendingSite._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(pendingBusiness._id)
+      .withService(pendingService._id)
+      .withCreatedBy(owner._id)
+      .save();
 
     // Test with location parameters
     const res = await request(app.getApp())

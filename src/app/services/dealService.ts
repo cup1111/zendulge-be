@@ -271,7 +271,11 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
     createdBy: userId, // Track who created the deal
   });
   const savedDeal = await newDeal.save();
-  return savedDeal.populate('category', 'name slug icon');
+  await savedDeal.populate('category', 'name slug icon');
+  await savedDeal.populate('service', 'name category basePrice duration');
+  await savedDeal.populate('operatingSite', 'name address');
+  await savedDeal.populate('createdBy', 'firstName lastName email');
+  return savedDeal;
 };
 
 const updateDeal = async (businessId: string, dealId: string, userId: string, updateData: any): Promise<IDealDocument> => {

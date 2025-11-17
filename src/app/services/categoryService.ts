@@ -3,7 +3,7 @@ import { NotFoundException, ConflictException } from '../exceptions';
 
 const getAllCategories = async (includeInactive = false) => {
   const query = includeInactive ? {} : { isActive: true };
-  const categories = await Category.find(query).sort({ name: 1 });
+  const categories = await Category.find(query).sort({ name: 1 }).lean();
   return categories;
 };
 

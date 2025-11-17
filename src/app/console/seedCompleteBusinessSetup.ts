@@ -5,6 +5,7 @@ import OperateSite from '../model/operateSite';
 import Service from '../model/service';
 import Deal from '../model/deal';
 import Role from '../model/role';
+import Category from '../model/category';
 import config from '../config/app';
 import { RoleName } from '../enum/roles';
 import { BusinessStatus } from '../enum/businessStatus';
@@ -22,6 +23,39 @@ async function createUserIfNotExists(userData: any, userLabel: string) {
   }
   return user;
 }
+
+const createCategoriesIfNotExists = async () => {
+  const categoriesData = [
+    { name: 'Massage', slug: 'massage', icon: '💆' },
+    { name: 'Beauty', slug: 'beauty', icon: '💅' },
+    { name: 'Spa', slug: 'spa', icon: '🛁' },
+    { name: 'Fitness', slug: 'fitness', icon: '🏃' },
+    { name: 'Alternative', slug: 'alternative', icon: '🌿' },
+    { name: 'Hair Salon', slug: 'salon', icon: '💇' },
+    { name: 'Cleaning', slug: 'cleaning', icon: '🧹' },
+    { name: 'Commercial', slug: 'commercial', icon: '🏢' },
+    { name: 'Specialized', slug: 'specialized', icon: '⚙️' },
+    { name: 'General', slug: 'general', icon: '📋' },
+  ];
+
+  const createdCategories = [];
+  for (const catData of categoriesData) {
+    let category = await Category.findOne({ slug: catData.slug });
+    if (!category) {
+      category = new Category({
+        ...catData,
+        isActive: true,
+      });
+      await category.save();
+      console.log(`✅ Created category: ${catData.name}`);
+    } else {
+      console.log(`ℹ️  Category already exists: ${catData.name}`);
+    }
+    createdCategories.push(category);
+  }
+
+  return createdCategories;
+};
 
 const createSitesIfNoExists = async (business: any) => {
 
@@ -181,11 +215,21 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
   const windowCleaningService = await Service.findOne({ name: 'Window Cleaning', business: business.id });
   const postConstructionService = await Service.findOne({ name: 'Post-Construction Cleanup', business: business.id });
 
+  // Get categories to reference them (should exist after seeding)
+  const cleaningCategory = await Category.findOne({ slug: 'cleaning' });
+  const commercialCategory = await Category.findOne({ slug: 'commercial' });
+  const specializedCategory = await Category.findOne({ slug: 'specialized' });
+  const generalCategory = await Category.findOne({ slug: 'general' });
+
+  if (!cleaningCategory || !commercialCategory || !specializedCategory || !generalCategory) {
+    throw new Error('Required categories not found. Please ensure categories are seeded first.');
+  }
+
   const dealsData = [
     {
       title: 'Spring Cleaning Special',
       description: 'Get your home sparkling clean with our comprehensive spring cleaning service. Includes deep cleaning of all rooms, windows, and appliances.',
-      category: 'Cleaning',
+      category: cleaningCategory._id,
       price: 150.00,
       originalPrice: 200.00,
       duration: 180,
@@ -203,7 +247,7 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     {
       title: 'Office Deep Clean',
       description: 'Professional office cleaning service perfect for post-construction cleanup or quarterly deep cleaning. Includes carpet cleaning and sanitization.',
-      category: 'Commercial',
+      category: commercialCategory._id,
       price: 300.00,
       originalPrice: 400.00,
       duration: 240,
@@ -221,7 +265,7 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     {
       title: 'Carpet Cleaning Package',
       description: 'Professional carpet and upholstery cleaning for residential properties. Includes stain removal and deodorizing.',
-      category: 'Specialized',
+      category: specializedCategory._id,
       price: 120.00,
       originalPrice: 150.00,
       duration: 90,
@@ -239,7 +283,7 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     {
       title: 'Window Cleaning Service',
       description: 'Crystal clear windows inside and out. Professional window cleaning service for residential and commercial properties.',
-      category: 'Specialized',
+      category: specializedCategory._id,
       price: 80.00,
       originalPrice: 100.00,
       duration: 60,
@@ -257,7 +301,7 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     {
       title: 'Post-Construction Cleanup',
       description: 'Heavy-duty cleaning after construction or renovation. Includes debris removal, dust cleaning, and final touch-ups.',
-      category: 'Specialized',
+      category: specializedCategory._id,
       price: 500.00,
       originalPrice: 650.00,
       duration: 360,
@@ -275,7 +319,7 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     {
       title: 'Monthly Maintenance Package',
       description: 'Regular monthly cleaning service to keep your property in top condition. Includes all basic cleaning tasks plus minor maintenance.',
-      category: 'Cleaning',
+      category: cleaningCategory._id,
       price: 200.00,
       originalPrice: 250.00,
       duration: 120,
@@ -357,15 +401,24 @@ const seedCompleteBusinessSetup = async () => {
       throw new Error('Roles not found. Please run seed-roles first.');
     }
 
+    // Seed categories first
+    await createCategoriesIfNotExists();
+
+    // Get general category for use in pending/disabled business deals
+    const generalCategory = await Category.findOne({ slug: 'general' });
+    if (!generalCategory) {
+      throw new Error('General category not found. Please ensure categories are seeded first.');
+    }
+
     // Create Business Owner User
     const businessOwnerData = {
       email: 'owner@zendulge.com',
       password: 'zxc123!',
       firstName: 'Business',
       lastName: 'Owner',
-      phoneNumber: '+61412345678',
       jobTitle: 'Business Owner',
       userName: 'businessowner',
+      phoneNumber: '+61400000001',
       active: true,
       role: ownerRole.id,
     };
@@ -376,9 +429,9 @@ const seedCompleteBusinessSetup = async () => {
       password: 'zxc123!',
       firstName: 'Sarah',
       lastName: 'Johnson',
-      phoneNumber: '+61412345679',
       jobTitle: 'Business Manager',
       userName: 'sjohnson',
+      phoneNumber: '+61400000002',
       active: true,
     };
 
@@ -387,9 +440,9 @@ const seedCompleteBusinessSetup = async () => {
       password: 'zxc123!',
       firstName: 'Kit',
       lastName: 'Kat',
-      phoneNumber: '+61412345679',
       jobTitle: 'Business Manager',
       userName: 'kitkat',
+      phoneNumber: '+61400000003',
       active: true,
     };
 
@@ -399,9 +452,9 @@ const seedCompleteBusinessSetup = async () => {
       password: 'zxc123!',
       firstName: 'Sam',
       lastName: 'Williams',
-      phoneNumber: '+61412345679',
       jobTitle: 'Business Manager',
       userName: 'samwilliams',
+      phoneNumber: '+61400000004',
       active: true,
     };
 
@@ -411,9 +464,9 @@ const seedCompleteBusinessSetup = async () => {
       password: 'zxc123!',
       firstName: 'Paul',
       lastName: 'Lee',
-      phoneNumber: '+61412345679',
       jobTitle: 'Business Manager',
       userName: 'paullee',
+      phoneNumber: '+61400000005',
       active: true,
     };
 
@@ -424,9 +477,9 @@ const seedCompleteBusinessSetup = async () => {
       password: 'zxc123!',
       firstName: 'John',
       lastName: 'Doe',
-      phoneNumber: '+61412345680',
       jobTitle: 'Employee',
       userName: 'jdoe',
+      phoneNumber: '+61400000006',
       active: true,
     };
 
@@ -435,9 +488,9 @@ const seedCompleteBusinessSetup = async () => {
       password: 'zxc123!',
       firstName: 'No',
       lastName: 'Access',
-      phoneNumber: '+61412345681',
       jobTitle: 'Employee',
       userName: 'jsmith',
+      phoneNumber: '+61400000007',
       active: true,
     };
 
@@ -446,9 +499,9 @@ const seedCompleteBusinessSetup = async () => {
       password: 'zxc123!',
       firstName: 'No',
       lastName: 'Active',
-      phoneNumber: '+61412345681',
       jobTitle: 'Employee',
       userName: 'jsmith',
+      phoneNumber: '+61400000008',
       active: false,
     };
 
@@ -458,8 +511,8 @@ const seedCompleteBusinessSetup = async () => {
       password: 'zxc123!',
       firstName: 'Customer',
       lastName: 'With Business',
-      phoneNumber: '+61412345682',
       userName: 'cwithbusiness',
+      phoneNumber: '+61400000009',
       active: true,
     };
 
@@ -468,8 +521,8 @@ const seedCompleteBusinessSetup = async () => {
       password: 'zxc123!',
       firstName: 'Customer',
       lastName: 'No Business',
-      phoneNumber: '+61412345682',
       userName: 'cwithbusiness',
+      phoneNumber: '+61400000010',
       active: true,
     };
 
@@ -526,9 +579,9 @@ const seedCompleteBusinessSetup = async () => {
       password: 'zxc123!',
       firstName: 'Pending',
       lastName: 'Owner',
-      phoneNumber: '+61412345690',
       jobTitle: 'Business Owner',
       userName: 'pendingowner',
+      phoneNumber: '+61400000011',
       active: true,
       role: ownerRole.id,
     };
@@ -592,7 +645,7 @@ const seedCompleteBusinessSetup = async () => {
       pendingDeal = new Deal({
         title: pendingDealTitle,
         description: 'Deal seeded for pending business (should be hidden from customers).',
-        category: 'General',
+        category: generalCategory._id,
         price: 49.0,
         originalPrice: 79.0,
         duration: 60,
@@ -619,9 +672,9 @@ const seedCompleteBusinessSetup = async () => {
       password: 'zxc123!',
       firstName: 'Disabled',
       lastName: 'Owner',
-      phoneNumber: '+61412345691',
       jobTitle: 'Business Owner',
       userName: 'disabledowner',
+      phoneNumber: '+61400000012',
       active: true,
       role: ownerRole.id,
     };
@@ -685,7 +738,7 @@ const seedCompleteBusinessSetup = async () => {
       disabledDeal = new Deal({
         title: disabledDealTitle,
         description: 'Deal seeded for disabled business (business is disabled).',
-        category: 'General',
+        category: generalCategory._id,
         price: 59.0,
         originalPrice: 89.0,
         duration: 60,

@@ -1,9 +1,9 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IDeal {
   title: string;
   description: string;
-  category: string;
+  category: Types.ObjectId | string;
   price: number;
   originalPrice?: number;
   discount?: number;
@@ -37,10 +37,10 @@ const dealSchema = new Schema<IDealDocument>({
     maxlength: 1000,
   },
   category: {
-    type: String,
+    type: Schema.Types.ObjectId,
     required: true,
-    trim: true,
-    maxlength: 50,
+    ref: 'categories',
+    index: true,
   },
   price: {
     type: Number,

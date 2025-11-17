@@ -189,6 +189,12 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
     dealData.duration = service.duration;
   }
 
+  // Validate that deal price is less than base price
+  const dealPrice = dealData.price ?? service.basePrice;
+  if (dealPrice >= service.basePrice) {
+    throw new BadRequestException('Deal price must be less than the service base price');
+  }
+
   // Calculate discount if originalPrice and price are provided
   if (dealData.originalPrice !== undefined || dealData.price !== undefined) {
     const normalizedDiscount = normalizeDiscount(
@@ -330,17 +336,36 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
     }
   }
 
-  // If service is updated, re-validate and potentially update originalPrice/duration
+  // Get the service (either from update or existing deal) for validation
+  let serviceForValidation: { basePrice: number } | null = null;
   if (updateData.service) {
-    const service = await Service.findOne({ _id: updateData.service, business: businessId });
-    if (!service) {
+    const updatedService = await Service.findOne({ _id: updateData.service, business: businessId });
+    if (!updatedService) {
       throw new Error('Service not found or does not belong to this business');
     }
+    serviceForValidation = updatedService;
     if (!updateData.originalPrice) {
-      updateData.originalPrice = service.basePrice;
+      updateData.originalPrice = updatedService.basePrice;
     }
     if (!updateData.duration) {
-      updateData.duration = service.duration;
+      updateData.duration = updatedService.duration;
+    }
+  } else {
+    // Populate service if not already populated
+    if (!existingDeal.service || typeof existingDeal.service === 'string') {
+      await existingDeal.populate('service', 'basePrice');
+    }
+    // Use existing deal's service for validation
+    const populatedService = existingDeal.service;
+    if (populatedService && typeof populatedService === 'object' && 'basePrice' in populatedService) {
+      serviceForValidation = populatedService as { basePrice: number };
+    }
+  }
+
+  // Validate that deal price is less than base price
+  if (updateData.price !== undefined && serviceForValidation && serviceForValidation.basePrice) {
+    if (updateData.price >= serviceForValidation.basePrice) {
+      throw new BadRequestException('Deal price must be less than the service base price');
     }
   }
 
@@ -628,11 +653,8 @@ const listPublicDeals = async (filters: {
 } = {}) => {
   const { category, title, limit = 20, skip = 0, latitude, longitude, radiusKm } = filters;
 
-  const now = new Date();
   const match: any = {
     status: 'active',
-    startDate: { $lte: now },
-    endDate: { $gte: now },
   };
 
   // If category is provided as slug, look it up to get ObjectId
@@ -784,6 +806,7 @@ export default {
   listPublicDeals,
   async getPublicDealById(dealId: string) {
     const now = new Date();
+    const oneDayFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     const pipeline: any[] = [
       { $match: { _id: new (require('mongoose').Types.ObjectId)(dealId) } },
       {
@@ -812,8 +835,7 @@ export default {
         $match: {
           'business.status': BusinessStatus.ACTIVE,
           status: 'active',
-          startDate: { $lte: now },
-          endDate: { $gte: now },
+          startDate: { $lte: oneDayFromNow },
         },
       },
       {

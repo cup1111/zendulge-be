@@ -71,10 +71,24 @@ import {
 } from '../../validation/dealValidation';
 import publicDealController from '../../controllers/v1/publicDealController';
 import {
+  getAllCategories,
+  getCategoryById,
+  getCategoryBySlug,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  deactivateCategory,
+  activateCategory,
+} from '../../controllers/v1/categoryController';
+import {
   createUserWithRoleValidation,
   businessAndUserIdValidation,
   updateUserValidation,
 } from '../../validation/userManagementValidation';
+import {
+  createCategoryValidation,
+  updateCategoryValidation,
+} from '../../validation/categoryValidation';
 import { handleValidationErrors } from '../../validation/validationHandler';
 import { authenticationTokenMiddleware } from '../../middleware/authMiddleware';
 import { validateBusinessAccess } from '../../middleware/businessAccessMiddleware';
@@ -236,6 +250,43 @@ router.patch(
 // Public deals listing (home page) and details
 router.get('/public/deals', publicDealController.listPublicDeals);
 router.get('/public/deals/:dealId', publicDealController.getPublicDealById);
+
+// Public categories endpoint (for home page)
+router.get('/public/categories', getAllCategories);
+
+// Category routes (CRUD - authenticated)
+router.get('/categories', authenticationTokenMiddleware, getAllCategories);
+router.get('/categories/:categoryId', authenticationTokenMiddleware, getCategoryById);
+router.get('/categories/slug/:slug', getCategoryBySlug); // Public route by slug
+router.post(
+  '/categories',
+  authenticationTokenMiddleware,
+  createCategoryValidation,
+  handleValidationErrors,
+  createCategory,
+);
+router.patch(
+  '/categories/:categoryId',
+  authenticationTokenMiddleware,
+  updateCategoryValidation,
+  handleValidationErrors,
+  updateCategory,
+);
+router.delete(
+  '/categories/:categoryId',
+  authenticationTokenMiddleware,
+  deleteCategory,
+);
+router.patch(
+  '/categories/:categoryId/deactivate',
+  authenticationTokenMiddleware,
+  deactivateCategory,
+);
+router.patch(
+  '/categories/:categoryId/activate',
+  authenticationTokenMiddleware,
+  activateCategory,
+);
 
 // Uploads - server-side multipart upload to S3
 router.post(

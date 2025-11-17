@@ -1,0 +1,155 @@
+<!--
+  ⚠️ CRITICAL: READ THIS FILE FIRST BEFORE ANY CODE CHANGES ⚠️
+  This file contains all development rules and patterns for this codebase.
+  Cursor AI should automatically include this in context, but ALWAYS verify
+  these rules are being followed before making changes.
+  
+  If you're an AI assistant, you MUST:
+  1. Read this entire file before starting any task
+  2. Reference these rules while coding
+  3. Follow ALL patterns listed here
+  4. Update this file if you discover new patterns
+-->
+
+# Cursor AI Development Rules
+
+## 🚨 CRITICAL RULES - ALWAYS FOLLOW
+
+### Testing
+- **ALWAYS USE BUILDERS** for all test data creation
+  - Use `CategoryBuilder`, `ServiceBuilder`, `DealBuilder`, `BusinessBuilder`, `OperateSiteBuilder`, `UserBuilder`
+  - **NEVER** use direct model creation like `Category.create()`, `Service.create()`, `Deal.create()`, etc.
+  - **EXCEPTION**: Only use direct model access when querying existing data (e.g., `Role.findOne()`, `Deal.find()`)
+
+### Code Organization
+- **Controllers** are thin - they ONLY handle HTTP request/response, NO business logic
+- **Services** contain ALL business logic
+- **Models** contain schema definitions and static/instance methods
+- **Validation** lives in `src/app/validation/` files
+
+### Model Patterns
+- Use TypeScript interfaces for model types (`IBusiness`, `IDeal`, etc.)
+- Use Mongoose schemas with proper types
+- Always include `timestamps: true` in schemas
+- Use enums for status fields (e.g., `BusinessStatus` enum)
+- Use `.lean()` for read-only queries to improve performance
+
+### Service Patterns
+- Return plain objects (use `.lean()` or `.toObject()`)
+- Handle population explicitly - await each `.populate()` call separately
+- Use aggregation pipelines for complex queries
+- Always validate input data
+- Throw appropriate exceptions from `src/app/exceptions/`
+
+### Database Patterns
+- `operatingSite` field in Deal model stores **array of strings** (not ObjectIds)
+- Category references in Deal model use **ObjectId** (from Category model)
+- Always convert ObjectIds to strings when matching with string arrays
+- Use `$toString` in aggregation pipelines when comparing ObjectIds with strings
+
+### API Patterns
+- Public endpoints prefix: `/api/v1/public/`
+- Authenticated endpoints prefix: `/api/v1/business/:businessId/`
+- Always return `{ success: boolean, message: string, data: any }` format
+- Use proper HTTP status codes (200, 201, 400, 401, 403, 404, 422, 500)
+
+### Location/Geospatial Queries
+- Always set `location` field on OperateSite documents (GeoJSON Point)
+- Use `$geoNear` as first stage in aggregation pipeline (requires 2dsphere index)
+- Implement fallback using Haversine distance calculation if `$geoNear` fails
+- Convert nearby site ObjectIds to strings before matching with `operatingSite` array
+
+### Validation Rules
+- Deal price MUST be less than service base price (both frontend and backend)
+- Facebook/Twitter URLs can be empty strings
+- Use express-validator for request validation
+- Validate all required fields
+
+### Builder Patterns
+- All builders extend `BaseBuilder`
+- Use fluent API pattern (`.withXxx().withYyy().save()`)
+- Builders should handle ID conversions (ObjectId to string, etc.)
+- Builders should set sensible defaults
+
+### Error Handling
+- Use custom exceptions from `src/app/exceptions/`
+- Never expose internal errors to users
+- Log errors appropriately
+- Return user-friendly error messages
+
+### TypeScript
+- Avoid `any` type - use proper types or interfaces
+- Use nullish coalescing (`??`) instead of logical OR (`||`) for default values
+- Prefer type-only imports: `import type { AxiosError } from 'axios'`
+- Use ESLint disable comments only when absolutely necessary
+
+### Frontend Patterns
+- Always expect populated objects from backend (e.g., `category` is always an object, never a string)
+- Use proper TypeScript interfaces for API responses
+- Handle loading and error states
+- Use proper null checks before rendering
+
+### Common Mistakes to Avoid
+- ❌ Chaining `.populate()` calls - must await each separately
+- ❌ Using `isActive: true` - use `status: BusinessStatus.ACTIVE` instead
+- ❌ Creating models directly in tests - use builders
+- ❌ Mixing ObjectId and string comparisons without conversion
+- ❌ Returning raw Mongoose documents - use `.lean()` or `.toObject()`
+- ❌ Adding business logic to controllers
+- ❌ Using `window.confirm` - use proper modals/dialogs
+- ❌ Hardcoding test data - use builders
+- ❌ Using `any` type unnecessarily
+
+### Test File Structure
+```typescript
+import request from 'supertest';
+import app from '../setup/app';
+import BusinessBuilder from './builders/businessBuilder';
+import CategoryBuilder from './builders/categoryBuilder';
+import ServiceBuilder from './builders/serviceBuilder';
+import DealBuilder from './builders/dealBuilder';
+// ... other builders
+
+describe('Test Suite', () => {
+  beforeEach(async () => {
+    // Use builders to create test data
+    category = await new CategoryBuilder()
+      .withName('Test Category')
+      .withActive()
+      .save();
+    
+    service = await new ServiceBuilder()
+      .withName('Test Service')
+      .withBusiness(business._id)
+      .withActive()
+      .save();
+  });
+  
+  it('should test something', async () => {
+    // Test implementation
+  });
+});
+```
+
+### When Making Changes
+1. Always check if tests need updating
+2. Ensure linting passes
+3. Use builders in all new tests
+4. Follow existing code patterns
+5. Update this file if you discover new patterns or rules
+
+### File Locations
+- Models: `src/app/model/`
+- Services: `src/app/services/`
+- Controllers: `src/app/controllers/v1/`
+- Validation: `src/app/validation/`
+- Builders: `test/__test__/builders/`
+- Tests: `test/__test__/`
+- Enums: `src/app/enum/`
+- Exceptions: `src/app/exceptions/`
+
+---
+
+**Last Updated**: After refactoring all deal tests to use builders
+**Key Principle**: Consistency and maintainability - use builders, follow patterns, keep code clean
+

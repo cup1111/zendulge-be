@@ -719,19 +719,16 @@ const listPublicDeals = async (filters: {
 
       nearbySiteIds = sitesWithinRadius;
     }
-
-    // Initialize as empty array if still undefined
-    if (nearbySiteIds === undefined) {
-      nearbySiteIds = [];
-    }
+    // nearbySiteIds is only set when location filtering is enabled (latitude, longitude, radiusKm all provided)
   }
 
   const match: any = {
     status: 'active',
   };
 
-  // If location filtering is enabled, always apply the filter
-  // If nearbySiteIds is empty array, it will result in no matches (correct behavior)
+  // If location filtering is enabled (nearbySiteIds is defined), apply the filter
+  // If nearbySiteIds is empty array, it will result in no matches (correct behavior - no sites within radius)
+  // If nearbySiteIds is undefined, don't filter by location (show all deals)
   // Convert ObjectIds to strings since operatingSite field stores strings
   if (nearbySiteIds !== undefined) {
     if (nearbySiteIds.length === 0) {
@@ -769,6 +766,10 @@ const listPublicDeals = async (filters: {
   const today = toUtcMidnight(now);
   const twoWeeksFromToday = toUtcMidnight(twoWeeksFromNow);
 
+  // Get date strings for MongoDB comparison (YYYY-MM-DD format)
+  const todayStr = today.toISOString().split('T')[0];
+  const twoWeeksFromTodayStr = twoWeeksFromToday.toISOString().split('T')[0];
+
   const pipeline: any[] = [
     { $match: match },
     // Add fields for lookups
@@ -779,42 +780,155 @@ const listPublicDeals = async (filters: {
       },
     },
     // Filter deals available within 2 weeks using $expr
+    // Note: Dates in MongoDB are stored as UTC, so we compare normalized UTC midnight dates
     {
       $match: {
         $expr: {
           $or: [
-            // Non-recurring: start date must be within 2 weeks
+            // Non-recurring: start date within 2 weeks from today onwards, OR started in past but endDate is today or in future (within 2 weeks)
             {
               $and: [
                 { $eq: ['$recurrenceType', 'none'] },
-                { $gte: ['$startDate', today] },
-                { $lte: ['$startDate', twoWeeksFromToday] },
+                {
+                  $or: [
+                    // Starts today or in future within 2 weeks
+                    {
+                      $and: [
+                        {
+                          $gte: [
+                            {
+                              $dateToString: {
+                                format: '%Y-%m-%d',
+                                date: '$startDate',
+                              },
+                            },
+                            todayStr,
+                          ],
+                        },
+                        {
+                          $lte: [
+                            {
+                              $dateToString: {
+                                format: '%Y-%m-%d',
+                                date: '$startDate',
+                              },
+                            },
+                            twoWeeksFromTodayStr,
+                          ],
+                        },
+                      ],
+                    },
+                    // Started in past but endDate is today or in future (deal is still active)
+                    // Since it's still active, it's available within the next 2 weeks
+                    {
+                      $and: [
+                        {
+                          $lt: [
+                            {
+                              $dateToString: {
+                                format: '%Y-%m-%d',
+                                date: '$startDate',
+                              },
+                            },
+                            todayStr,
+                          ],
+                        },
+                        { $ne: [{ $ifNull: ['$endDate', null] }, null] },
+                        {
+                          $gte: [
+                            {
+                              $dateToString: {
+                                format: '%Y-%m-%d',
+                                date: '$endDate',
+                              },
+                            },
+                            todayStr,
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
               ],
             },
-            // Recurring: started in past, no end date
+            // Recurring: started in past or today (normalized), no end date (ongoing - always available)
             {
               $and: [
                 { $ne: ['$recurrenceType', 'none'] },
-                { $lt: ['$startDate', today] },
-                { $eq: ['$endDate', null] },
+                {
+                  $lte: [
+                    {
+                      $dateToString: {
+                        format: '%Y-%m-%d',
+                        date: '$startDate',
+                      },
+                    },
+                    twoWeeksFromTodayStr,
+                  ],
+                },
+                {
+                  $or: [
+                    { $eq: ['$endDate', null] },
+                    { $eq: [{ $ifNull: ['$endDate', null] }, null] },
+                  ],
+                },
               ],
             },
-            // Recurring: started in past, end date within 2 weeks
+            // Recurring: started in past or today (normalized), end date (normalized) is today or in future
             {
               $and: [
                 { $ne: ['$recurrenceType', 'none'] },
-                { $lt: ['$startDate', today] },
-                { $ne: ['$endDate', null] },
-                { $gte: ['$endDate', today] },
-                { $lte: ['$endDate', twoWeeksFromToday] },
+                {
+                  $lte: [
+                    {
+                      $dateToString: {
+                        format: '%Y-%m-%d',
+                        date: '$startDate',
+                      },
+                    },
+                    twoWeeksFromTodayStr,
+                  ],
+                },
+                { $ne: [{ $ifNull: ['$endDate', null] }, null] },
+                {
+                  $gte: [
+                    {
+                      $dateToString: {
+                        format: '%Y-%m-%d',
+                        date: '$endDate',
+                      },
+                    },
+                    todayStr,
+                  ],
+                },
               ],
             },
-            // Recurring: starts in future within 2 weeks
+            // Recurring: starts in future within 2 weeks (normalized)
             {
               $and: [
                 { $ne: ['$recurrenceType', 'none'] },
-                { $gte: ['$startDate', today] },
-                { $lte: ['$startDate', twoWeeksFromToday] },
+                {
+                  $gte: [
+                    {
+                      $dateToString: {
+                        format: '%Y-%m-%d',
+                        date: '$startDate',
+                      },
+                    },
+                    todayStr,
+                  ],
+                },
+                {
+                  $lte: [
+                    {
+                      $dateToString: {
+                        format: '%Y-%m-%d',
+                        date: '$startDate',
+                      },
+                    },
+                    twoWeeksFromTodayStr,
+                  ],
+                },
               ],
             },
           ],
@@ -970,6 +1084,17 @@ const listPublicDeals = async (filters: {
           basePrice: '$service.basePrice',
           duration: '$service.duration',
         },
+        sites: {
+          $map: {
+            input: '$sites',
+            as: 'site',
+            in: {
+              _id: '$$site._id',
+              name: '$$site.name',
+              address: '$$site.address',
+            },
+          },
+        },
         distance: 1,
       },
     },
@@ -992,8 +1117,12 @@ export default {
   async getPublicDealById(dealId: string) {
     const now = new Date();
     const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-    const today = toUtcMidnight(now);
-    const twoWeeksFromToday = toUtcMidnight(twoWeeksFromNow);
+    const todayUtc = toUtcMidnight(now);
+    const twoWeeksFromTodayUtc = toUtcMidnight(twoWeeksFromNow);
+
+    // Get date strings for MongoDB comparison (YYYY-MM-DD format)
+    const todayStr = todayUtc.toISOString().split('T')[0];
+    const twoWeeksFromTodayStr = twoWeeksFromTodayUtc.toISOString().split('T')[0];
 
     const pipeline: any[] = [
       { $match: { _id: new (require('mongoose').Types.ObjectId)(dealId) } },
@@ -1001,13 +1130,6 @@ export default {
         $addFields: {
           businessObjId: { $toObjectId: '$business' },
           serviceObjId: { $toObjectId: '$service' },
-          operatingSiteObjIds: {
-            $map: {
-              input: { $ifNull: ['$operatingSite', []] },
-              as: 'sid',
-              in: { $toObjectId: '$$sid' },
-            },
-          },
         },
       },
       {
@@ -1022,37 +1144,156 @@ export default {
       {
         $match: {
           'business.status': BusinessStatus.ACTIVE,
-          status: 'active',
           $expr: {
-            $or: [
+            $and: [
+              { $eq: ['$status', 'active'] },
               {
-                $and: [
-                  { $eq: ['$recurrenceType', 'none'] },
-                  { $gte: ['$startDate', today] },
-                  { $lte: ['$startDate', twoWeeksFromToday] },
-                ],
-              },
-              {
-                $and: [
-                  { $ne: ['$recurrenceType', 'none'] },
-                  { $lt: ['$startDate', today] },
-                  { $eq: ['$endDate', null] },
-                ],
-              },
-              {
-                $and: [
-                  { $ne: ['$recurrenceType', 'none'] },
-                  { $lt: ['$startDate', today] },
-                  { $ne: ['$endDate', null] },
-                  { $gte: ['$endDate', today] },
-                  { $lte: ['$endDate', twoWeeksFromToday] },
-                ],
-              },
-              {
-                $and: [
-                  { $ne: ['$recurrenceType', 'none'] },
-                  { $gte: ['$startDate', today] },
-                  { $lte: ['$startDate', twoWeeksFromToday] },
+                $or: [
+                  // Non-recurring: start date within 2 weeks from today onwards, OR started in past but endDate is today or in future
+                  {
+                    $and: [
+                      { $eq: ['$recurrenceType', 'none'] },
+                      {
+                        $or: [
+                          // Starts today or in future within 2 weeks
+                          {
+                            $and: [
+                              {
+                                $gte: [
+                                  {
+                                    $dateToString: {
+                                      format: '%Y-%m-%d',
+                                      date: '$startDate',
+                                    },
+                                  },
+                                  todayStr,
+                                ],
+                              },
+                              {
+                                $lte: [
+                                  {
+                                    $dateToString: {
+                                      format: '%Y-%m-%d',
+                                      date: '$startDate',
+                                    },
+                                  },
+                                  twoWeeksFromTodayStr,
+                                ],
+                              },
+                            ],
+                          },
+                          // Started in past but endDate is today or in future (deal is still active)
+                          {
+                            $and: [
+                              {
+                                $lt: [
+                                  {
+                                    $dateToString: {
+                                      format: '%Y-%m-%d',
+                                      date: '$startDate',
+                                    },
+                                  },
+                                  todayStr,
+                                ],
+                              },
+                              { $ne: [{ $ifNull: ['$endDate', null] }, null] },
+                              {
+                                $gte: [
+                                  {
+                                    $dateToString: {
+                                      format: '%Y-%m-%d',
+                                      date: '$endDate',
+                                    },
+                                  },
+                                  todayStr,
+                                ],
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  // Recurring: started in past or today, no end date (ongoing - always available)
+                  {
+                    $and: [
+                      { $ne: ['$recurrenceType', 'none'] },
+                      {
+                        $lte: [
+                          {
+                            $dateToString: {
+                              format: '%Y-%m-%d',
+                              date: '$startDate',
+                            },
+                          },
+                          twoWeeksFromTodayStr,
+                        ],
+                      },
+                      {
+                        $or: [
+                          { $eq: ['$endDate', null] },
+                          { $eq: [{ $ifNull: ['$endDate', null] }, null] },
+                        ],
+                      },
+                    ],
+                  },
+                  // Recurring: started in past or today, end date is today or in future
+                  {
+                    $and: [
+                      { $ne: ['$recurrenceType', 'none'] },
+                      {
+                        $lte: [
+                          {
+                            $dateToString: {
+                              format: '%Y-%m-%d',
+                              date: '$startDate',
+                            },
+                          },
+                          twoWeeksFromTodayStr,
+                        ],
+                      },
+                      { $ne: [{ $ifNull: ['$endDate', null] }, null] },
+                      {
+                        $gte: [
+                          {
+                            $dateToString: {
+                              format: '%Y-%m-%d',
+                              date: '$endDate',
+                            },
+                          },
+                          todayStr,
+                        ],
+                      },
+                    ],
+                  },
+                  // Recurring: starts in future within 2 weeks
+                  {
+                    $and: [
+                      { $ne: ['$recurrenceType', 'none'] },
+                      {
+                        $gte: [
+                          {
+                            $dateToString: {
+                              format: '%Y-%m-%d',
+                              date: '$startDate',
+                            },
+                          },
+                          todayStr,
+                        ],
+                      },
+                      {
+                        $lte: [
+                          {
+                            $dateToString: {
+                              format: '%Y-%m-%d',
+                              date: '$startDate',
+                            },
+                          },
+                          twoWeeksFromTodayStr,
+                        ],
+                      },
+                    ],
+                  },
                 ],
               },
             ],
@@ -1091,9 +1332,28 @@ export default {
       {
         $lookup: {
           from: 'operateSites',
-          localField: 'operatingSiteObjIds',
-          foreignField: '_id',
+          let: { operatingSiteIds: '$operatingSite' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: [{ $toString: '$_id' }, '$$operatingSiteIds'],
+                },
+              },
+            },
+          ],
           as: 'sites',
+        },
+      },
+      {
+        $addFields: {
+          sites: {
+            $filter: {
+              input: '$sites',
+              as: 'site',
+              cond: { $eq: ['$$site.isActive', true] },
+            },
+          },
         },
       },
       {
@@ -1111,10 +1371,11 @@ export default {
           price: 1,
           originalPrice: 1,
           duration: 1,
+          sections: 1,
           allDay: 1,
-          recurrenceStartDate: 1,
+          startDate: 1,
+          endDate: 1,
           recurrenceType: 1,
-          recurrenceEndDate: 1,
           business: { _id: '$business._id', name: '$business.name', status: '$business.status' },
           service: {
             _id: '$service._id',
@@ -1126,10 +1387,15 @@ export default {
           sites: {
             $map: {
               input: '$sites',
-              as: 's',
-              in: { _id: '$$s._id', name: '$$s.name', address: '$$s.address' },
+              as: 'site',
+              in: {
+                _id: '$$site._id',
+                name: '$$site.name',
+                address: '$$site.address',
+              },
             },
           },
+          distance: 1,
         },
       },
       { $limit: 1 },

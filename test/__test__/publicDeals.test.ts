@@ -268,6 +268,85 @@ describe('Public deals listing', () => {
     expect(titles).not.toEqual(expect.arrayContaining(['pendingBusinessDeal - Intro Offer']));
     expect(titles).not.toEqual(expect.arrayContaining(['disabledBusinessDeal - Intro Offer']));
   });
+
+  it('should return a deal by ID when it exists and is within 2-week window', async () => {
+    const ownerRole = await Role.findOne({ name: RoleName.OWNER });
+    expect(ownerRole).toBeTruthy();
+
+    const owner = await new UserBuilder()
+      .withEmail('publicdealbyid-owner@example.com')
+      .withPassword('OwnerPass123!')
+      .withActive(true)
+      .save();
+
+    const activeBusiness = await new BusinessBuilder()
+      .withName('Active Biz for GetById')
+      .withOwner(owner._id)
+      .withMember(owner._id, ownerRole!._id)
+      .withActive()
+      .save();
+
+    const siteActive = await new OperateSiteBuilder()
+      .withBusiness(activeBusiness._id)
+      .withName('Active Site')
+      .save();
+
+    const cleaningCategory = await new CategoryBuilder()
+      .withName('Cleaning')
+      .withSlug('cleaning')
+      .withIcon('🧹')
+      .withActive()
+      .save();
+
+    const serviceActive = await new ServiceBuilder()
+      .withName('Active Service')
+      .withCategory('Cleaning')
+      .withDuration(60)
+      .withBasePrice(100)
+      .withBusiness(activeBusiness._id)
+      .withActive()
+      .save();
+
+    const now = new Date();
+    const future = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+    const deal = await new DealBuilder()
+      .withTitle('Test Deal for GetById')
+      .withDescription('Active deal')
+      .withPrice(150)
+      .withOriginalPrice(200)
+      .withDuration(180)
+      .withOperatingSite(siteActive._id)
+      .withStartDate(now)
+      .withEndDate(future)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(activeBusiness._id)
+      .withService(serviceActive._id)
+      .withCreatedBy(owner._id)
+      .save();
+
+    const res = await request(app.getApp())
+      .get(`/api/v1/public/deals/${deal._id.toString()}`)
+      .expect(200);
+
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toBeDefined();
+    expect(res.body.data._id).toBe(deal._id.toString());
+    expect(res.body.data.title).toBe('Test Deal for GetById');
+  });
+
+  it('should return 400 (BadRequest) when deal is not found', async () => {
+    const fakeId = '507f1f77bcf86cd799439011'; // Valid ObjectId format but doesn't exist
+
+    const res = await request(app.getApp())
+      .get(`/api/v1/public/deals/${fakeId}`)
+      .expect(400);
+
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toBe('Deal not found');
+    expect(res.body.statusCode).toBe(400);
+  });
 });
 
 

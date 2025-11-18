@@ -38,6 +38,10 @@ Before running this application, make sure you have the following installed:
 yarn install
 ```
 
+```bash
+nvm install
+```
+
 ### 2. Setup VS Code Extensions
 
 ```bash

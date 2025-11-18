@@ -55,7 +55,9 @@
 - Public endpoints prefix: `/api/v1/public/`
 - Authenticated endpoints prefix: `/api/v1/business/:businessId/`
 - Always return `{ success: boolean, message: string, data: any }` format
-- Use proper HTTP status codes (200, 201, 400, 401, 403, 404, 422, 500)
+- Use proper HTTP status codes (200, 201, 400, 401, 403, 422, 500)
+- **NEVER USE 404** - Always use 400 (BadRequestException) instead when a resource is not found
+- Example: `throw new BadRequestException('Deal not found')` instead of `res.status(404)`
 
 ### Location/Geospatial Queries
 - Always set `location` field on OperateSite documents (GeoJSON Point)

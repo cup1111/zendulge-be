@@ -37,36 +37,6 @@ const ensureEndAfterStart = (start: Date, end: Date) => {
   }
 };
 
-const normalizeDiscount = (
-  originalPrice?: number | null,
-  price?: number | null,
-): number | undefined => {
-  if (
-    originalPrice === undefined ||
-    originalPrice === null ||
-    price === undefined ||
-    price === null ||
-    originalPrice === 0
-  ) {
-    return undefined;
-  }
-
-  const rawDiscount = Math.round(((originalPrice - price) / originalPrice) * 100);
-  if (Number.isNaN(rawDiscount)) {
-    return undefined;
-  }
-
-  if (rawDiscount <= 0) {
-    return 0;
-  }
-
-  if (rawDiscount >= 100) {
-    return 100;
-  }
-
-  return rawDiscount;
-};
-
 const getDealsByBusiness = async (businessId: string, userId: string): Promise<IDealDocument[]> => {
   const business = await Business.findById(businessId);
   if (!business || !business.hasAccess(userId as any)) {
@@ -185,6 +155,10 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
   if (!dealData.duration) {
     dealData.duration = service.duration;
   }
+  // Set sections to 1 if not provided
+  if (!dealData.sections) {
+    dealData.sections = 1;
+  }
 
   // Validate that deal price is less than base price
   const dealPrice = dealData.price ?? service.basePrice;
@@ -192,23 +166,13 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
     throw new BadRequestException('Deal price must be less than the service base price');
   }
 
-  // Calculate discount if originalPrice and price are provided
-  if (dealData.originalPrice !== undefined || dealData.price !== undefined) {
-    const normalizedDiscount = normalizeDiscount(
-      dealData.originalPrice ?? service.basePrice,
-      dealData.price ?? service.basePrice,
-    );
-    dealData.discount = normalizedDiscount;
+  // Remove discount from dealData if it exists (we calculate it on-the-fly, not stored)
+  if (dealData.discount !== undefined) {
+    delete dealData.discount;
   }
 
   if (dealData.availability) {
     const legacyAvailability = dealData.availability;
-    if (Object.prototype.hasOwnProperty.call(legacyAvailability, 'startDate')) {
-      dealData.startDate = legacyAvailability.startDate;
-    }
-    if (Object.prototype.hasOwnProperty.call(legacyAvailability, 'endDate')) {
-      dealData.endDate = legacyAvailability.endDate;
-    }
     if (
       Object.prototype.hasOwnProperty.call(legacyAvailability, 'maxBookings')
     ) {
@@ -219,21 +183,36 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
     ) {
       dealData.currentBookings = legacyAvailability.currentBookings;
     }
+    delete dealData.availability;
   }
 
-  const defaultStartDate = dealData.startDate
+  // Handle recurring pattern fields
+  const allDay = dealData.allDay !== undefined ? Boolean(dealData.allDay) : false;
+  const recurrenceType = dealData.recurrenceType || 'none';
+  const validRecurrenceTypes = ['none', 'daily', 'weekly', 'weekdays', 'monthly', 'annually'];
+  if (!validRecurrenceTypes.includes(recurrenceType)) {
+    throw new BadRequestException(`Recurrence type must be one of: ${validRecurrenceTypes.join(', ')}`);
+  }
+
+  const startDate = dealData.startDate
     ? normalizeDate(dealData.startDate, 'Start date')
     : startOfToday();
-  const defaultEndDate = dealData.endDate
-    ? normalizeDate(dealData.endDate, 'End date')
-    : normalizeDate(
+
+  ensureFutureDate(startDate, 'Start date');
+
+  let endDate: Date | undefined;
+  if (dealData.endDate) {
+    endDate = normalizeDate(dealData.endDate, 'End date');
+    if (recurrenceType !== 'none') {
+      ensureEndAfterStart(startDate, endDate);
+    }
+  } else if (recurrenceType === 'none') {
+    // For non-recurring deals, end date should be set (default to 30 days from start)
+    endDate = normalizeDate(
       new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       'End date',
     );
-
-  ensureFutureDate(defaultStartDate, 'Start date');
-  ensureFutureDate(defaultEndDate, 'End date');
-  ensureEndAfterStart(defaultStartDate, defaultEndDate);
+  }
 
   const rawMaxBookings =
     dealData.maxBookings !== undefined && dealData.maxBookings !== null
@@ -251,16 +230,16 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
     ? 0
     : rawCurrentBookings;
 
-  delete dealData.availability;
-
   if (dealData.category) {
     delete dealData.category;
   }
 
   const newDeal = new Deal({
     ...dealData,
-    startDate: defaultStartDate,
-    endDate: defaultEndDate,
+    allDay,
+    startDate,
+    endDate,
+    recurrenceType,
     maxBookings,
     currentBookings,
     business: businessId,
@@ -399,12 +378,6 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
 
   if (updateData.availability) {
     const availabilityUpdates = updateData.availability;
-    if (Object.prototype.hasOwnProperty.call(availabilityUpdates, 'startDate')) {
-      updateData.startDate = availabilityUpdates.startDate;
-    }
-    if (Object.prototype.hasOwnProperty.call(availabilityUpdates, 'endDate')) {
-      updateData.endDate = availabilityUpdates.endDate;
-    }
     if (
       Object.prototype.hasOwnProperty.call(availabilityUpdates, 'maxBookings')
     ) {
@@ -421,6 +394,18 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
     delete updateData.availability;
   }
 
+  // Handle recurring pattern fields
+  if (Object.prototype.hasOwnProperty.call(updateData, 'allDay')) {
+    updateData.allDay = Boolean(updateData.allDay);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updateData, 'recurrenceType')) {
+    const validRecurrenceTypes = ['none', 'daily', 'weekly', 'weekdays', 'monthly', 'annually'];
+    if (!validRecurrenceTypes.includes(updateData.recurrenceType)) {
+      throw new BadRequestException(`Recurrence type must be one of: ${validRecurrenceTypes.join(', ')}`);
+    }
+  }
+
   const hasStartDateUpdate = Object.prototype.hasOwnProperty.call(
     updateData,
     'startDate',
@@ -429,17 +414,35 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
     updateData,
     'endDate',
   );
+  const hasRecurrenceTypeUpdate = Object.prototype.hasOwnProperty.call(
+    updateData,
+    'recurrenceType',
+  );
 
-  if (hasStartDateUpdate || hasEndDateUpdate) {
+  if (hasStartDateUpdate || hasEndDateUpdate || hasRecurrenceTypeUpdate) {
+    const effectiveRecurrenceType = hasRecurrenceTypeUpdate
+      ? updateData.recurrenceType
+      : existingDeal.recurrenceType;
     const effectiveStart = hasStartDateUpdate
       ? normalizeDate(updateData.startDate, 'Start date')
       : new Date(existingDeal.startDate);
     const effectiveEnd = hasEndDateUpdate
-      ? normalizeDate(updateData.endDate, 'End date')
-      : new Date(existingDeal.endDate);
+      ? (updateData.endDate
+        ? normalizeDate(updateData.endDate, 'End date')
+        : existingDeal.endDate
+          ? new Date(existingDeal.endDate)
+          : undefined)
+      : existingDeal.endDate
+        ? new Date(existingDeal.endDate)
+        : undefined;
 
-    ensureFutureDate(effectiveEnd, 'End date');
-    ensureEndAfterStart(effectiveStart, effectiveEnd);
+    if (hasStartDateUpdate) {
+      ensureFutureDate(effectiveStart, 'Start date');
+    }
+
+    if (effectiveEnd && effectiveRecurrenceType !== 'none') {
+      ensureEndAfterStart(effectiveStart, effectiveEnd);
+    }
 
     if (hasStartDateUpdate) {
       updateData.startDate = effectiveStart;
@@ -467,21 +470,9 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
       : rawCurrentBookings;
   }
 
-  // Recalculate discount if price or originalPrice are updated
-  if (updateData.originalPrice !== undefined || updateData.price !== undefined) {
-    const currentOriginalPrice =
-      updateData.originalPrice !== undefined
-        ? updateData.originalPrice
-        : existingDeal.originalPrice;
-    const currentPrice =
-      updateData.price !== undefined ? updateData.price : existingDeal.price;
-
-    const normalizedDiscount = normalizeDiscount(
-      currentOriginalPrice ?? undefined,
-      currentPrice ?? undefined,
-    );
-
-    updateData.discount = normalizedDiscount;
+  // Remove discount from updateData if it exists (we calculate it on-the-fly, not stored)
+  if (updateData.discount !== undefined) {
+    delete updateData.discount;
   }
 
   if (updateData.category) {
@@ -772,13 +763,62 @@ const listPublicDeals = async (filters: {
     }
   }
 
+  // Add 2-week window filtering
+  const now = new Date();
+  const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+  const today = toUtcMidnight(now);
+  const twoWeeksFromToday = toUtcMidnight(twoWeeksFromNow);
+
   const pipeline: any[] = [
     { $match: match },
-    // Convert string ids to ObjectId for lookups
+    // Add fields for lookups
     {
       $addFields: {
         businessObjId: { $toObjectId: '$business' },
         serviceObjId: { $toObjectId: '$service' },
+      },
+    },
+    // Filter deals available within 2 weeks using $expr
+    {
+      $match: {
+        $expr: {
+          $or: [
+            // Non-recurring: start date must be within 2 weeks
+            {
+              $and: [
+                { $eq: ['$recurrenceType', 'none'] },
+                { $gte: ['$startDate', today] },
+                { $lte: ['$startDate', twoWeeksFromToday] },
+              ],
+            },
+            // Recurring: started in past, no end date
+            {
+              $and: [
+                { $ne: ['$recurrenceType', 'none'] },
+                { $lt: ['$startDate', today] },
+                { $eq: ['$endDate', null] },
+              ],
+            },
+            // Recurring: started in past, end date within 2 weeks
+            {
+              $and: [
+                { $ne: ['$recurrenceType', 'none'] },
+                { $lt: ['$startDate', today] },
+                { $ne: ['$endDate', null] },
+                { $gte: ['$endDate', today] },
+                { $lte: ['$endDate', twoWeeksFromToday] },
+              ],
+            },
+            // Recurring: starts in future within 2 weeks
+            {
+              $and: [
+                { $ne: ['$recurrenceType', 'none'] },
+                { $gte: ['$startDate', today] },
+                { $lte: ['$startDate', twoWeeksFromToday] },
+              ],
+            },
+          ],
+        },
       },
     },
     {
@@ -918,9 +958,10 @@ const listPublicDeals = async (filters: {
         price: 1,
         originalPrice: 1,
         duration: 1,
+        allDay: 1,
         startDate: 1,
         endDate: 1,
-        discount: 1,
+        recurrenceType: 1,
         business: { _id: '$business._id', name: '$business.name', status: '$business.status' },
         service: {
           _id: '$service._id',
@@ -950,7 +991,10 @@ export default {
   listPublicDeals,
   async getPublicDealById(dealId: string) {
     const now = new Date();
-    const oneDayFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const today = toUtcMidnight(now);
+    const twoWeeksFromToday = toUtcMidnight(twoWeeksFromNow);
+
     const pipeline: any[] = [
       { $match: { _id: new (require('mongoose').Types.ObjectId)(dealId) } },
       {
@@ -979,7 +1023,40 @@ export default {
         $match: {
           'business.status': BusinessStatus.ACTIVE,
           status: 'active',
-          startDate: { $lte: oneDayFromNow },
+          $expr: {
+            $or: [
+              {
+                $and: [
+                  { $eq: ['$recurrenceType', 'none'] },
+                  { $gte: ['$startDate', today] },
+                  { $lte: ['$startDate', twoWeeksFromToday] },
+                ],
+              },
+              {
+                $and: [
+                  { $ne: ['$recurrenceType', 'none'] },
+                  { $lt: ['$startDate', today] },
+                  { $eq: ['$endDate', null] },
+                ],
+              },
+              {
+                $and: [
+                  { $ne: ['$recurrenceType', 'none'] },
+                  { $lt: ['$startDate', today] },
+                  { $ne: ['$endDate', null] },
+                  { $gte: ['$endDate', today] },
+                  { $lte: ['$endDate', twoWeeksFromToday] },
+                ],
+              },
+              {
+                $and: [
+                  { $ne: ['$recurrenceType', 'none'] },
+                  { $gte: ['$startDate', today] },
+                  { $lte: ['$startDate', twoWeeksFromToday] },
+                ],
+              },
+            ],
+          },
         },
       },
       {
@@ -1034,9 +1111,10 @@ export default {
           price: 1,
           originalPrice: 1,
           duration: 1,
-          startDate: 1,
-          endDate: 1,
-          discount: 1,
+          allDay: 1,
+          recurrenceStartDate: 1,
+          recurrenceType: 1,
+          recurrenceEndDate: 1,
           business: { _id: '$business._id', name: '$business.name', status: '$business.status' },
           service: {
             _id: '$service._id',

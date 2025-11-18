@@ -254,11 +254,18 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
       price: 150.00,
       originalPrice: 200.00,
       duration: 180,
+      sections: 1,
       operatingSite: [MelbourneCBDOperateSite.id],
       service: deepCleaningService?.id,
       createdBy: businessOwner.id,
-      startDate: new Date(),
+      allDay: false,
+      startDate: (() => {
+        const date = new Date();
+        date.setHours(9, 0, 0, 0); // 9:00 AM
+        return date;
+      })(),
       endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      recurrenceType: 'none',
       maxBookings: 50,
       currentBookings: 12,
       status: 'active',
@@ -268,14 +275,20 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     {
       title: 'Office Deep Clean',
       description: 'Professional office cleaning service perfect for post-construction cleanup or quarterly deep cleaning. Includes carpet cleaning and sanitization.',
-      price: 300.00,
-      originalPrice: 400.00,
+      price: 120.00,
+      originalPrice: 150.00,
       duration: 240,
+      sections: 1,
       operatingSite: [SydneyOperateSite.id],
       service: officeCleaningService?.id,
       createdBy: businessOwner.id,
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
+      allDay: true,
+      startDate: (() => {
+        const date = new Date();
+        date.setHours(0, 0, 0, 0); // Start of day for allDay deals
+        return date;
+      })(),
+      recurrenceType: 'weekdays',
       maxBookings: 20,
       currentBookings: 5,
       status: 'active',
@@ -285,14 +298,21 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     {
       title: 'Carpet Cleaning Package',
       description: 'Professional carpet and upholstery cleaning for residential properties. Includes stain removal and deodorizing.',
-      price: 120.00,
-      originalPrice: 150.00,
+      price: 99.00,
+      originalPrice: 120.00,
       duration: 90,
+      sections: 1,
       operatingSite: [MelbourneCBDOperateSite.id],
       service: carpetCleaningService?.id,
       createdBy: businessOwner.id,
-      startDate: new Date(),
+      allDay: false,
+      startDate: (() => {
+        const date = new Date();
+        date.setHours(10, 0, 0, 0); // 10:00 AM
+        return date;
+      })(),
       endDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
+      recurrenceType: 'weekly',
       maxBookings: 30,
       currentBookings: 8,
       status: 'active',
@@ -302,14 +322,21 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     {
       title: 'Window Cleaning Service',
       description: 'Crystal clear windows inside and out. Professional window cleaning service for residential and commercial properties.',
-      price: 80.00,
-      originalPrice: 100.00,
+      price: 45.00,
+      originalPrice: 60.00,
       duration: 60,
+      sections: 1,
       operatingSite: [SydneyOperateSite.id],
       service: windowCleaningService?.id,
       createdBy: businessOwner.id,
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000), // 20 days from now
+      allDay: false,
+      startDate: (() => {
+        const date = new Date();
+        date.setHours(14, 0, 0, 0); // 2:00 PM
+        return date;
+      })(),
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      recurrenceType: 'none',
       maxBookings: 40,
       currentBookings: 15,
       status: 'sold_out',
@@ -319,14 +346,21 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     {
       title: 'Post-Construction Cleanup',
       description: 'Heavy-duty cleaning after construction or renovation. Includes debris removal, dust cleaning, and final touch-ups.',
-      price: 500.00,
-      originalPrice: 650.00,
+      price: 250.00,
+      originalPrice: 300.00,
       duration: 360,
+      sections: 1,
       operatingSite: [MelbourneCBDOperateSite.id],
       service: postConstructionService?.id,
       createdBy: businessOwner.id,
-      startDate: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000), // 120 days ago
+      allDay: true,
+      startDate: (() => {
+        const date = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000); // 120 days ago
+        date.setHours(0, 0, 0, 0); // Start of day for allDay deals
+        return date;
+      })(),
       endDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
+      recurrenceType: 'none',
       maxBookings: 10,
       currentBookings: 10,
       status: 'expired',
@@ -336,18 +370,48 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     {
       title: 'Monthly Maintenance Package',
       description: 'Regular monthly cleaning service to keep your property in top condition. Includes all basic cleaning tasks plus minor maintenance.',
-      price: 200.00,
-      originalPrice: 250.00,
+      price: 65.00,
+      originalPrice: 80.00,
       duration: 120,
+      sections: 1,
       operatingSite: [MelbourneCBDOperateSite.id],
       service: basicCleaningService?.id,
       createdBy: businessOwner.id,
-      startDate: new Date(),
-      endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+      allDay: true,
+      startDate: (() => {
+        const date = new Date();
+        date.setHours(0, 0, 0, 0); // Start of day for allDay deals
+        return date;
+      })(),
+      recurrenceType: 'monthly',
       maxBookings: 100,
       currentBookings: 25,
       status: 'inactive',
       tags: ['monthly', 'maintenance', 'subscription'],
+      business: business.id,
+    },
+    {
+      title: 'Sydney CBD Next Month Deal',
+      description: 'This deal starts next month and should not appear on the home page.',
+      price: 120.00,
+      originalPrice: 150.00,
+      duration: 120,
+      sections: 1,
+      operatingSite: [SydneyOperateSite.id],
+      service: officeCleaningService?.id,
+      createdBy: businessOwner.id,
+      allDay: false,
+      startDate: (() => {
+        const date = new Date(Date.now() + 35 * 24 * 60 * 60 * 1000); // 35 days from now (next month)
+        date.setHours(11, 0, 0, 0); // 11:00 AM
+        return date;
+      })(),
+      endDate: new Date(Date.now() + 65 * 24 * 60 * 60 * 1000), // 65 days from now
+      recurrenceType: 'none',
+      maxBookings: 50,
+      currentBookings: 0,
+      status: 'active',
+      tags: ['sydney', 'cbd', 'next-month'],
       business: business.id,
     },
   ];
@@ -701,17 +765,22 @@ const seedCompleteBusinessSetup = async () => {
     const pendingDealTitle = 'pendingBusinessDeal - Intro Offer';
     let pendingDeal = await Deal.findOne({ title: pendingDealTitle, business: pendingBusiness.id });
     if (!pendingDeal) {
+      const pendingStartDate = new Date();
+      pendingStartDate.setHours(9, 0, 0, 0); // 9:00 AM
       pendingDeal = new Deal({
         title: pendingDealTitle,
         description: 'Deal seeded for pending business (should be hidden from customers).',
         price: 49.0,
         originalPrice: 79.0,
         duration: 60,
+        sections: 1,
         operatingSite: [pendingSite1.id],
         service: pendingService.id,
         createdBy: pendingBusinessOwner.id,
-        startDate: new Date(),
+        allDay: false,
+        startDate: pendingStartDate,
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        recurrenceType: 'none',
         maxBookings: 10,
         currentBookings: 0,
         status: 'inactive',
@@ -793,17 +862,22 @@ const seedCompleteBusinessSetup = async () => {
     const disabledDealTitle = 'disabledBusinessDeal - Intro Offer';
     let disabledDeal = await Deal.findOne({ title: disabledDealTitle, business: disabledBusiness.id });
     if (!disabledDeal) {
+      const disabledStartDate = new Date();
+      disabledStartDate.setHours(10, 0, 0, 0); // 10:00 AM
       disabledDeal = new Deal({
         title: disabledDealTitle,
         description: 'Deal seeded for disabled business (business is disabled).',
         price: 59.0,
         originalPrice: 89.0,
         duration: 60,
+        sections: 1,
         operatingSite: [disabledSite1.id],
         service: disabledService.id,
         createdBy: disabledBusinessOwner.id,
-        startDate: new Date(),
+        allDay: false,
+        startDate: disabledStartDate,
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        recurrenceType: 'none',
         maxBookings: 10,
         currentBookings: 0,
         status: 'inactive',

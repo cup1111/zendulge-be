@@ -85,8 +85,10 @@ describe('Deal CRUD operations', () => {
                     duration: 60,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(201);
@@ -142,8 +144,10 @@ describe('Deal CRUD operations', () => {
                     duration: 60,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 });
 
@@ -171,8 +175,10 @@ describe('Deal CRUD operations', () => {
                     duration: 60,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(400);
@@ -192,8 +198,10 @@ describe('Deal CRUD operations', () => {
                     duration: 60,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(400);
@@ -217,8 +225,10 @@ describe('Deal CRUD operations', () => {
                     duration: 60,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(201);
@@ -243,8 +253,10 @@ describe('Deal CRUD operations', () => {
                     duration: 60,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(201);
@@ -292,8 +304,10 @@ describe('Deal CRUD operations', () => {
                     duration: 60,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(201);
@@ -339,8 +353,10 @@ describe('Deal CRUD operations', () => {
                     duration: 60,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(201);
@@ -392,8 +408,10 @@ describe('Deal CRUD operations', () => {
                     duration: 60,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(201);

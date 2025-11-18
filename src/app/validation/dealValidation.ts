@@ -27,6 +27,11 @@ export const createDealValidation = [
     .withMessage('Duration is required')
     .isInt({ min: 1, max: 1440 })
     .withMessage('Duration must be an integer between 1 and 1440 minutes'),
+  body('sections')
+    .notEmpty()
+    .withMessage('Sections is required')
+    .isInt({ min: 1 })
+    .withMessage('Sections must be a positive integer'),
   body('operatingSite')
     .notEmpty()
     .withMessage('Operating site is required')
@@ -35,16 +40,24 @@ export const createDealValidation = [
   body('operatingSite.*')
     .isMongoId()
     .withMessage('Each operating site must be a valid MongoDB ObjectId'),
+  body('allDay')
+    .optional()
+    .isBoolean()
+    .withMessage('All day must be a boolean'),
   body('startDate')
     .notEmpty()
     .withMessage('Start date is required')
     .isISO8601()
     .withMessage('Start date must be a valid date'),
   body('endDate')
-    .notEmpty()
-    .withMessage('End date is required')
+    .optional()
     .isISO8601()
     .withMessage('End date must be a valid date'),
+  body('recurrenceType')
+    .notEmpty()
+    .withMessage('Recurrence type is required')
+    .isIn(['none', 'daily', 'weekly', 'weekdays', 'monthly', 'annually'])
+    .withMessage('Recurrence type must be one of: none, daily, weekly, weekdays, monthly, annually'),
   body('maxBookings')
     .optional()
     .isInt({ min: 1 })
@@ -63,25 +76,35 @@ export const createDealValidation = [
       today.setHours(0, 0, 0, 0);
 
       const startDate = new Date(value.startDate);
-      const endDate = new Date(value.endDate);
-
-      if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      if (Number.isNaN(startDate.getTime())) {
         return true;
       }
 
       startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(0, 0, 0, 0);
-
-      if (endDate.getTime() <= startDate.getTime()) {
-        throw new Error('End date must be after start date');
-      }
 
       if (startDate.getTime() < today.getTime()) {
         throw new Error('Start date cannot be before today');
       }
 
-      if (endDate.getTime() < today.getTime()) {
-        throw new Error('End date cannot be before today');
+      // For non-recurring deals, endDate is required
+      const recurrenceType = value.recurrenceType || 'none';
+      if (recurrenceType === 'none' && !value.endDate) {
+        throw new Error('End date is required for non-recurring deals');
+      }
+
+      if (value.endDate) {
+        const endDate = new Date(value.endDate);
+        if (!Number.isNaN(endDate.getTime())) {
+          endDate.setHours(0, 0, 0, 0);
+
+          if (endDate.getTime() < today.getTime()) {
+            throw new Error('End date cannot be before today');
+          }
+
+          if (endDate.getTime() <= startDate.getTime()) {
+            throw new Error('End date must be after start date');
+          }
+        }
       }
 
       return true;
@@ -137,6 +160,10 @@ export const updateDealValidation = [
     .optional()
     .isInt({ min: 1, max: 1440 })
     .withMessage('Duration must be an integer between 1 and 1440 minutes'),
+  body('sections')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Sections must be a positive integer'),
   body('operatingSite')
     .optional()
     .isArray({ min: 1 })
@@ -145,6 +172,10 @@ export const updateDealValidation = [
     .optional()
     .isMongoId()
     .withMessage('Each operating site must be a valid MongoDB ObjectId'),
+  body('allDay')
+    .optional()
+    .isBoolean()
+    .withMessage('All day must be a boolean'),
   body('startDate')
     .optional()
     .isISO8601()
@@ -153,6 +184,10 @@ export const updateDealValidation = [
     .optional()
     .isISO8601()
     .withMessage('End date must be a valid date'),
+  body('recurrenceType')
+    .optional()
+    .isIn(['none', 'daily', 'weekly', 'weekdays', 'monthly', 'annually'])
+    .withMessage('Recurrence type must be one of: none, daily, weekly, weekdays, monthly, annually'),
   body('maxBookings')
     .optional()
     .isInt({ min: 1 })
@@ -170,20 +205,25 @@ export const updateDealValidation = [
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const hasStart = Object.prototype.hasOwnProperty.call(value, 'startDate');
-      const hasEnd = Object.prototype.hasOwnProperty.call(value, 'endDate');
+      const hasStartDate = Object.prototype.hasOwnProperty.call(value, 'startDate');
+      const hasEndDate = Object.prototype.hasOwnProperty.call(value, 'endDate');
+      const hasRecurrenceType = Object.prototype.hasOwnProperty.call(value, 'recurrenceType');
 
       let normalizedStart: Date | undefined;
 
-      if (hasStart) {
+      if (hasStartDate) {
         const startDate = new Date(value.startDate);
         if (!Number.isNaN(startDate.getTime())) {
           startDate.setHours(0, 0, 0, 0);
           normalizedStart = startDate;
+
+          if (startDate.getTime() < today.getTime()) {
+            throw new Error('Start date cannot be before today');
+          }
         }
       }
 
-      if (hasEnd) {
+      if (hasEndDate) {
         const endDate = new Date(value.endDate);
         if (!Number.isNaN(endDate.getTime())) {
           endDate.setHours(0, 0, 0, 0);
@@ -192,7 +232,8 @@ export const updateDealValidation = [
             throw new Error('End date cannot be before today');
           }
 
-          if (normalizedStart && endDate.getTime() <= normalizedStart.getTime()) {
+          const recurrenceType = hasRecurrenceType ? value.recurrenceType : 'none';
+          if (recurrenceType !== 'none' && normalizedStart && endDate.getTime() <= normalizedStart.getTime()) {
             throw new Error('End date must be after start date');
           }
         }

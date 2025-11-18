@@ -31,7 +31,10 @@
 - Use TypeScript interfaces for model types (`IBusiness`, `IDeal`, etc.)
 - Use Mongoose schemas with proper types
 - Always include `timestamps: true` in schemas
+- **USE ENUMS WHENEVER POSSIBLE** - Prefer enums over string literals for status fields, types, and constants
 - Use enums for status fields (e.g., `BusinessStatus` enum)
+- When defining string literal unions, consider if an enum would be better
+- Example: `status: 'active' | 'inactive'` → Consider `enum BusinessStatus { ACTIVE = 'active', INACTIVE = 'inactive' }`
 - Use `.lean()` for read-only queries to improve performance
 
 ### Service Patterns
@@ -78,11 +81,101 @@
 - Log errors appropriately
 - Return user-friendly error messages
 
+### Clean Code - Early Returns
+- **USE EARLY RETURNS** as much as possible to reduce nesting and improve readability
+- **AVOID** deep nesting - use guard clauses and early exits
+- **PREFER** early returns over nested if-else blocks
+- **VALIDATE FIRST, PROCESS LATER** - check preconditions early
+- Example:
+  ```typescript
+  // ❌ BAD - Deep nesting
+  async function processDeal(dealId: string, userId: string) {
+    const deal = await Deal.findById(dealId);
+    if (deal) {
+      const user = await User.findById(userId);
+      if (user) {
+        if (user.role === 'owner') {
+          // actual logic here
+          return result;
+        }
+      }
+    }
+    throw new Error('Not found');
+  }
+  
+  // ✅ GOOD - Early returns
+  async function processDeal(dealId: string, userId: string) {
+    const deal = await Deal.findById(dealId);
+    if (!deal) {
+      throw new NotFoundException('Deal not found');
+    }
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    
+    if (user.role !== 'owner') {
+      throw new ForbiddenException('Access denied');
+    }
+    
+    // actual logic here
+    return result;
+  }
+  
+  // ✅ ALSO GOOD - Guard clauses for validation
+  function validateDeal(deal: IDeal) {
+    if (!deal.title) throw new ValidationError('Title required');
+    if (!deal.price || deal.price <= 0) throw new ValidationError('Invalid price');
+    if (!deal.service) throw new ValidationError('Service required');
+    
+    // validation passed
+    return true;
+  }
+  ```
+
+### Nested Ternary Expressions - NEVER USE
+- **NEVER USE** nested ternary expressions - ALWAYS AVOID THEM
+- **ALWAYS USE** if-else blocks or immediately invoked function expressions (IIFE) instead
+- **MANDATORY**: When you see nested ternaries in code, refactor them immediately
+- Example:
+  ```typescript
+  // ❌ BAD - NEVER DO THIS
+  const value = condition1 ? value1 : condition2 ? value2 : value3;
+  const result = deal ? (deal.status === 'active' ? 'Yes' : 'No') : 'Unknown';
+  
+  // ✅ GOOD - Use IIFE with early returns
+  const result = (() => {
+    if (!deal) return 'Unknown';
+    if (deal.status === 'active') return 'Yes';
+    return 'No';
+  })();
+  
+  // ✅ ALSO GOOD - Use if-else block
+  let value: string | undefined;
+  if (condition1) {
+    value = value1;
+  } else if (condition2) {
+    value = value2;
+  } else {
+    value = value3;
+  }
+  
+  // ✅ ALSO GOOD - Guard clauses pattern
+  if (!deal) return 'Unknown';
+  if (deal.status === 'active') return 'Yes';
+  return 'No';
+  ```
+
 ### TypeScript
 - Avoid `any` type - use proper types or interfaces
 - Use nullish coalescing (`??`) instead of logical OR (`||`) for default values
 - Prefer type-only imports: `import type { AxiosError } from 'axios'`
 - Use ESLint disable comments only when absolutely necessary
+- **NEVER** use nested ternary expressions
+- **USE ENUMS WHENEVER POSSIBLE** - Prefer enums over string literal unions when values are fixed constants
+- When you see `'value1' | 'value2' | 'value3'` consider creating an enum if these are fixed constants
+- Example: Instead of `type Status = 'active' | 'inactive'`, prefer `enum Status { ACTIVE = 'active', INACTIVE = 'inactive' }`
 
 ### Frontend Patterns
 - Always expect populated objects from backend
@@ -103,6 +196,10 @@
 - ❌ Using `any` type unnecessarily
 - ❌ Adding category field to deals - category comes from service
 - ❌ Using `.withCategory()` on DealBuilder - deals don't have category
+- ❌ Deep nesting instead of early returns - use guard clauses
+- ❌ Not validating preconditions early in functions
+- ❌ **NEVER** using nested ternary expressions - ALWAYS refactor to IIFE or if-else
+- ❌ Using string literal unions (`'active' | 'inactive'`) when an enum would be better - **USE ENUMS WHENEVER POSSIBLE**
 
 ### Test File Structure
 ```typescript
@@ -135,12 +232,21 @@ describe('Test Suite', () => {
 });
 ```
 
+### ESLint - MANDATORY BEFORE COMMITS
+- **MANDATORY**: Run `npm run lint` or `yarn lint` BEFORE completing any code changes
+- **MANDATORY**: Fix ALL linting errors before marking code as complete
+- **MANDATORY**: Fix ALL linting warnings before marking code as complete (unless explicitly approved)
+- **NEVER** commit code with linting errors
+- **NEVER** ignore linting errors without explicit approval
+- **ALWAYS** check lint status after making changes
+
 ### When Making Changes
 1. Always check if tests need updating
-2. Ensure linting passes
+2. **ALWAYS** run linting and fix ALL errors - NO EXCEPTIONS
 3. Use builders in all new tests
 4. Follow existing code patterns
 5. Update this file if you discover new patterns or rules
+6. **VERIFY**: Run linter again after fixes to confirm all errors are resolved
 
 ### File Locations
 - Models: `src/app/model/`
@@ -152,10 +258,25 @@ describe('Test Suite', () => {
 - Enums: `src/app/enum/`
 - Exceptions: `src/app/exceptions/`
 
+### ESLint Commands (Backend)
+```bash
+# Check for linting errors
+npm run lint
+
+# Fix auto-fixable errors (if configured)
+npm run lint:fix
+
+# Run tests
+npm test
+```
+
 ---
 
-**Last Updated**: After removing category field from deals (category now comes from service)
-**Key Principle**: Consistency and maintainability - use builders, follow patterns, keep code clean
+**Last Updated**: After adding ESLint requirements to prevent linting errors in commits
+**Key Principle**: Consistency and maintainability - use builders, follow patterns, keep code clean, **FIX ALL LINTING ERRORS**
+
+### Critical Reminder
+⚠️ **IF YOU SEE LINTING ERRORS, FIX THEM IMMEDIATELY. DO NOT PROCEED UNTIL ALL ERRORS ARE RESOLVED.** ⚠️
 
 ### Deal-Category Relationship (IMPORTANT)
 - **Deals DO NOT have a category field** - this was removed in a major refactoring

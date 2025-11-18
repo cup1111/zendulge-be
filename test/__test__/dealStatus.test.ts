@@ -82,7 +82,6 @@ describe('Deal status management', () => {
       .withDescription('Deal used for status change tests')
       .withPrice(90)
       .withOriginalPrice(120)
-      .withDiscount(25)
       .withDuration(60)
       .withOperatingSite(operateSite._id)
       .withStartDate(new Date())
@@ -146,6 +145,7 @@ describe('Deal status management', () => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() + 5);
     const endDate = new Date(startDate);
+    endDate.setDate(endDate.getDate() - 1); // End date before start date
 
     const response = await request(app.getApp())
       .post(`/api/v1/business/${business._id}/deals`)
@@ -158,8 +158,10 @@ describe('Deal status management', () => {
         duration: 60,
         operatingSite: [operateSite._id.toString()],
         service: service._id.toString(),
+        allDay: false,
         startDate: `${startDate.toISOString().split('T')[0]}T00:00:00.000Z`,
         endDate: `${endDate.toISOString().split('T')[0]}T00:00:00.000Z`,
+        recurrenceType: 'weekly',
       })
       .expect(422);
 
@@ -192,8 +194,10 @@ describe('Deal status management', () => {
         duration: 60,
         operatingSite: [operateSite._id.toString()],
         service: service._id.toString(),
+        allDay: false,
         startDate: `${yesterday.toISOString().split('T')[0]}T00:00:00.000Z`,
         endDate: `${tomorrow.toISOString().split('T')[0]}T00:00:00.000Z`,
+        recurrenceType: 'none',
       })
       .expect(422);
 
@@ -212,17 +216,15 @@ describe('Deal status management', () => {
       .send({
         startDate: isoUtc,
       })
-      .expect(200);
+      .expect(422);
 
-    expect(response.body.success).toBe(true);
-    expect(response.body.data.startDate).toBe(isoUtc);
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toContain('Start date cannot be before today');
   });
 
-  it('normalizes discount to zero when price exceeds original price', async () => {
-    // Price cannot exceed service base price, so we need to test with a price
-    // that's still less than base price but greater than original price
-    // The service base price is 120, deal originalPrice is 120, so we can't exceed it
-    // Instead, let's test with price less than original (which sets discount correctly)
+  it('updates deal price successfully', async () => {
+    // Price cannot exceed service base price
+    // The service base price is 120, deal originalPrice is 120, so we need to use a price less than basePrice
     const newPrice = deal.originalPrice - 10; // 110, which is still less than basePrice (120)
 
     const response = await request(app.getApp())
@@ -235,8 +237,6 @@ describe('Deal status management', () => {
 
     expect(response.body.success).toBe(true);
     expect(response.body.data.price).toBe(newPrice);
-    // Discount should be calculated correctly (not 0)
-    expect(response.body.data.discount).toBeGreaterThan(0);
   });
 
   it('rejects updating a deal when end date is before or equal to start date', async () => {
@@ -248,9 +248,10 @@ describe('Deal status management', () => {
       .patch(`/api/v1/business/${business._id}/deals/${deal._id}`)
       .set('Authorization', `Bearer ${ownerToken}`)
       .send({
+        recurrenceType: 'weekly',
         endDate: endDateSameAsStart.toISOString(),
       })
-      .expect(400);
+      .expect(422);
 
     expect(response.body.success).toBe(false);
     expect(response.body.message).toContain('End date must be after start date');

@@ -12,11 +12,13 @@ export default class DealBuilder extends BaseBuilder<IDealDocument> {
       description: 'Test deal description',
       price: 90,
       originalPrice: 100,
-      discount: 10,
       duration: 60,
+      sections: 1,
       operatingSite: [], // Should be set with .withOperatingSite()
+      allDay: false,
       startDate: now,
       endDate: future,
+      recurrenceType: 'none',
       maxBookings: 100,
       currentBookings: 0,
       status: 'active',
@@ -48,13 +50,13 @@ export default class DealBuilder extends BaseBuilder<IDealDocument> {
     return this;
   }
 
-  withDiscount(discount: number): DealBuilder {
-    this.properties.discount = discount;
+  withDuration(duration: number): DealBuilder {
+    this.properties.duration = duration;
     return this;
   }
 
-  withDuration(duration: number): DealBuilder {
-    this.properties.duration = duration;
+  withSections(sections: number): DealBuilder {
+    this.properties.sections = sections;
     return this;
   }
 
@@ -74,6 +76,11 @@ export default class DealBuilder extends BaseBuilder<IDealDocument> {
     return this;
   }
 
+  withAllDay(allDay: boolean): DealBuilder {
+    this.properties.allDay = allDay;
+    return this;
+  }
+
   withStartDate(startDate: Date): DealBuilder {
     this.properties.startDate = startDate;
     return this;
@@ -81,6 +88,11 @@ export default class DealBuilder extends BaseBuilder<IDealDocument> {
 
   withEndDate(endDate: Date): DealBuilder {
     this.properties.endDate = endDate;
+    return this;
+  }
+
+  withRecurrenceType(recurrenceType: 'none' | 'daily' | 'weekly' | 'weekdays' | 'monthly' | 'annually'): DealBuilder {
+    this.properties.recurrenceType = recurrenceType;
     return this;
   }
 

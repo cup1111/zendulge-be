@@ -216,3 +216,9 @@ Month 4 (Feb 2026, by 5 Feb) 7. Stripe Test Payment, 8. MVP Finalisation, 9. Fin
 ## invite user forgot to assign sites, only buiness owner can solve this issue
 
 ## Services ???
+
+
+### License
+© 2025 Zendulge. All Rights Reserved.
+
+Unauthorized copying of this file is strictly prohibited.

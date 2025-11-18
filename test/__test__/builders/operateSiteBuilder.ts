@@ -49,6 +49,11 @@ export default class OperateSiteBuilder extends BaseBuilder<IOperateSiteDocument
     return this;
   }
 
+  withOperatingHours(operatingHours: any): OperateSiteBuilder {
+    this.properties.operatingHours = operatingHours;
+    return this;
+  }
+
   build(): any {
     return this.properties;
   }

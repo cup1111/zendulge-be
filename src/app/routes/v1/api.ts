@@ -69,6 +69,10 @@ import {
   updateDealValidation,
   updateDealStatusValidation,
 } from '../../validation/dealValidation';
+import {
+  createOperateSiteValidation,
+  updateOperateSiteValidation,
+} from '../../validation/operateSiteValidation';
 import publicDealController from '../../controllers/v1/publicDealController';
 import {
   getAllCategories,
@@ -301,6 +305,8 @@ router.post(
   '/business/:id/operate-sites',
   authenticationTokenMiddleware,
   validateBusinessAccess, // Validates business access + provides req.business
+  createOperateSiteValidation,
+  handleValidationErrors,
   createOperateSite,
 );
 
@@ -327,6 +333,8 @@ router.put(
   '/business/:id/operate-sites/:operateSiteId',
   authenticationTokenMiddleware,
   validateBusinessAccess, // Validates business access
+  updateOperateSiteValidation,
+  handleValidationErrors,
   updateOperateSite,
 );
 

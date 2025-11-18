@@ -57,6 +57,8 @@ const updateBusiness = async (businessId: string, userId: string, updateData: an
     website: updateData.website,
     facebookUrl: updateData.facebookUrl,
     twitterUrl: updateData.twitterUrl,
+    logo: updateData.logo,
+    operatingHours: updateData.operatingHours,
   };
 
   // If ABN changed, set status to 'pending' (will need re-verification) and disable all deals

@@ -10,7 +10,6 @@ export default class DealBuilder extends BaseBuilder<IDealDocument> {
     this.properties = {
       title: 'Test Deal',
       description: 'Test deal description',
-      category: '', // Should be set with .withCategory()
       price: 90,
       originalPrice: 100,
       discount: 10,
@@ -36,11 +35,6 @@ export default class DealBuilder extends BaseBuilder<IDealDocument> {
 
   withDescription(description: string): DealBuilder {
     this.properties.description = description;
-    return this;
-  }
-
-  withCategory(categoryId: string | any): DealBuilder {
-    this.properties.category = typeof categoryId === 'string' ? categoryId : categoryId.toString();
     return this;
   }
 

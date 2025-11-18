@@ -13,12 +13,6 @@ export const createDealValidation = [
     .isLength({ min: 1, max: 1000 })
     .withMessage('Description must be between 1 and 1000 characters')
     .trim(),
-  body('category')
-    .notEmpty()
-    .withMessage('Category is required')
-    .isLength({ min: 1, max: 50 })
-    .withMessage('Category must be between 1 and 50 characters')
-    .trim(),
   body('price')
     .notEmpty()
     .withMessage('Price is required')
@@ -130,11 +124,6 @@ export const updateDealValidation = [
     .optional()
     .isLength({ min: 1, max: 1000 })
     .withMessage('Description must be between 1 and 1000 characters')
-    .trim(),
-  body('category')
-    .optional()
-    .isLength({ min: 1, max: 50 })
-    .withMessage('Category must be between 1 and 50 characters')
     .trim(),
   body('price')
     .optional()

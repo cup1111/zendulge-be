@@ -43,7 +43,8 @@
 
 ### Database Patterns
 - `operatingSite` field in Deal model stores **array of strings** (not ObjectIds)
-- Category references in Deal model use **ObjectId** (from Category model)
+- **Deals do NOT have a category field** - category comes from the associated Service
+- Service.category is a string slug (not ObjectId)
 - Always convert ObjectIds to strings when matching with string arrays
 - Use `$toString` in aggregation pipelines when comparing ObjectIds with strings
 
@@ -84,7 +85,8 @@
 - Use ESLint disable comments only when absolutely necessary
 
 ### Frontend Patterns
-- Always expect populated objects from backend (e.g., `category` is always an object, never a string)
+- Always expect populated objects from backend
+- For deals, category comes from `service.category` (string slug) or from API's `categoryData` object
 - Use proper TypeScript interfaces for API responses
 - Handle loading and error states
 - Use proper null checks before rendering
@@ -99,6 +101,8 @@
 - ❌ Using `window.confirm` - use proper modals/dialogs
 - ❌ Hardcoding test data - use builders
 - ❌ Using `any` type unnecessarily
+- ❌ Adding category field to deals - category comes from service
+- ❌ Using `.withCategory()` on DealBuilder - deals don't have category
 
 ### Test File Structure
 ```typescript
@@ -150,6 +154,14 @@ describe('Test Suite', () => {
 
 ---
 
-**Last Updated**: After refactoring all deal tests to use builders
+**Last Updated**: After removing category field from deals (category now comes from service)
 **Key Principle**: Consistency and maintainability - use builders, follow patterns, keep code clean
+
+### Deal-Category Relationship (IMPORTANT)
+- **Deals DO NOT have a category field** - this was removed in a major refactoring
+- Category information comes from the associated Service (`service.category` - string slug)
+- When filtering deals by category, filter by `service.category` (not `deal.category`)
+- When displaying category, use `deal.service.category` or look up category details from the slug
+- Backend public deals API returns `categoryData` populated from `service.category`
+- Authenticated deal endpoints don't populate category - frontend must derive from `service.category`
 

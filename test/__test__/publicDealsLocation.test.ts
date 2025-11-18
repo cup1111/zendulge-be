@@ -71,7 +71,6 @@ describe('Public deals listing with location filtering', () => {
 
     const service = await new ServiceBuilder()
       .withName('Active Service')
-      .withCategory('Cleaning')
       .withDuration(60)
       .withBasePrice(100)
       .withBusiness(activeBusiness._id)
@@ -85,7 +84,6 @@ describe('Public deals listing with location filtering', () => {
     const deal1 = await new DealBuilder()
       .withTitle('Sydney Cleaning Deal')
       .withDescription('Active deal in Sydney')
-      .withCategory(category._id)
       .withPrice(90)
       .withOriginalPrice(120)
       .withDuration(180)
@@ -103,7 +101,6 @@ describe('Public deals listing with location filtering', () => {
     const deal2 = await new DealBuilder()
       .withTitle('Sydney Office Clean')
       .withDescription('Another active deal in Sydney')
-      .withCategory(category._id)
       .withPrice(150)
       .withOriginalPrice(200)
       .withDuration(240)
@@ -142,7 +139,6 @@ describe('Public deals listing with location filtering', () => {
 
     const melbourneService = await new ServiceBuilder()
       .withName('Melbourne Service')
-      .withCategory('Cleaning')
       .withDuration(60)
       .withBasePrice(100)
       .withBusiness(melbourneBusiness._id)
@@ -153,7 +149,6 @@ describe('Public deals listing with location filtering', () => {
     await new DealBuilder()
       .withTitle('Melbourne Cleaning Deal')
       .withDescription('Active deal in Melbourne (too far)')
-      .withCategory(category._id)
       .withPrice(90)
       .withOriginalPrice(120)
       .withDuration(180)
@@ -264,7 +259,6 @@ describe('Public deals listing with location filtering', () => {
 
     const service = await new ServiceBuilder()
       .withName('Test Service')
-      .withCategory('Cleaning')
       .withDuration(60)
       .withBasePrice(100)
       .withBusiness(business._id)
@@ -277,7 +271,6 @@ describe('Public deals listing with location filtering', () => {
     await new DealBuilder()
       .withTitle('Deal Without Location Filter')
       .withDescription('Should appear when no location params')
-      .withCategory(category._id)
       .withPrice(90)
       .withOriginalPrice(120)
       .withDuration(180)
@@ -342,7 +335,6 @@ describe('Public deals listing with location filtering', () => {
 
     const service = await new ServiceBuilder()
       .withName('Fallback Service')
-      .withCategory('Cleaning')
       .withDuration(60)
       .withBasePrice(100)
       .withBusiness(business._id)
@@ -355,7 +347,6 @@ describe('Public deals listing with location filtering', () => {
     await new DealBuilder()
       .withTitle('Fallback Test Deal')
       .withDescription('Should work with fallback calculation')
-      .withCategory(category._id)
       .withPrice(90)
       .withOriginalPrice(120)
       .withDuration(180)
@@ -429,7 +420,6 @@ describe('Public deals listing with location filtering', () => {
 
     const service = await new ServiceBuilder()
       .withName('Status Service')
-      .withCategory('Cleaning')
       .withDuration(60)
       .withBasePrice(100)
       .withBusiness(business._id)
@@ -443,7 +433,6 @@ describe('Public deals listing with location filtering', () => {
     await new DealBuilder()
       .withTitle('Active Status Deal')
       .withDescription('Should appear')
-      .withCategory(category._id)
       .withPrice(90)
       .withOriginalPrice(120)
       .withDuration(180)
@@ -461,7 +450,6 @@ describe('Public deals listing with location filtering', () => {
     await new DealBuilder()
       .withTitle('Inactive Status Deal')
       .withDescription('Should NOT appear')
-      .withCategory(category._id)
       .withPrice(90)
       .withOriginalPrice(120)
       .withDuration(180)
@@ -540,7 +528,6 @@ describe('Public deals listing with location filtering', () => {
 
     const activeService = await new ServiceBuilder()
       .withName('Active Business Service')
-      .withCategory('Cleaning')
       .withDuration(60)
       .withBasePrice(100)
       .withBusiness(activeBusiness._id)
@@ -554,7 +541,6 @@ describe('Public deals listing with location filtering', () => {
     await new DealBuilder()
       .withTitle('Active Business Deal')
       .withDescription('Should appear')
-      .withCategory(category._id)
       .withPrice(90)
       .withOriginalPrice(120)
       .withDuration(180)
@@ -592,7 +578,6 @@ describe('Public deals listing with location filtering', () => {
 
     const pendingService = await new ServiceBuilder()
       .withName('Pending Business Service')
-      .withCategory('Cleaning')
       .withDuration(60)
       .withBasePrice(100)
       .withBusiness(pendingBusiness._id)
@@ -603,7 +588,6 @@ describe('Public deals listing with location filtering', () => {
     await new DealBuilder()
       .withTitle('Pending Business Deal')
       .withDescription('Should NOT appear')
-      .withCategory(category._id)
       .withPrice(90)
       .withOriginalPrice(120)
       .withDuration(180)
@@ -653,6 +637,13 @@ describe('Public deals listing with location filtering', () => {
     expect(ownerRole).toBeTruthy();
 
     // Create categories
+    const cleaningCategory = await new CategoryBuilder()
+      .withName('Cleaning')
+      .withSlug('cleaning')
+      .withIcon('🧹')
+      .withActive()
+      .save();
+
     const commercialCategory = await new CategoryBuilder()
       .withName('Commercial')
       .withSlug('commercial')
@@ -691,10 +682,9 @@ describe('Public deals listing with location filtering', () => {
     };
     await sydneySite.save();
 
-    // Create Office Cleaning service
     const officeService = await new ServiceBuilder()
       .withName('Office Cleaning')
-      .withCategory('Commercial')
+      .withCategory('Cleaning')
       .withDuration(120)
       .withBasePrice(150)
       .withBusiness(business._id)
@@ -708,7 +698,6 @@ describe('Public deals listing with location filtering', () => {
     await new DealBuilder()
       .withTitle('Office Deep Clean')
       .withDescription('Professional office cleaning service perfect for post-construction cleanup or quarterly deep cleaning. Includes carpet cleaning and sanitization.')
-      .withCategory(commercialCategory._id)
       .withPrice(300)
       .withOriginalPrice(400)
       .withDuration(240)
@@ -809,6 +798,28 @@ describe('Public deals listing with location filtering', () => {
     expect(Array.isArray(res100km.body.data)).toBe(true);
     expect(res100km.body.data.length).toBe(1);
     expect(res100km.body.data[0].title).toBe('Office Deep Clean');
+
+    // Test category filtering with location - should return Office Deep Clean when filtering by cleaning
+    const resCategoryFilter = await request(app.getApp())
+      .get('/api/v1/public/deals')
+      .query({
+        category: 'cleaning', // Filter by category slug
+        latitude: USER_LAT.toString(),
+        longitude: USER_LON.toString(),
+        radiusKm: '50',
+      })
+      .expect(200);
+
+    expect(resCategoryFilter.body.success).toBe(true);
+    expect(Array.isArray(resCategoryFilter.body.data)).toBe(true);
+    expect(resCategoryFilter.body.data.length).toBe(1);
+    expect(resCategoryFilter.body.data[0].title).toBe('Office Deep Clean');
+    expect(resCategoryFilter.body.data[0].service.name).toBe('Office Cleaning');
+
+    // Verify category data is populated
+    expect(resCategoryFilter.body.data[0].categoryData).toBeDefined();
+    expect(resCategoryFilter.body.data[0].categoryData.name).toBe('Cleaning');
+    expect(resCategoryFilter.body.data[0].categoryData.slug).toBe('cleaning');
   });
 });
 

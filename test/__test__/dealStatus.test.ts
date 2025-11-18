@@ -80,7 +80,6 @@ describe('Deal status management', () => {
     deal = await new DealBuilder()
       .withTitle('Status Deal')
       .withDescription('Deal used for status change tests')
-      .withCategory(category._id)
       .withPrice(90)
       .withOriginalPrice(120)
       .withDiscount(25)

@@ -186,7 +186,7 @@ const createServicesIfNotExists = async (business: any) => {
     },
     {
       name: 'Office Cleaning',
-      category: 'Commercial',
+      category: 'Cleaning', // Changed from 'Commercial' to 'Cleaning' to match filtering expectation
       duration: 120,
       basePrice: 150.00,
       description: 'Professional office cleaning service',
@@ -247,21 +247,10 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
   const windowCleaningService = await Service.findOne({ name: 'Window Cleaning', business: business.id });
   const postConstructionService = await Service.findOne({ name: 'Post-Construction Cleanup', business: business.id });
 
-  // Get categories to reference them (should exist after seeding)
-  const cleaningCategory = await Category.findOne({ slug: 'cleaning' });
-  const commercialCategory = await Category.findOne({ slug: 'commercial' });
-  const specializedCategory = await Category.findOne({ slug: 'specialized' });
-  const generalCategory = await Category.findOne({ slug: 'general' });
-
-  if (!cleaningCategory || !commercialCategory || !specializedCategory || !generalCategory) {
-    throw new Error('Required categories not found. Please ensure categories are seeded first.');
-  }
-
   const dealsData = [
     {
       title: 'Spring Cleaning Special',
       description: 'Get your home sparkling clean with our comprehensive spring cleaning service. Includes deep cleaning of all rooms, windows, and appliances.',
-      category: cleaningCategory._id,
       price: 150.00,
       originalPrice: 200.00,
       duration: 180,
@@ -279,7 +268,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     {
       title: 'Office Deep Clean',
       description: 'Professional office cleaning service perfect for post-construction cleanup or quarterly deep cleaning. Includes carpet cleaning and sanitization.',
-      category: commercialCategory._id,
       price: 300.00,
       originalPrice: 400.00,
       duration: 240,
@@ -297,7 +285,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     {
       title: 'Carpet Cleaning Package',
       description: 'Professional carpet and upholstery cleaning for residential properties. Includes stain removal and deodorizing.',
-      category: specializedCategory._id,
       price: 120.00,
       originalPrice: 150.00,
       duration: 90,
@@ -315,7 +302,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     {
       title: 'Window Cleaning Service',
       description: 'Crystal clear windows inside and out. Professional window cleaning service for residential and commercial properties.',
-      category: specializedCategory._id,
       price: 80.00,
       originalPrice: 100.00,
       duration: 60,
@@ -333,7 +319,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     {
       title: 'Post-Construction Cleanup',
       description: 'Heavy-duty cleaning after construction or renovation. Includes debris removal, dust cleaning, and final touch-ups.',
-      category: specializedCategory._id,
       price: 500.00,
       originalPrice: 650.00,
       duration: 360,
@@ -351,7 +336,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
     {
       title: 'Monthly Maintenance Package',
       description: 'Regular monthly cleaning service to keep your property in top condition. Includes all basic cleaning tasks plus minor maintenance.',
-      category: cleaningCategory._id,
       price: 200.00,
       originalPrice: 250.00,
       duration: 120,
@@ -449,12 +433,6 @@ const seedCompleteBusinessSetup = async () => {
 
     // Seed categories first
     await createCategoriesIfNotExists();
-
-    // Get general category for use in pending/disabled business deals
-    const generalCategory = await Category.findOne({ slug: 'general' });
-    if (!generalCategory) {
-      throw new Error('General category not found. Please ensure categories are seeded first.');
-    }
 
     // Create Business Owner User
     const businessOwnerData = {
@@ -726,7 +704,6 @@ const seedCompleteBusinessSetup = async () => {
       pendingDeal = new Deal({
         title: pendingDealTitle,
         description: 'Deal seeded for pending business (should be hidden from customers).',
-        category: generalCategory._id,
         price: 49.0,
         originalPrice: 79.0,
         duration: 60,
@@ -819,7 +796,6 @@ const seedCompleteBusinessSetup = async () => {
       disabledDeal = new Deal({
         title: disabledDealTitle,
         description: 'Deal seeded for disabled business (business is disabled).',
-        category: generalCategory._id,
         price: 59.0,
         originalPrice: 89.0,
         duration: 60,

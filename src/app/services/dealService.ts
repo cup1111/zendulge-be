@@ -2,7 +2,6 @@ import Deal, { IDealDocument } from '../model/deal';
 import Business from '../model/business';
 import Service from '../model/service';
 import OperateSite from '../model/operateSite';
-import Category from '../model/category';
 import { BadRequestException } from '../exceptions';
 import { BusinessStatus } from '../enum/businessStatus';
 import mongoose from 'mongoose';
@@ -101,7 +100,6 @@ const getDealsByBusiness = async (businessId: string, userId: string): Promise<I
   }
 
   return Deal.find(dealsQuery)
-    .populate('category', 'name slug icon')
     .populate('service', 'name category basePrice duration')
     .populate('operatingSite', 'name address')
     .populate('createdBy', 'firstName lastName email');
@@ -113,7 +111,6 @@ const getDealById = async (businessId: string, dealId: string, userId: string): 
     throw new Error('Business not found or access denied');
   }
   const deal = await Deal.findOne({ _id: dealId, business: businessId })
-    .populate('category', 'name slug icon')
     .populate('service', 'name category basePrice duration')
     .populate('operatingSite', 'name address');
   if (!deal) {
@@ -256,15 +253,8 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
 
   delete dealData.availability;
 
-  // Handle category - if provided as slug, look it up to get ObjectId
   if (dealData.category) {
-    const categoryDoc = await Category.findOne({ slug: dealData.category, isActive: true });
-    if (!categoryDoc) {
-      throw new BadRequestException(`Category with slug '${dealData.category}' not found or is inactive`);
-    }
-    dealData.category = categoryDoc._id;
-  } else {
-    throw new BadRequestException('Category is required');
+    delete dealData.category;
   }
 
   const newDeal = new Deal({
@@ -277,7 +267,6 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
     createdBy: userId, // Track who created the deal
   });
   const savedDeal = await newDeal.save();
-  await savedDeal.populate('category', 'name slug icon');
   await savedDeal.populate('service', 'name category basePrice duration');
   await savedDeal.populate('operatingSite', 'name address');
   await savedDeal.populate('createdBy', 'firstName lastName email');
@@ -495,13 +484,8 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
     updateData.discount = normalizedDiscount;
   }
 
-  // Handle category - if provided as slug, look it up to get ObjectId
   if (updateData.category) {
-    const categoryDoc = await Category.findOne({ slug: updateData.category, isActive: true });
-    if (!categoryDoc) {
-      throw new BadRequestException(`Category with slug '${updateData.category}' not found or is inactive`);
-    }
-    updateData.category = categoryDoc._id;
+    delete updateData.category;
   }
 
   const deal = await Deal.findOneAndUpdate(
@@ -509,7 +493,6 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
     updateData,
     { new: true, runValidators: true },
   )
-    .populate('category', 'name slug icon')
     .populate('service', 'name category basePrice duration')
     .populate('operatingSite', 'name address')
     .populate('createdBy', 'firstName lastName email');
@@ -773,21 +756,20 @@ const listPublicDeals = async (filters: {
   }
   // If location filtering is not enabled (nearbySiteIds is undefined), show all deals
 
-  // If category is provided as slug, look it up to get ObjectId
-  let categoryObjectId: mongoose.Types.ObjectId | undefined;
-  if (category) {
-    const categoryDoc = await Category.findOne({ slug: category, isActive: true });
-    if (categoryDoc) {
-      categoryObjectId = categoryDoc._id as mongoose.Types.ObjectId;
-      match.category = categoryObjectId;
-    } else {
-      // If category slug not found, return empty results
-      match.category = new mongoose.Types.ObjectId('000000000000000000000000');
-    }
-  }
-
   if (title) {
     match.title = { $regex: title, $options: 'i' };
+  }
+
+  let categoryName: string | undefined;
+  if (category) {
+    const Category = mongoose.model('categories');
+    const categoryDoc = await Category.findOne({ slug: category, isActive: true }).lean();
+    if (categoryDoc && typeof categoryDoc === 'object' && 'name' in categoryDoc) {
+      categoryName = categoryDoc.name as string;
+    } else {
+      // If category slug not found, return empty results
+      return [];
+    }
   }
 
   const pipeline: any[] = [
@@ -822,11 +804,31 @@ const listPublicDeals = async (filters: {
       },
     },
     { $unwind: '$service' },
+    ...(categoryName
+      ? [
+        {
+          $match: {
+            'service.category': categoryName,
+          },
+        },
+      ]
+      : []),
     {
       $lookup: {
         from: 'categories',
-        localField: 'category',
-        foreignField: '_id',
+        let: { serviceCategoryName: '$service.category' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ['$name', '$$serviceCategoryName'] },
+                  { $eq: ['$isActive', true] },
+                ],
+              },
+            },
+          },
+        ],
         as: 'categoryData',
       },
     },
@@ -992,8 +994,19 @@ export default {
       {
         $lookup: {
           from: 'categories',
-          localField: 'category',
-          foreignField: '_id',
+          let: { serviceCategoryName: '$service.category' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$name', '$$serviceCategoryName'] },
+                    { $eq: ['$isActive', true] },
+                  ],
+                },
+              },
+            },
+          ],
           as: 'categoryData',
         },
       },

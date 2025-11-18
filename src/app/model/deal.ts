@@ -3,7 +3,6 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 export interface IDeal {
   title: string;
   description: string;
-  category: Types.ObjectId | string;
   price: number;
   originalPrice?: number;
   discount?: number;
@@ -35,12 +34,6 @@ const dealSchema = new Schema<IDealDocument>({
     required: true,
     trim: true,
     maxlength: 1000,
-  },
-  category: {
-    type: Schema.Types.ObjectId,
-    required: true,
-    ref: 'categories',
-    index: true,
   },
   price: {
     type: Number,
@@ -122,7 +115,6 @@ dealSchema.index({ business: 1, status: 1 });
 dealSchema.index({ business: 1, 'operatingSite': 1 });
 dealSchema.index({ business: 1, service: 1 });
 dealSchema.index({ business: 1, createdBy: 1 });
-dealSchema.index({ category: 1 });
 dealSchema.index({ startDate: 1, endDate: 1 });
 
 const Deal = mongoose.model<IDealDocument>('deals', dealSchema);

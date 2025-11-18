@@ -80,7 +80,6 @@ describe('Deal CRUD operations', () => {
                 .send({
                     title: 'Test Deal',
                     description: 'Test Deal Description',
-                    category: category.slug, // Use slug
                     price: 90,
                     originalPrice: 120,
                     duration: 60,
@@ -102,15 +101,6 @@ describe('Deal CRUD operations', () => {
             expect(createdDeal.price).toBe(90);
             expect(createdDeal.originalPrice).toBe(120);
 
-            // Verify category is populated (should be an object, not just an ObjectId)
-            expect(createdDeal.category).toBeDefined();
-            expect(typeof createdDeal.category).toBe('object');
-            expect(createdDeal.category).not.toBeNull();
-            expect(createdDeal.category._id).toBeDefined();
-            expect(createdDeal.category.name).toBe(category.name);
-            expect(createdDeal.category.slug).toBe(category.slug);
-            expect(createdDeal.category.icon).toBe(category.icon);
-
             // Verify service is populated
             expect(createdDeal.service).toBeDefined();
             expect(typeof createdDeal.service).toBe('object');
@@ -119,6 +109,7 @@ describe('Deal CRUD operations', () => {
             expect(createdDeal.service.name).toBe(service.name);
             expect(createdDeal.service.basePrice).toBe(service.basePrice);
             expect(createdDeal.service.duration).toBe(service.duration);
+            expect(createdDeal.service.category).toBe(service.category);
 
             // Verify operatingSite is populated (should be an array of objects)
             expect(createdDeal.operatingSite).toBeDefined();
@@ -422,14 +413,10 @@ describe('Deal CRUD operations', () => {
             const foundDeal = listResponse.body.data.find((d: any) => d._id === dealId);
             expect(foundDeal).toBeDefined();
 
-            // Verify all fields are populated
-            expect(foundDeal.category).toBeDefined();
-            expect(typeof foundDeal.category).toBe('object');
-            expect(foundDeal.category.name).toBe(category.name);
-
             expect(foundDeal.service).toBeDefined();
             expect(typeof foundDeal.service).toBe('object');
             expect(foundDeal.service.name).toBe(service.name);
+            expect(foundDeal.service.category).toBe(service.category);
 
             expect(foundDeal.operatingSite).toBeDefined();
             expect(Array.isArray(foundDeal.operatingSite)).toBe(true);

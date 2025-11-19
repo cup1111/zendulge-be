@@ -167,30 +167,6 @@ export const updateDealValidation = [
     .optional()
     .isInt({ min: 0 })
     .withMessage('Current bookings must be a non-negative integer'),
-  body()
-    .custom(value => {
-      if (!value) {
-        return true;
-      }
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const hasStartDate = Object.prototype.hasOwnProperty.call(value, 'startDate');
-
-      if (hasStartDate) {
-        const startDate = new Date(value.startDate);
-        if (!Number.isNaN(startDate.getTime())) {
-          startDate.setHours(0, 0, 0, 0);
-
-          if (startDate.getTime() < today.getTime()) {
-            throw new Error('Start date cannot be before today');
-          }
-        }
-      }
-
-      return true;
-    }),
   body('status')
     .optional()
     .isIn(['active', 'inactive', 'expired', 'sold_out'])

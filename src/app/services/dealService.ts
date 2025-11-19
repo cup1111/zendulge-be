@@ -398,7 +398,7 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
       : new Date(existingDeal.startDate);
 
     if (hasStartDateUpdate) {
-      ensureFutureDate(effectiveStart, 'Start date');
+      // No validation - allow any date when editing
       updateData.startDate = effectiveStart;
     }
   }
@@ -657,13 +657,13 @@ const findNearbySiteIds = async (
 
     // If $geoNear returns no results, try fallback method
     if (siteIds.length === 0) {
-      return findSitesWithinRadiusFallback(parsedLatitude, parsedLongitude, parsedRadiusKm);
+      return await findSitesWithinRadiusFallback(parsedLatitude, parsedLongitude, parsedRadiusKm);
     }
 
     return siteIds;
   } catch {
     // If $geoNear fails (e.g., no 2dsphere index), use fallback method
-    return findSitesWithinRadiusFallback(parsedLatitude, parsedLongitude, parsedRadiusKm);
+    return await findSitesWithinRadiusFallback(parsedLatitude, parsedLongitude, parsedRadiusKm);
   }
 };
 
@@ -830,66 +830,270 @@ const buildDateFilterStage = (dateWindow: ReturnType<typeof calculateDateWindow>
   };
 };
 
+// ============================================================================
+// Builder + Strategy Pattern Implementation
+// ============================================================================
+
 /**
- * Builds the aggregation pipeline stages for public deals
+ * Query object that encapsulates all filter parameters for public deals
  */
-const buildPipelineStages = (
-  match: any,
-  dateWindow: ReturnType<typeof calculateDateWindow>,
-  categoryName: string | undefined,
-  title: string | undefined,
-  nearbySiteIds: mongoose.Types.ObjectId[] | undefined,
-  skip: number,
-  limit: number,
-): any[] => {
-  return [
-    { $match: match },
-    // Add fields for lookups
-    {
+class PublicDealQuery {
+  category?: string;
+
+  limit: number;
+
+  skip: number;
+
+  latitude?: number;
+
+  longitude?: number;
+
+  radiusKm?: number;
+
+  title?: string;
+
+  constructor(filters: {
+    category?: string;
+    limit?: number;
+    skip?: number;
+    latitude?: number;
+    longitude?: number;
+    radiusKm?: number;
+    title?: string;
+  } = {}) {
+    this.category = filters.category;
+    this.limit = filters.limit ?? 20;
+    this.skip = filters.skip ?? 0;
+    this.latitude = filters.latitude;
+    this.longitude = filters.longitude;
+    this.radiusKm = filters.radiusKm;
+    this.title = filters.title;
+  }
+
+  hasLocationFilter(): boolean {
+    return (
+      this.latitude != null && this.longitude != null && this.radiusKm != null
+    );
+  }
+
+  hasCategoryFilter(): boolean {
+    return this.category != null && this.category.trim().length > 0;
+  }
+
+  hasTitleFilter(): boolean {
+    return this.title != null && this.title.trim().length > 0;
+  }
+}
+
+/**
+ * Strategy interface for adding filter stages to the pipeline
+ */
+interface FilterStrategy {
+  apply(builder: DealPipelineBuilder, query: PublicDealQuery): Promise<void>;
+}
+
+/**
+ * Location filter strategy - finds nearby sites and filters deals by location
+ */
+class LocationFilterStrategy implements FilterStrategy {
+  async apply(builder: DealPipelineBuilder, query: PublicDealQuery): Promise<void> {
+    if (!query.hasLocationFilter()) {
+      return;
+    }
+
+    const nearbySiteIds = await findNearbySiteIds(
+      query.latitude!,
+      query.longitude!,
+      query.radiusKm!,
+    );
+
+    builder.withLocationFilter(nearbySiteIds);
+  }
+}
+
+/**
+ * Category filter strategy - validates and filters deals by category
+ */
+class CategoryFilterStrategy implements FilterStrategy {
+  async apply(builder: DealPipelineBuilder, query: PublicDealQuery): Promise<void> {
+    if (!query.hasCategoryFilter()) {
+      return;
+    }
+
+    const categoryName = await validateCategoryFilter(query.category);
+    if (!categoryName) {
+      // Category slug not found or inactive, mark builder to return empty results
+      builder.markEmptyResults();
+      return;
+    }
+
+    builder.withCategoryFilter(categoryName);
+  }
+}
+
+/**
+ * Date filter strategy - filters deals available within 2-week window
+ */
+class DateFilterStrategy implements FilterStrategy {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async apply(builder: DealPipelineBuilder, _query: PublicDealQuery): Promise<void> {
+    const dateWindow = calculateDateWindow();
+    builder.withDateFilter(dateWindow);
+  }
+}
+
+/**
+ * Title filter strategy - filters deals by title/search term
+ */
+class TitleFilterStrategy implements FilterStrategy {
+  async apply(builder: DealPipelineBuilder, query: PublicDealQuery): Promise<void> {
+    if (query.hasTitleFilter()) {
+      builder.withTitleFilter(query.title!);
+    }
+  }
+}
+
+/**
+ * Fluent builder for constructing MongoDB aggregation pipeline
+ */
+class DealPipelineBuilder {
+  private pipeline: mongoose.PipelineStage[];
+
+  private shouldReturnEmpty: boolean;
+
+  private nearbySiteIds: mongoose.Types.ObjectId[] | undefined;
+
+  private categoryName: string | undefined;
+
+  private title: string | undefined;
+
+  private dateWindow: ReturnType<typeof calculateDateWindow> | undefined;
+
+  constructor() {
+    this.pipeline = [];
+    this.shouldReturnEmpty = false;
+  }
+
+  /**
+   * Adds initial match stage for status and basic filters
+   */
+  withInitialMatch(nearbySiteIds?: mongoose.Types.ObjectId[], title?: string): this {
+    const match = buildInitialMatchFilter(nearbySiteIds, title);
+    this.pipeline.push({ $match: match });
+    return this;
+  }
+
+  /**
+   * Adds fields for ObjectId conversions needed for lookups
+   */
+  withObjectIdFields(): this {
+    this.pipeline.push({
       $addFields: {
         businessObjId: { $toObjectId: '$business' },
         serviceObjId: { $toObjectId: '$service' },
       },
-    },
-    // Filter deals available within 2 weeks
-    buildDateFilterStage(dateWindow),
+    });
+    return this;
+  }
+
+  /**
+   * Adds location filter based on nearby site IDs
+   */
+  withLocationFilter(nearbySiteIds: mongoose.Types.ObjectId[] | undefined): this {
+    this.nearbySiteIds = nearbySiteIds;
+    return this;
+  }
+
+  /**
+   * Adds category filter
+   */
+  withCategoryFilter(categoryName: string): this {
+    this.categoryName = categoryName;
+    return this;
+  }
+
+  /**
+   * Adds date filter for 2-week window
+   */
+  withDateFilter(dateWindow: ReturnType<typeof calculateDateWindow>): this {
+    this.dateWindow = dateWindow;
+    return this;
+  }
+
+  /**
+   * Adds title filter
+   */
+  withTitleFilter(title: string): this {
+    this.title = title;
+    return this;
+  }
+
+  /**
+   * Marks that the query should return empty results
+   */
+  markEmptyResults(): this {
+    this.shouldReturnEmpty = true;
+    return this;
+  }
+
+  /**
+   * Gets the nearby site IDs (set by LocationFilterStrategy)
+   */
+  getNearbySiteIds(): mongoose.Types.ObjectId[] | undefined {
+    return this.nearbySiteIds;
+  }
+
+  /**
+   * Builds the complete pipeline with all stages
+   */
+  build(): mongoose.PipelineStage[] {
+    if (this.shouldReturnEmpty) {
+      return [{ $match: { _id: { $exists: false } } }]; // Return no results
+    }
+
+    // Add date filter stage
+    if (this.dateWindow) {
+      this.pipeline.push(buildDateFilterStage(this.dateWindow));
+    }
+
     // Lookup business
-    {
+    this.pipeline.push({
       $lookup: {
         from: 'businesses',
         localField: 'businessObjId',
         foreignField: '_id',
         as: 'business',
       },
-    },
-    { $unwind: '$business' },
-    {
+    });
+    this.pipeline.push({ $unwind: '$business' });
+    this.pipeline.push({
       $match: {
         'business.status': BusinessStatus.ACTIVE,
       },
-    },
+    });
+
     // Lookup service
-    {
+    this.pipeline.push({
       $lookup: {
         from: 'services',
         localField: 'serviceObjId',
         foreignField: '_id',
         as: 'service',
       },
-    },
-    { $unwind: '$service' },
+    });
+    this.pipeline.push({ $unwind: '$service' });
+
     // Filter by category if provided
-    ...(categoryName
-      ? [
-        {
-          $match: {
-            'service.category': categoryName,
-          },
+    if (this.categoryName) {
+      this.pipeline.push({
+        $match: {
+          'service.category': this.categoryName,
         },
-      ]
-      : []),
+      });
+    }
+
     // Lookup category data
-    {
+    this.pipeline.push({
       $lookup: {
         from: 'categories',
         let: { serviceCategoryName: '$service.category' },
@@ -907,23 +1111,23 @@ const buildPipelineStages = (
         ],
         as: 'categoryData',
       },
-    },
-    { $unwind: { path: '$categoryData', preserveNullAndEmptyArrays: true } },
+    });
+    this.pipeline.push({ $unwind: { path: '$categoryData', preserveNullAndEmptyArrays: true } });
+
     // Optional title search on service name too
-    ...(title
-      ? [
-        {
-          $match: {
-            $or: [
-              { title: { $regex: title, $options: 'i' } },
-              { 'service.name': { $regex: title, $options: 'i' } },
-            ],
-          },
+    if (this.title) {
+      this.pipeline.push({
+        $match: {
+          $or: [
+            { title: { $regex: this.title, $options: 'i' } },
+            { 'service.name': { $regex: this.title, $options: 'i' } },
+          ],
         },
-      ]
-      : []),
+      });
+    }
+
     // Lookup operating sites
-    {
+    this.pipeline.push({
       $lookup: {
         from: 'operateSites',
         let: { operatingSiteIds: '$operatingSite' },
@@ -938,47 +1142,47 @@ const buildPipelineStages = (
         ],
         as: 'sites',
       },
-    },
+    });
+
     // Filter sites based on location filtering
-    ...(nearbySiteIds && nearbySiteIds.length > 0
-      ? [
-        {
-          $addFields: {
-            sites: {
-              $filter: {
-                input: '$sites',
-                as: 'site',
-                cond: {
-                  $and: [
-                    { $eq: ['$$site.isActive', true] },
-                    { $in: ['$$site._id', nearbySiteIds] },
-                  ],
-                },
+    if (this.nearbySiteIds && this.nearbySiteIds.length > 0) {
+      this.pipeline.push({
+        $addFields: {
+          sites: {
+            $filter: {
+              input: '$sites',
+              as: 'site',
+              cond: {
+                $and: [
+                  { $eq: ['$$site.isActive', true] },
+                  { $in: ['$$site._id', this.nearbySiteIds] },
+                ],
               },
             },
           },
         },
-        {
-          $match: {
-            'sites.0': { $exists: true },
-          },
+      });
+      this.pipeline.push({
+        $match: {
+          'sites.0': { $exists: true },
         },
-      ]
-      : [
-        {
-          $addFields: {
-            sites: {
-              $filter: {
-                input: '$sites',
-                as: 'site',
-                cond: { $eq: ['$$site.isActive', true] },
-              },
+      });
+    } else {
+      this.pipeline.push({
+        $addFields: {
+          sites: {
+            $filter: {
+              input: '$sites',
+              as: 'site',
+              cond: { $eq: ['$$site.isActive', true] },
             },
           },
         },
-      ]),
+      });
+    }
+
     // Project final fields
-    {
+    this.pipeline.push({
       $project: {
         _id: 1,
         title: 1,
@@ -1017,13 +1221,18 @@ const buildPipelineStages = (
         },
         distance: 1,
       },
-    },
-    { $sort: { startDate: 1 } },
-    { $skip: skip },
-    { $limit: limit },
-  ];
-};
+    });
 
+    // Add sorting and pagination
+    this.pipeline.push({ $sort: { startDate: 1 } });
+
+    return this.pipeline;
+  }
+}
+
+/**
+ * Main function using Builder + Strategy pattern
+ */
 const listPublicDeals = async (filters: {
   category?: string;
   limit?: number;
@@ -1033,37 +1242,39 @@ const listPublicDeals = async (filters: {
   radiusKm?: number;
   title?: string;
 } = {}) => {
-  const { category, title, limit = 20, skip = 0, latitude, longitude, radiusKm } = filters;
+  // Create query object
+  const query = new PublicDealQuery(filters);
 
-  // Find nearby sites if location filtering is enabled
-  let nearbySiteIds: mongoose.Types.ObjectId[] | undefined;
-  if (latitude != null && longitude != null && radiusKm != null) {
-    nearbySiteIds = await findNearbySiteIds(latitude, longitude, radiusKm);
+  // Create builder
+  const builder = new DealPipelineBuilder();
+
+  // Create filter strategies
+  const strategies: FilterStrategy[] = [
+    new LocationFilterStrategy(),
+    new CategoryFilterStrategy(),
+    new DateFilterStrategy(),
+    new TitleFilterStrategy(),
+  ];
+
+  // Apply all strategies
+  for (const strategy of strategies) {
+    await strategy.apply(builder, query);
   }
 
-  // Build initial match filter
-  const match = buildInitialMatchFilter(nearbySiteIds, title);
+  // Get nearby site IDs from builder (set by LocationFilterStrategy)
+  const nearbySiteIds = builder.getNearbySiteIds();
 
-  // Validate category filter
-  const categoryName = await validateCategoryFilter(category);
-  if (category && !categoryName) {
-    // Category slug not found or inactive, return empty results
-    return [];
-  }
+  // Build initial match and ObjectId fields
+  builder
+    .withInitialMatch(nearbySiteIds, query.title)
+    .withObjectIdFields();
 
-  // Calculate date window for 2-week filtering
-  const dateWindow = calculateDateWindow();
+  // Build pipeline and execute
+  const pipeline = builder.build();
 
-  // Build aggregation pipeline
-  const pipeline = buildPipelineStages(
-    match,
-    dateWindow,
-    categoryName,
-    title,
-    nearbySiteIds,
-    skip,
-    limit,
-  );
+  // Add pagination
+  pipeline.push({ $skip: query.skip });
+  pipeline.push({ $limit: query.limit });
 
   return Deal.aggregate(pipeline);
 };

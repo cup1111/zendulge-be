@@ -708,12 +708,12 @@ const listPublicDeals = async (filters: {
   if (category) {
     const Category = mongoose.model('categories');
     const categoryDoc = await Category.findOne({ slug: category, isActive: true }).lean();
-    if (categoryDoc && typeof categoryDoc === 'object' && 'name' in categoryDoc) {
-      categoryName = categoryDoc.name as string;
-    } else {
-      // If category slug not found, return empty results
+    if (!categoryDoc || typeof categoryDoc !== 'object' || !('name' in categoryDoc)) {
+      // If category slug not found or inactive, return empty results
       return [];
     }
+    // service.category stores the category NAME, not the slug
+    categoryName = categoryDoc.name as string;
   }
 
   // Add 2-week window filtering

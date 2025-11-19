@@ -572,161 +572,277 @@ const updateDealStatus = async (businessId: string, dealId: string, userId: stri
 };
 
 // Public listing: only deals from ACTIVE businesses and active/current deals
-const listPublicDeals = async (filters: {
-  category?: string;
-  limit?: number;
-  skip?: number;
-  latitude?: number;
-  longitude?: number;
-  radiusKm?: number;
-  title?: string;
-} = {}) => {
-  const { category, title, limit = 20, skip = 0, latitude, longitude, radiusKm } = filters;
+/**
+ * Calculates Haversine distance between two geographic points
+ */
+const calculateHaversineDistance = (
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number => {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
 
-  // If location filtering is needed, first find operating sites within radius
-  let nearbySiteIds: mongoose.Types.ObjectId[] | undefined;
-  if (latitude != null && longitude != null && radiusKm != null) {
-    const radiusInMeters = Math.max(1, radiusKm) * 1000;
-    const parsedLatitude = Number(latitude);
-    const parsedLongitude = Number(longitude);
-    const parsedRadiusKm = Number(radiusKm);
+/**
+ * Finds operating sites within radius using Haversine distance calculation (fallback method)
+ */
+const findSitesWithinRadiusFallback = async (
+  latitude: number,
+  longitude: number,
+  radiusKm: number,
+): Promise<mongoose.Types.ObjectId[]> => {
+  const allActiveSites = await OperateSite.find({ isActive: true }).lean();
+  const sitesWithinRadius: mongoose.Types.ObjectId[] = [];
 
-    try {
-      // $geoNear must be the first stage
-      // The location field is now stored in the database (via pre-save hook) for geospatial indexing
-      const nearbySites = await OperateSite.aggregate([
-        {
-          $geoNear: {
-            near: { type: 'Point', coordinates: [parsedLongitude, parsedLatitude] },
-            distanceField: 'distance',
-            maxDistance: radiusInMeters,
-            spherical: true,
-            query: { isActive: true },
-          },
-        },
-        {
-          $project: {
-            _id: 1,
-          },
-        },
-      ]);
-
-      nearbySiteIds = nearbySites.map((site: any) => site._id);
-
-      // If $geoNear returns no results, try fallback method
-      if (nearbySiteIds.length === 0) {
-        // Fallback: Find active sites and calculate distance manually
-        // This handles cases where location field might not be properly indexed
-        const allActiveSites = await OperateSite.find({ isActive: true }).lean();
-        const sitesWithinRadius: mongoose.Types.ObjectId[] = [];
-
-        for (const site of allActiveSites) {
-          if (site.latitude == null || site.longitude == null) {
-            continue; // Skip sites without coordinates
-          }
-
-          // Calculate haversine distance
-          const siteLat = Number(site.latitude);
-          const siteLon = Number(site.longitude);
-
-          const R = 6371; // Earth radius in km
-          const dLat = (siteLat - parsedLatitude) * Math.PI / 180;
-          const dLon = (siteLon - parsedLongitude) * Math.PI / 180;
-          const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(parsedLatitude * Math.PI / 180) * Math.cos(siteLat * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-          const distance = R * c;
-
-          if (distance <= parsedRadiusKm) {
-            sitesWithinRadius.push(site._id);
-          }
-        }
-
-        nearbySiteIds = sitesWithinRadius;
-      }
-    } catch (error: any) {
-      // If $geoNear fails (e.g., no 2dsphere index), use fallback method
-
-      const allActiveSites = await OperateSite.find({ isActive: true }).lean();
-      const sitesWithinRadius: mongoose.Types.ObjectId[] = [];
-
-      for (const site of allActiveSites) {
-        if (site.latitude == null || site.longitude == null) {
-          continue; // Skip sites without coordinates
-        }
-
-        const siteLat = Number(site.latitude);
-        const siteLon = Number(site.longitude);
-
-        const R = 6371;
-        const dLat = (siteLat - parsedLatitude) * Math.PI / 180;
-        const dLon = (siteLon - parsedLongitude) * Math.PI / 180;
-        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos(parsedLatitude * Math.PI / 180) * Math.cos(siteLat * Math.PI / 180) *
-          Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const distance = R * c;
-
-        if (distance <= parsedRadiusKm) {
-          sitesWithinRadius.push(site._id);
-        }
-      }
-
-      nearbySiteIds = sitesWithinRadius;
+  for (const site of allActiveSites) {
+    if (site.latitude == null || site.longitude == null) {
+      continue; // Skip sites without coordinates
     }
-    // nearbySiteIds is only set when location filtering is enabled (latitude, longitude, radiusKm all provided)
+
+    const siteLat = Number(site.latitude);
+    const siteLon = Number(site.longitude);
+    const distance = calculateHaversineDistance(latitude, longitude, siteLat, siteLon);
+
+    if (distance <= radiusKm) {
+      sitesWithinRadius.push(site._id);
+    }
   }
 
+  return sitesWithinRadius;
+};
+
+/**
+ * Finds nearby operating sites within the specified radius
+ * Uses $geoNear if available, falls back to Haversine calculation
+ */
+const findNearbySiteIds = async (
+  latitude: number,
+  longitude: number,
+  radiusKm: number,
+): Promise<mongoose.Types.ObjectId[]> => {
+  const radiusInMeters = Math.max(1, radiusKm) * 1000;
+  const parsedLatitude = Number(latitude);
+  const parsedLongitude = Number(longitude);
+  const parsedRadiusKm = Number(radiusKm);
+
+  try {
+    // $geoNear must be the first stage
+    // The location field is now stored in the database (via pre-save hook) for geospatial indexing
+    const nearbySites = await OperateSite.aggregate([
+      {
+        $geoNear: {
+          near: { type: 'Point', coordinates: [parsedLongitude, parsedLatitude] },
+          distanceField: 'distance',
+          maxDistance: radiusInMeters,
+          spherical: true,
+          query: { isActive: true },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+        },
+      },
+    ]);
+
+    const siteIds = nearbySites.map((site: any) => site._id);
+
+    // If $geoNear returns no results, try fallback method
+    if (siteIds.length === 0) {
+      return findSitesWithinRadiusFallback(parsedLatitude, parsedLongitude, parsedRadiusKm);
+    }
+
+    return siteIds;
+  } catch {
+    // If $geoNear fails (e.g., no 2dsphere index), use fallback method
+    return findSitesWithinRadiusFallback(parsedLatitude, parsedLongitude, parsedRadiusKm);
+  }
+};
+
+/**
+ * Builds the initial match filter for deals
+ */
+const buildInitialMatchFilter = (
+  nearbySiteIds: mongoose.Types.ObjectId[] | undefined,
+  title?: string,
+): any => {
   const match: any = {
     status: 'active',
   };
 
-  // If location filtering is enabled (nearbySiteIds is defined), apply the filter
-  // If nearbySiteIds is empty array, it will result in no matches (correct behavior - no sites within radius)
-  // If nearbySiteIds is undefined, don't filter by location (show all deals)
-  // Convert ObjectIds to strings since operatingSite field stores strings
+  // Apply location filter if provided
   if (nearbySiteIds !== undefined) {
     if (nearbySiteIds.length === 0) {
       // No sites within radius, so return no deals
-      // Set match to an impossible condition to return empty results
       match.operatingSite = { $in: [] };
     } else {
       const nearbySiteIdsAsStrings = nearbySiteIds.map((id) => id.toString());
       // Use $in to match if ANY element in the operatingSite array matches
-      // MongoDB $in works on arrays - it checks if any element matches
       match.operatingSite = { $in: nearbySiteIdsAsStrings };
     }
   }
-  // If location filtering is not enabled (nearbySiteIds is undefined), show all deals
 
+  // Apply title filter if provided
   if (title) {
     match.title = { $regex: title, $options: 'i' };
   }
 
-  let categoryName: string | undefined;
-  if (category) {
-    const Category = mongoose.model('categories');
-    const categoryDoc = await Category.findOne({ slug: category, isActive: true }).lean();
-    if (!categoryDoc || typeof categoryDoc !== 'object' || !('name' in categoryDoc)) {
-      // If category slug not found or inactive, return empty results
-      return [];
-    }
-    // service.category stores the category NAME, not the slug
-    categoryName = categoryDoc.name as string;
+  return match;
+};
+
+/**
+ * Validates category filter and returns category name
+ * Returns undefined if category is not provided or not found
+ */
+const validateCategoryFilter = async (category?: string): Promise<string | undefined> => {
+  if (!category) {
+    return undefined;
   }
 
-  // Add 2-week window filtering
+  const Category = mongoose.model('categories');
+  const categoryDoc = await Category.findOne({ slug: category, isActive: true }).lean();
+
+  if (!categoryDoc || typeof categoryDoc !== 'object' || !('name' in categoryDoc)) {
+    // If category slug not found or inactive, return undefined to signal empty results
+    return undefined;
+  }
+
+  // service.category stores the category NAME, not the slug
+  return categoryDoc.name as string;
+};
+
+/**
+ * Calculates date window strings for 2-week filtering
+ */
+const calculateDateWindow = () => {
   const now = new Date();
   const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+  const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
   const today = toUtcMidnight(now);
   const twoWeeksFromToday = toUtcMidnight(twoWeeksFromNow);
+  const twoWeeksAgoFromToday = toUtcMidnight(twoWeeksAgo);
 
-  // Get date strings for MongoDB comparison (YYYY-MM-DD format)
-  const todayStr = today.toISOString().split('T')[0];
-  const twoWeeksFromTodayStr = twoWeeksFromToday.toISOString().split('T')[0];
+  return {
+    todayStr: today.toISOString().split('T')[0],
+    twoWeeksFromTodayStr: twoWeeksFromToday.toISOString().split('T')[0],
+    twoWeeksAgoStr: twoWeeksAgoFromToday.toISOString().split('T')[0],
+  };
+};
 
-  const pipeline: any[] = [
+/**
+ * Builds the date filtering stage for the aggregation pipeline
+ */
+const buildDateFilterStage = (dateWindow: ReturnType<typeof calculateDateWindow>) => {
+  const { todayStr, twoWeeksFromTodayStr, twoWeeksAgoStr } = dateWindow;
+
+  return {
+    $match: {
+      $expr: {
+        $or: [
+          // Non-recurring: start date within 2 weeks (past or future)
+          {
+            $and: [
+              { $eq: ['$recurrenceType', 'none'] },
+              {
+                $and: [
+                  {
+                    $gte: [
+                      {
+                        $dateToString: {
+                          format: '%Y-%m-%d',
+                          date: '$startDate',
+                        },
+                      },
+                      twoWeeksAgoStr,
+                    ],
+                  },
+                  {
+                    $lte: [
+                      {
+                        $dateToString: {
+                          format: '%Y-%m-%d',
+                          date: '$startDate',
+                        },
+                      },
+                      twoWeeksFromTodayStr,
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          // Recurring: started in past or today (normalized), no end date (ongoing - always available)
+          {
+            $and: [
+              { $ne: ['$recurrenceType', 'none'] },
+              {
+                $lte: [
+                  {
+                    $dateToString: {
+                      format: '%Y-%m-%d',
+                      date: '$startDate',
+                    },
+                  },
+                  twoWeeksFromTodayStr,
+                ],
+              },
+            ],
+          },
+          // Recurring: starts in future within 2 weeks (normalized)
+          {
+            $and: [
+              { $ne: ['$recurrenceType', 'none'] },
+              {
+                $gte: [
+                  {
+                    $dateToString: {
+                      format: '%Y-%m-%d',
+                      date: '$startDate',
+                    },
+                  },
+                  todayStr,
+                ],
+              },
+              {
+                $lte: [
+                  {
+                    $dateToString: {
+                      format: '%Y-%m-%d',
+                      date: '$startDate',
+                    },
+                  },
+                  twoWeeksFromTodayStr,
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    },
+  };
+};
+
+/**
+ * Builds the aggregation pipeline stages for public deals
+ */
+const buildPipelineStages = (
+  match: any,
+  dateWindow: ReturnType<typeof calculateDateWindow>,
+  categoryName: string | undefined,
+  title: string | undefined,
+  nearbySiteIds: mongoose.Types.ObjectId[] | undefined,
+  skip: number,
+  limit: number,
+): any[] => {
+  return [
     { $match: match },
     // Add fields for lookups
     {
@@ -735,98 +851,9 @@ const listPublicDeals = async (filters: {
         serviceObjId: { $toObjectId: '$service' },
       },
     },
-    // Filter deals available within 2 weeks using $expr
-    // Note: Dates in MongoDB are stored as UTC, so we compare normalized UTC midnight dates
-    {
-      $match: {
-        $expr: {
-          $or: [
-            // Non-recurring: start date within 2 weeks from today onwards, OR started in past but endDate is today or in future (within 2 weeks)
-            {
-              $and: [
-                { $eq: ['$recurrenceType', 'none'] },
-                {
-                  $or: [
-                    // Starts today or in future within 2 weeks
-                    {
-                      $and: [
-                        {
-                          $gte: [
-                            {
-                              $dateToString: {
-                                format: '%Y-%m-%d',
-                                date: '$startDate',
-                              },
-                            },
-                            todayStr,
-                          ],
-                        },
-                        {
-                          $lte: [
-                            {
-                              $dateToString: {
-                                format: '%Y-%m-%d',
-                                date: '$startDate',
-                              },
-                            },
-                            twoWeeksFromTodayStr,
-                          ],
-                        },
-                      ],
-                    },
-                  ],
-                },
-              ],
-            },
-            // Recurring: started in past or today (normalized), no end date (ongoing - always available)
-            {
-              $and: [
-                { $ne: ['$recurrenceType', 'none'] },
-                {
-                  $lte: [
-                    {
-                      $dateToString: {
-                        format: '%Y-%m-%d',
-                        date: '$startDate',
-                      },
-                    },
-                    twoWeeksFromTodayStr,
-                  ],
-                },
-              ],
-            },
-            // Recurring: starts in future within 2 weeks (normalized)
-            {
-              $and: [
-                { $ne: ['$recurrenceType', 'none'] },
-                {
-                  $gte: [
-                    {
-                      $dateToString: {
-                        format: '%Y-%m-%d',
-                        date: '$startDate',
-                      },
-                    },
-                    todayStr,
-                  ],
-                },
-                {
-                  $lte: [
-                    {
-                      $dateToString: {
-                        format: '%Y-%m-%d',
-                        date: '$startDate',
-                      },
-                    },
-                    twoWeeksFromTodayStr,
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      },
-    },
+    // Filter deals available within 2 weeks
+    buildDateFilterStage(dateWindow),
+    // Lookup business
     {
       $lookup: {
         from: 'businesses',
@@ -841,6 +868,7 @@ const listPublicDeals = async (filters: {
         'business.status': BusinessStatus.ACTIVE,
       },
     },
+    // Lookup service
     {
       $lookup: {
         from: 'services',
@@ -850,6 +878,7 @@ const listPublicDeals = async (filters: {
       },
     },
     { $unwind: '$service' },
+    // Filter by category if provided
     ...(categoryName
       ? [
         {
@@ -859,6 +888,7 @@ const listPublicDeals = async (filters: {
         },
       ]
       : []),
+    // Lookup category data
     {
       $lookup: {
         from: 'categories',
@@ -879,7 +909,7 @@ const listPublicDeals = async (filters: {
       },
     },
     { $unwind: { path: '$categoryData', preserveNullAndEmptyArrays: true } },
-    // Optional title-like search on service name too (applied after lookup)
+    // Optional title search on service name too
     ...(title
       ? [
         {
@@ -892,8 +922,7 @@ const listPublicDeals = async (filters: {
         },
       ]
       : []),
-    // Lookup operating sites for display (and distance if location filtering is enabled)
-    // operatingSite is an array of strings, _id is ObjectId, so we need to convert for lookup
+    // Lookup operating sites
     {
       $lookup: {
         from: 'operateSites',
@@ -910,7 +939,7 @@ const listPublicDeals = async (filters: {
         as: 'sites',
       },
     },
-    // Filter to only active sites if location filtering is enabled, we already filtered by nearbySiteIds
+    // Filter sites based on location filtering
     ...(nearbySiteIds && nearbySiteIds.length > 0
       ? [
         {
@@ -929,7 +958,6 @@ const listPublicDeals = async (filters: {
             },
           },
         },
-        // Only keep deals that have at least one site within radius
         {
           $match: {
             'sites.0': { $exists: true },
@@ -949,6 +977,7 @@ const listPublicDeals = async (filters: {
           },
         },
       ]),
+    // Project final fields
     {
       $project: {
         _id: 1,
@@ -993,6 +1022,48 @@ const listPublicDeals = async (filters: {
     { $skip: skip },
     { $limit: limit },
   ];
+};
+
+const listPublicDeals = async (filters: {
+  category?: string;
+  limit?: number;
+  skip?: number;
+  latitude?: number;
+  longitude?: number;
+  radiusKm?: number;
+  title?: string;
+} = {}) => {
+  const { category, title, limit = 20, skip = 0, latitude, longitude, radiusKm } = filters;
+
+  // Find nearby sites if location filtering is enabled
+  let nearbySiteIds: mongoose.Types.ObjectId[] | undefined;
+  if (latitude != null && longitude != null && radiusKm != null) {
+    nearbySiteIds = await findNearbySiteIds(latitude, longitude, radiusKm);
+  }
+
+  // Build initial match filter
+  const match = buildInitialMatchFilter(nearbySiteIds, title);
+
+  // Validate category filter
+  const categoryName = await validateCategoryFilter(category);
+  if (category && !categoryName) {
+    // Category slug not found or inactive, return empty results
+    return [];
+  }
+
+  // Calculate date window for 2-week filtering
+  const dateWindow = calculateDateWindow();
+
+  // Build aggregation pipeline
+  const pipeline = buildPipelineStages(
+    match,
+    dateWindow,
+    categoryName,
+    title,
+    nearbySiteIds,
+    skip,
+    limit,
+  );
 
   return Deal.aggregate(pipeline);
 };

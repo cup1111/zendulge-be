@@ -29,14 +29,6 @@ const ensureFutureDate = (date: Date, fieldName: string) => {
   }
 };
 
-const ensureEndAfterStart = (start: Date, end: Date) => {
-  const normalizedStart = toUtcMidnight(start);
-  const normalizedEnd = toUtcMidnight(end);
-  if (normalizedEnd.getTime() <= normalizedStart.getTime()) {
-    throw new BadRequestException('End date must be after start date');
-  }
-};
-
 const getDealsByBusiness = async (businessId: string, userId: string): Promise<IDealDocument[]> => {
   const business = await Business.findById(businessId);
   if (!business || !business.hasAccess(userId as any)) {
@@ -200,20 +192,6 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
 
   ensureFutureDate(startDate, 'Start date');
 
-  let endDate: Date | undefined;
-  if (dealData.endDate) {
-    endDate = normalizeDate(dealData.endDate, 'End date');
-    if (recurrenceType !== 'none') {
-      ensureEndAfterStart(startDate, endDate);
-    }
-  } else if (recurrenceType === 'none') {
-    // For non-recurring deals, end date should be set (default to 30 days from start)
-    endDate = normalizeDate(
-      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      'End date',
-    );
-  }
-
   const rawMaxBookings =
     dealData.maxBookings !== undefined && dealData.maxBookings !== null
       ? Number(dealData.maxBookings)
@@ -238,7 +216,6 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
     ...dealData,
     allDay,
     startDate,
-    endDate,
     recurrenceType,
     maxBookings,
     currentBookings,
@@ -410,46 +387,25 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
     updateData,
     'startDate',
   );
-  const hasEndDateUpdate = Object.prototype.hasOwnProperty.call(
-    updateData,
-    'endDate',
-  );
   const hasRecurrenceTypeUpdate = Object.prototype.hasOwnProperty.call(
     updateData,
     'recurrenceType',
   );
 
-  if (hasStartDateUpdate || hasEndDateUpdate || hasRecurrenceTypeUpdate) {
-    const effectiveRecurrenceType = hasRecurrenceTypeUpdate
-      ? updateData.recurrenceType
-      : existingDeal.recurrenceType;
+  if (hasStartDateUpdate || hasRecurrenceTypeUpdate) {
     const effectiveStart = hasStartDateUpdate
       ? normalizeDate(updateData.startDate, 'Start date')
       : new Date(existingDeal.startDate);
-    const effectiveEnd = hasEndDateUpdate
-      ? (updateData.endDate
-        ? normalizeDate(updateData.endDate, 'End date')
-        : existingDeal.endDate
-          ? new Date(existingDeal.endDate)
-          : undefined)
-      : existingDeal.endDate
-        ? new Date(existingDeal.endDate)
-        : undefined;
 
     if (hasStartDateUpdate) {
       ensureFutureDate(effectiveStart, 'Start date');
-    }
-
-    if (effectiveEnd && effectiveRecurrenceType !== 'none') {
-      ensureEndAfterStart(effectiveStart, effectiveEnd);
-    }
-
-    if (hasStartDateUpdate) {
       updateData.startDate = effectiveStart;
     }
-    if (hasEndDateUpdate) {
-      updateData.endDate = effectiveEnd;
-    }
+  }
+
+  // Remove endDate if it exists in updateData
+  if (Object.prototype.hasOwnProperty.call(updateData, 'endDate')) {
+    delete updateData.endDate;
   }
 
   if (Object.prototype.hasOwnProperty.call(updateData, 'maxBookings')) {
@@ -818,35 +774,6 @@ const listPublicDeals = async (filters: {
                         },
                       ],
                     },
-                    // Started in past but endDate is today or in future (deal is still active)
-                    // Since it's still active, it's available within the next 2 weeks
-                    {
-                      $and: [
-                        {
-                          $lt: [
-                            {
-                              $dateToString: {
-                                format: '%Y-%m-%d',
-                                date: '$startDate',
-                              },
-                            },
-                            todayStr,
-                          ],
-                        },
-                        { $ne: [{ $ifNull: ['$endDate', null] }, null] },
-                        {
-                          $gte: [
-                            {
-                              $dateToString: {
-                                format: '%Y-%m-%d',
-                                date: '$endDate',
-                              },
-                            },
-                            todayStr,
-                          ],
-                        },
-                      ],
-                    },
                   ],
                 },
               ],
@@ -864,41 +791,6 @@ const listPublicDeals = async (filters: {
                       },
                     },
                     twoWeeksFromTodayStr,
-                  ],
-                },
-                {
-                  $or: [
-                    { $eq: ['$endDate', null] },
-                    { $eq: [{ $ifNull: ['$endDate', null] }, null] },
-                  ],
-                },
-              ],
-            },
-            // Recurring: started in past or today (normalized), end date (normalized) is today or in future
-            {
-              $and: [
-                { $ne: ['$recurrenceType', 'none'] },
-                {
-                  $lte: [
-                    {
-                      $dateToString: {
-                        format: '%Y-%m-%d',
-                        date: '$startDate',
-                      },
-                    },
-                    twoWeeksFromTodayStr,
-                  ],
-                },
-                { $ne: [{ $ifNull: ['$endDate', null] }, null] },
-                {
-                  $gte: [
-                    {
-                      $dateToString: {
-                        format: '%Y-%m-%d',
-                        date: '$endDate',
-                      },
-                    },
-                    todayStr,
                   ],
                 },
               ],
@@ -1074,7 +966,6 @@ const listPublicDeals = async (filters: {
         duration: 1,
         allDay: 1,
         startDate: 1,
-        endDate: 1,
         recurrenceType: 1,
         business: { _id: '$business._id', name: '$business.name', status: '$business.status' },
         service: {
@@ -1182,34 +1073,6 @@ export default {
                               },
                             ],
                           },
-                          // Started in past but endDate is today or in future (deal is still active)
-                          {
-                            $and: [
-                              {
-                                $lt: [
-                                  {
-                                    $dateToString: {
-                                      format: '%Y-%m-%d',
-                                      date: '$startDate',
-                                    },
-                                  },
-                                  todayStr,
-                                ],
-                              },
-                              { $ne: [{ $ifNull: ['$endDate', null] }, null] },
-                              {
-                                $gte: [
-                                  {
-                                    $dateToString: {
-                                      format: '%Y-%m-%d',
-                                      date: '$endDate',
-                                    },
-                                  },
-                                  todayStr,
-                                ],
-                              },
-                            ],
-                          },
                         ],
                       },
                     ],
@@ -1227,41 +1090,6 @@ export default {
                             },
                           },
                           twoWeeksFromTodayStr,
-                        ],
-                      },
-                      {
-                        $or: [
-                          { $eq: ['$endDate', null] },
-                          { $eq: [{ $ifNull: ['$endDate', null] }, null] },
-                        ],
-                      },
-                    ],
-                  },
-                  // Recurring: started in past or today, end date is today or in future
-                  {
-                    $and: [
-                      { $ne: ['$recurrenceType', 'none'] },
-                      {
-                        $lte: [
-                          {
-                            $dateToString: {
-                              format: '%Y-%m-%d',
-                              date: '$startDate',
-                            },
-                          },
-                          twoWeeksFromTodayStr,
-                        ],
-                      },
-                      { $ne: [{ $ifNull: ['$endDate', null] }, null] },
-                      {
-                        $gte: [
-                          {
-                            $dateToString: {
-                              format: '%Y-%m-%d',
-                              date: '$endDate',
-                            },
-                          },
-                          todayStr,
                         ],
                       },
                     ],
@@ -1374,7 +1202,6 @@ export default {
           sections: 1,
           allDay: 1,
           startDate: 1,
-          endDate: 1,
           recurrenceType: 1,
           business: { _id: '$business._id', name: '$business.name', status: '$business.status' },
           service: {
@@ -1392,6 +1219,7 @@ export default {
                 _id: '$$site._id',
                 name: '$$site.name',
                 address: '$$site.address',
+                operatingHours: '$$site.operatingHours',
               },
             },
           },
@@ -1401,6 +1229,26 @@ export default {
       { $limit: 1 },
     ];
     const result = await Deal.aggregate(pipeline);
-    return result[0] || null;
+    const deal = result[0] || null;
+
+    if (!deal) {
+      return null;
+    }
+
+    // Calculate available time slots
+    const { calculateAvailableTimeSlots } = require('../utils/timeSlotUtils');
+    const availableTimeSlots = calculateAvailableTimeSlots({
+      startDate: new Date(deal.startDate),
+      allDay: deal.allDay,
+      recurrenceType: deal.recurrenceType,
+      duration: deal.duration,
+      sections: deal.sections,
+      operatingSites: deal.sites || [],
+    });
+
+    return {
+      ...deal,
+      availableTimeSlots,
+    };
   },
 };

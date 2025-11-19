@@ -94,7 +94,7 @@ const createSitesIfNoExists = async (business: any) => {
       thursday: { open: '09:00', close: '17:00', isClosed: false },
       friday: { open: '09:00', close: '17:00', isClosed: false },
       saturday: { open: '10:00', close: '16:00', isClosed: false },
-      sunday: { open: '12:00', close: '15:00', isClosed: true },
+      sunday: { open: '10:00', close: '16:00', isClosed: false },
     },
     specialInstruction:
       'Boutique location specializing in premium consultations. Valet parking available.',
@@ -264,7 +264,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
         date.setHours(9, 0, 0, 0); // 9:00 AM
         return date;
       })(),
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       recurrenceType: 'none',
       maxBookings: 50,
       currentBookings: 12,
@@ -288,7 +287,7 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
         date.setHours(0, 0, 0, 0); // Start of day for allDay deals
         return date;
       })(),
-      recurrenceType: 'weekdays',
+      recurrenceType: 'daily',
       maxBookings: 20,
       currentBookings: 5,
       status: 'active',
@@ -308,10 +307,10 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
       allDay: false,
       startDate: (() => {
         const date = new Date();
+        date.setDate(date.getDate() - 2); // 2 days ago
         date.setHours(10, 0, 0, 0); // 10:00 AM
         return date;
       })(),
-      endDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000), // 45 days from now
       recurrenceType: 'weekly',
       maxBookings: 30,
       currentBookings: 8,
@@ -335,7 +334,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
         date.setHours(14, 0, 0, 0); // 2:00 PM
         return date;
       })(),
-      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       recurrenceType: 'none',
       maxBookings: 40,
       currentBookings: 15,
@@ -359,7 +357,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
         date.setHours(0, 0, 0, 0); // Start of day for allDay deals
         return date;
       })(),
-      endDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
       recurrenceType: 'none',
       maxBookings: 10,
       currentBookings: 10,
@@ -406,7 +403,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
         date.setHours(11, 0, 0, 0); // 11:00 AM
         return date;
       })(),
-      endDate: new Date(Date.now() + 65 * 24 * 60 * 60 * 1000), // 65 days from now
       recurrenceType: 'none',
       maxBookings: 50,
       currentBookings: 0,
@@ -779,7 +775,6 @@ const seedCompleteBusinessSetup = async () => {
         createdBy: pendingBusinessOwner.id,
         allDay: false,
         startDate: pendingStartDate,
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         recurrenceType: 'none',
         maxBookings: 10,
         currentBookings: 0,
@@ -876,7 +871,6 @@ const seedCompleteBusinessSetup = async () => {
         createdBy: disabledBusinessOwner.id,
         allDay: false,
         startDate: disabledStartDate,
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         recurrenceType: 'none',
         maxBookings: 10,
         currentBookings: 0,

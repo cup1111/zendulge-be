@@ -10,7 +10,6 @@ export interface IDeal {
   operatingSite: string[]; // Array of Operating Site ID references
   allDay: boolean; // Whether the deal is available all day
   startDate: Date; // When the deal starts (start of recurring pattern)
-  endDate?: Date; // When the deal ends (end of recurring pattern, optional for recurring deals)
   recurrenceType: 'none' | 'daily' | 'weekly' | 'weekdays' | 'monthly' | 'annually';
   maxBookings?: number;
   currentBookings: number;
@@ -72,10 +71,6 @@ const dealSchema = new Schema<IDealDocument>({
     type: Date,
     required: true,
   },
-  endDate: {
-    type: Date,
-    required: false,
-  },
   recurrenceType: {
     type: String,
     enum: ['none', 'daily', 'weekly', 'weekdays', 'monthly', 'annually'],
@@ -129,7 +124,7 @@ dealSchema.index({ business: 1, status: 1 });
 dealSchema.index({ business: 1, 'operatingSite': 1 });
 dealSchema.index({ business: 1, service: 1 });
 dealSchema.index({ business: 1, createdBy: 1 });
-dealSchema.index({ startDate: 1, endDate: 1 });
+dealSchema.index({ startDate: 1 });
 dealSchema.index({ startDate: 1, recurrenceType: 1 });
 
 const Deal = mongoose.model<IDealDocument>('deals', dealSchema);

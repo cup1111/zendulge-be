@@ -49,10 +49,6 @@ export const createDealValidation = [
     .withMessage('Start date is required')
     .isISO8601()
     .withMessage('Start date must be a valid date'),
-  body('endDate')
-    .optional()
-    .isISO8601()
-    .withMessage('End date must be a valid date'),
   body('recurrenceType')
     .notEmpty()
     .withMessage('Recurrence type is required')
@@ -84,27 +80,6 @@ export const createDealValidation = [
 
       if (startDate.getTime() < today.getTime()) {
         throw new Error('Start date cannot be before today');
-      }
-
-      // For non-recurring deals, endDate is required
-      const recurrenceType = value.recurrenceType || 'none';
-      if (recurrenceType === 'none' && !value.endDate) {
-        throw new Error('End date is required for non-recurring deals');
-      }
-
-      if (value.endDate) {
-        const endDate = new Date(value.endDate);
-        if (!Number.isNaN(endDate.getTime())) {
-          endDate.setHours(0, 0, 0, 0);
-
-          if (endDate.getTime() < today.getTime()) {
-            throw new Error('End date cannot be before today');
-          }
-
-          if (endDate.getTime() <= startDate.getTime()) {
-            throw new Error('End date must be after start date');
-          }
-        }
       }
 
       return true;
@@ -180,10 +155,6 @@ export const updateDealValidation = [
     .optional()
     .isISO8601()
     .withMessage('Start date must be a valid date'),
-  body('endDate')
-    .optional()
-    .isISO8601()
-    .withMessage('End date must be a valid date'),
   body('recurrenceType')
     .optional()
     .isIn(['none', 'daily', 'weekly', 'weekdays', 'monthly', 'annually'])
@@ -206,35 +177,14 @@ export const updateDealValidation = [
       today.setHours(0, 0, 0, 0);
 
       const hasStartDate = Object.prototype.hasOwnProperty.call(value, 'startDate');
-      const hasEndDate = Object.prototype.hasOwnProperty.call(value, 'endDate');
-      const hasRecurrenceType = Object.prototype.hasOwnProperty.call(value, 'recurrenceType');
-
-      let normalizedStart: Date | undefined;
 
       if (hasStartDate) {
         const startDate = new Date(value.startDate);
         if (!Number.isNaN(startDate.getTime())) {
           startDate.setHours(0, 0, 0, 0);
-          normalizedStart = startDate;
 
           if (startDate.getTime() < today.getTime()) {
             throw new Error('Start date cannot be before today');
-          }
-        }
-      }
-
-      if (hasEndDate) {
-        const endDate = new Date(value.endDate);
-        if (!Number.isNaN(endDate.getTime())) {
-          endDate.setHours(0, 0, 0, 0);
-
-          if (endDate.getTime() < today.getTime()) {
-            throw new Error('End date cannot be before today');
-          }
-
-          const recurrenceType = hasRecurrenceType ? value.recurrenceType : 'none';
-          if (recurrenceType !== 'none' && normalizedStart && endDate.getTime() <= normalizedStart.getTime()) {
-            throw new Error('End date must be after start date');
           }
         }
       }

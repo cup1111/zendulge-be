@@ -51,21 +51,13 @@ yarn fix-vscode-cli
 # Install all recommended extensions
 yarn setup-vscode-plugin
 
+cp .env.example .env (CONFIG THE .env VALUE, eg: database)
+
 # Setup Sample data for project
 yarn setup
 ```
 
-### 3. Environment Configuration
-
-Copy the example environment file and configure your settings:
-
-```bash
-cp .env.example .env
-```
-
-Edit the `.env` file with your configuration:
-
-### 4. Build the Application
+### 3. Build the Application
 
 ```bash
 yarn build

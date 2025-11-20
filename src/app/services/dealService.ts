@@ -3,13 +3,24 @@ import Business from '../model/business';
 import Service from '../model/service';
 import { BadRequestException } from '../exceptions';
 import { BusinessStatus } from '../enum/businessStatus';
-import { DealPipelineBuilder } from './deals/DealPipelineBuilder';
+import { DealAggregationBuilder } from './deals/DealAggregationBuilder';
 import { PublicDealQuery } from './deals/PublicDealQuery';
-import { CategoryFilterStrategy } from './deals/strategies/CategoryFilterStrategy';
-import { DateFilterStrategy } from './deals/strategies/DateFilterStrategy';
-import { LocationFilterStrategy } from './deals/strategies/LocationFilterStrategy';
-import { TitleFilterStrategy } from './deals/strategies/TitleFilterStrategy';
-import type { FilterStrategy } from './deals/strategies/types';
+import { BusinessLookupStage } from './deals/stages/BusinessLookupStage';
+import { CategoryFilterStage } from './deals/stages/CategoryFilterStage';
+import { CategoryLookupStage } from './deals/stages/CategoryLookupStage';
+import { DateFilterStage } from './deals/stages/DateFilterStage';
+import { DealStatusStage } from './deals/stages/DealStatusStage';
+import { LocationMatchStage } from './deals/stages/LocationMatchStage';
+import { ObjectIdFieldsStage } from './deals/stages/ObjectIdFieldsStage';
+import { OperatingSitesLookupStage } from './deals/stages/OperatingSitesLookupStage';
+import { ProjectStage } from './deals/stages/ProjectStage';
+import { ServiceLookupStage } from './deals/stages/ServiceLookupStage';
+import { SiteFilterStage } from './deals/stages/SiteFilterStage';
+import { SortStage } from './deals/stages/SortStage';
+import { TitleFilterStage } from './deals/stages/TitleFilterStage';
+import { CategoryStage } from './deals/stages/CategoryStage';
+import { DateStage } from './deals/stages/DateStage';
+import { LocationStage } from './deals/stages/LocationStage';
 import OperateSite from '../model/operateSite';
 import { toUtcMidnight, normalizeDate } from '../utils/timeUtils';
 
@@ -566,7 +577,7 @@ const updateDealStatus = async (businessId: string, dealId: string, userId: stri
 };
 
 /**
- * Main function using Builder + Strategy pattern
+ * Main function using Builder Pattern with Fluent Interface
  */
 const listPublicDeals = async (filters: {
   category?: string;
@@ -577,41 +588,27 @@ const listPublicDeals = async (filters: {
   radiusKm?: number;
   title?: string;
 } = {}) => {
-  // Create query object
   const query = new PublicDealQuery(filters);
 
-  // Create builder
-  const builder = new DealPipelineBuilder();
+  const builder = new DealAggregationBuilder()
+    .add(new LocationStage())
+    .add(new CategoryStage())
+    .add(new DateStage())
+    .add(new DealStatusStage())
+    .add(new LocationMatchStage())
+    .add(new ObjectIdFieldsStage())
+    .add(new DateFilterStage())
+    .add(new BusinessLookupStage())
+    .add(new ServiceLookupStage())
+    .add(new CategoryFilterStage())
+    .add(new CategoryLookupStage())
+    .add(new TitleFilterStage())
+    .add(new OperatingSitesLookupStage())
+    .add(new SiteFilterStage())
+    .add(new ProjectStage())
+    .add(new SortStage());
 
-  // Create filter strategies
-  const strategies: FilterStrategy[] = [
-    new LocationFilterStrategy(),
-    new CategoryFilterStrategy(),
-    new DateFilterStrategy(),
-    new TitleFilterStrategy(),
-  ];
-
-  // Apply all strategies
-  for (const strategy of strategies) {
-    await strategy.apply(builder, query);
-  }
-
-  // Get nearby site IDs from builder (set by LocationFilterStrategy)
-  const nearbySiteIds = builder.getNearbySiteIds();
-
-  // Build initial match and ObjectId fields
-  builder
-    .withInitialMatch(nearbySiteIds, query.title)
-    .withObjectIdFields();
-
-  // Build pipeline and execute
-  const pipeline = builder.build();
-
-  // Add pagination
-  pipeline.push({ $skip: query.skip });
-  pipeline.push({ $limit: query.limit });
-
-  return Deal.aggregate(pipeline);
+  return builder.execute(query);
 };
 
 export default {

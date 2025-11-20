@@ -1,14 +1,13 @@
-import mongoose from 'mongoose';
+import type mongoose from 'mongoose';
 
 import OperateSite from '../../../model/operateSite';
-import type { DealPipelineBuilder } from '../DealPipelineBuilder';
 import type { PublicDealQuery } from '../PublicDealQuery';
-import type { FilterStrategy } from './types';
+import type { PipelineContext, PipelineStage } from '../stages/types';
 
 /**
- * Location filter strategy - finds nearby sites and filters deals by location
+ * Location stage - finds nearby sites and sets context for location filtering
  */
-export class LocationFilterStrategy implements FilterStrategy {
+export class LocationStage implements PipelineStage {
   /**
    * Calculates Haversine distance between two geographic points
    */
@@ -104,9 +103,9 @@ export class LocationFilterStrategy implements FilterStrategy {
     }
   }
 
-  async apply(builder: DealPipelineBuilder, query: PublicDealQuery): Promise<void> {
+  async build(query: PublicDealQuery, context: PipelineContext): Promise<mongoose.PipelineStage[]> {
     if (!query.hasLocationFilter()) {
-      return;
+      return [];
     }
 
     const nearbySiteIds = await this.findNearbySiteIds(
@@ -115,7 +114,12 @@ export class LocationFilterStrategy implements FilterStrategy {
       query.radiusKm!,
     );
 
-    builder.withLocationFilter(nearbySiteIds);
+    // Set context for other stages to use
+    context.nearbySiteIds = nearbySiteIds;
+
+    // This stage doesn't add pipeline stages itself, it just sets context
+    // The actual filtering is done by SiteFilterStage
+    return [];
   }
 }
 

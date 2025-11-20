@@ -11,6 +11,7 @@ import type { PipelineContext, PipelineStage } from './types';
  * and AFTER SiteFilterStage (so radius/location filters are already applied).
  */
 export class LocationTextSearchStage implements PipelineStage {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async build(query: PublicDealQuery, _context: PipelineContext): Promise<mongoose.PipelineStage[]> {
     if (!query.hasLocationSearch()) {
       return [];

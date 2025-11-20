@@ -7,6 +7,7 @@ import type { PipelineContext, PipelineStage } from './types';
  * Category lookup stage - joins with categories collection
  */
 export class CategoryLookupStage implements PipelineStage {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async build(_query: PublicDealQuery, _context: PipelineContext): Promise<mongoose.PipelineStage[]> {
     return [
       {

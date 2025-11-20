@@ -21,6 +21,7 @@ import { TitleFilterStage } from './deals/stages/TitleFilterStage';
 import { CategoryStage } from './deals/stages/CategoryStage';
 import { DateStage } from './deals/stages/DateStage';
 import { LocationStage } from './deals/stages/LocationStage';
+import { LocationTextSearchStage } from './deals/stages/LocationTextSearchStage';
 import OperateSite from '../model/operateSite';
 import { toUtcMidnight, normalizeDate } from '../utils/timeUtils';
 
@@ -587,6 +588,7 @@ const listPublicDeals = async (filters: {
   longitude?: number;
   radiusKm?: number;
   title?: string;
+  locationQuery?: string;
 } = {}) => {
   const query = new PublicDealQuery(filters);
 
@@ -605,6 +607,7 @@ const listPublicDeals = async (filters: {
     .add(new TitleFilterStage())
     .add(new OperatingSitesLookupStage())
     .add(new SiteFilterStage())
+    .add(new LocationTextSearchStage())
     .add(new ProjectStage())
     .add(new SortStage());
 

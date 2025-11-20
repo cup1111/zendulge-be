@@ -127,6 +127,11 @@ export default class BusinessBuilder extends BaseBuilder<IBusinessDocument> {
         return this;
     }
 
+    withOperatingHours(operatingHours: any): BusinessBuilder {
+        this.properties.operatingHours = operatingHours;
+        return this;
+    }
+
     async save(): Promise<IBusinessDocument> {
         return super.save(Business);
     }

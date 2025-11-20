@@ -1,16 +1,16 @@
-import mongoose, { Schema, Document, Types } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IDeal {
   title: string;
   description: string;
-  category: Types.ObjectId | string;
   price: number;
   originalPrice?: number;
-  discount?: number;
   duration: number; // Duration in minutes
+  sections: number; // Number of sections (endTime = duration * sections)
   operatingSite: string[]; // Array of Operating Site ID references
-  startDate: Date;
-  endDate: Date;
+  allDay: boolean; // Whether the deal is available all day
+  startDate: Date; // When the deal starts (start of recurring pattern)
+  recurrenceType: 'none' | 'daily' | 'weekly' | 'weekdays' | 'monthly' | 'annually';
   maxBookings?: number;
   currentBookings: number;
   status: 'active' | 'inactive' | 'expired' | 'sold_out';
@@ -36,12 +36,6 @@ const dealSchema = new Schema<IDealDocument>({
     trim: true,
     maxlength: 1000,
   },
-  category: {
-    type: Schema.Types.ObjectId,
-    required: true,
-    ref: 'categories',
-    index: true,
-  },
   price: {
     type: Number,
     required: true,
@@ -51,29 +45,37 @@ const dealSchema = new Schema<IDealDocument>({
     type: Number,
     min: 0,
   },
-  discount: {
-    type: Number,
-    min: 0,
-    max: 100,
-  },
   duration: {
     type: Number,
     required: true,
     min: 1,
     max: 1440, // up to 24 hours
   },
+  sections: {
+    type: Number,
+    required: true,
+    min: 1,
+    default: 1,
+  },
   operatingSite: {
     type: [String],
     required: true,
     ref: 'operateSites',
   },
+  allDay: {
+    type: Boolean,
+    required: true,
+    default: false,
+  },
   startDate: {
     type: Date,
     required: true,
   },
-  endDate: {
-    type: Date,
+  recurrenceType: {
+    type: String,
+    enum: ['none', 'daily', 'weekly', 'weekdays', 'monthly', 'annually'],
     required: true,
+    default: 'none',
   },
   maxBookings: {
     type: Number,
@@ -122,8 +124,8 @@ dealSchema.index({ business: 1, status: 1 });
 dealSchema.index({ business: 1, 'operatingSite': 1 });
 dealSchema.index({ business: 1, service: 1 });
 dealSchema.index({ business: 1, createdBy: 1 });
-dealSchema.index({ category: 1 });
-dealSchema.index({ startDate: 1, endDate: 1 });
+dealSchema.index({ startDate: 1 });
+dealSchema.index({ startDate: 1, recurrenceType: 1 });
 
 const Deal = mongoose.model<IDealDocument>('deals', dealSchema);
 export default Deal;

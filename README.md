@@ -38,6 +38,10 @@ Before running this application, make sure you have the following installed:
 yarn install
 ```
 
+```bash
+nvm install
+```
+
 ### 2. Setup VS Code Extensions
 
 ```bash
@@ -47,21 +51,13 @@ yarn fix-vscode-cli
 # Install all recommended extensions
 yarn setup-vscode-plugin
 
+cp .env.example .env (CONFIG THE .env VALUE, eg: database)
+
 # Setup Sample data for project
 yarn setup
 ```
 
-### 3. Environment Configuration
-
-Copy the example environment file and configure your settings:
-
-```bash
-cp .env.example .env
-```
-
-Edit the `.env` file with your configuration:
-
-### 4. Build the Application
+### 3. Build the Application
 
 ```bash
 yarn build
@@ -216,3 +212,9 @@ Month 4 (Feb 2026, by 5 Feb) 7. Stripe Test Payment, 8. MVP Finalisation, 9. Fin
 ## invite user forgot to assign sites, only buiness owner can solve this issue
 
 ## Services ???
+
+
+### License
+© 2025 Zendulge. All Rights Reserved.
+
+Unauthorized copying of this file is strictly prohibited.

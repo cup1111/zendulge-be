@@ -3,11 +3,10 @@ import app from '../setup/app';
 import BusinessBuilder from './builders/businessBuilder';
 import OperateSiteBuilder from './builders/operateSiteBuilder';
 import UserBuilder from './builders/userBuilder';
+import CategoryBuilder from './builders/categoryBuilder';
+import ServiceBuilder from './builders/serviceBuilder';
 import Role from '../../src/app/model/role';
-import Service from '../../src/app/model/service';
-import Category from '../../src/app/model/category';
 import { RoleName } from '../../src/app/enum/roles';
-import { BusinessStatus } from '../../src/app/enum/businessStatus';
 
 describe('Deal CRUD operations', () => {
     let ownerUser: any;
@@ -49,22 +48,23 @@ describe('Deal CRUD operations', () => {
         operateSite.members = [ownerUser._id];
         await operateSite.save();
 
-        // Create a category
-        category = await Category.create({
-            name: 'Test Category',
-            slug: 'test-category',
-            icon: '🧪',
-            isActive: true,
-        });
+        // Create a category using builder
+        category = await new CategoryBuilder()
+            .withName('Test Category')
+            .withSlug('test-category')
+            .withIcon('🧪')
+            .withActive()
+            .save();
 
-        service = await Service.create({
-            name: 'Test Service',
-            category: 'Wellness',
-            duration: 60,
-            basePrice: 120,
-            business: business._id.toString(),
-            status: BusinessStatus.ACTIVE,
-        });
+        // Create a service using builder
+        service = await new ServiceBuilder()
+            .withName('Test Service')
+            .withCategory('Wellness')
+            .withDuration(60)
+            .withBasePrice(120)
+            .withBusiness(business._id)
+            .withActive()
+            .save();
 
         ownerToken = await loginAndGetToken('deal-crud-owner@example.com', 'OwnerCRUD123!');
     });
@@ -80,14 +80,16 @@ describe('Deal CRUD operations', () => {
                 .send({
                     title: 'Test Deal',
                     description: 'Test Deal Description',
-                    category: category.slug, // Use slug
                     price: 90,
                     originalPrice: 120,
                     duration: 60,
+                    sections: 1,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(201);
@@ -102,15 +104,6 @@ describe('Deal CRUD operations', () => {
             expect(createdDeal.price).toBe(90);
             expect(createdDeal.originalPrice).toBe(120);
 
-            // Verify category is populated (should be an object, not just an ObjectId)
-            expect(createdDeal.category).toBeDefined();
-            expect(typeof createdDeal.category).toBe('object');
-            expect(createdDeal.category).not.toBeNull();
-            expect(createdDeal.category._id).toBeDefined();
-            expect(createdDeal.category.name).toBe(category.name);
-            expect(createdDeal.category.slug).toBe(category.slug);
-            expect(createdDeal.category.icon).toBe(category.icon);
-
             // Verify service is populated
             expect(createdDeal.service).toBeDefined();
             expect(typeof createdDeal.service).toBe('object');
@@ -119,6 +112,7 @@ describe('Deal CRUD operations', () => {
             expect(createdDeal.service.name).toBe(service.name);
             expect(createdDeal.service.basePrice).toBe(service.basePrice);
             expect(createdDeal.service.duration).toBe(service.duration);
+            expect(createdDeal.service.category).toBe(service.category);
 
             // Verify operatingSite is populated (should be an array of objects)
             expect(createdDeal.operatingSite).toBeDefined();
@@ -149,10 +143,13 @@ describe('Deal CRUD operations', () => {
                     category: category.slug,
                     price: 100,
                     duration: 60,
+                    sections: 1,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 });
 
@@ -178,10 +175,13 @@ describe('Deal CRUD operations', () => {
                     category: category.slug,
                     price: 120, // Equal to base price
                     duration: 60,
+                    sections: 1,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(400);
@@ -199,10 +199,13 @@ describe('Deal CRUD operations', () => {
                     category: category.slug,
                     price: 150, // Greater than base price
                     duration: 60,
+                    sections: 1,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(400);
@@ -224,10 +227,13 @@ describe('Deal CRUD operations', () => {
                     category: category.slug,
                     price: 90, // Less than base price (120)
                     duration: 60,
+                    sections: 1,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(201);
@@ -250,10 +256,13 @@ describe('Deal CRUD operations', () => {
                     category: category.slug,
                     price: 90,
                     duration: 60,
+                    sections: 1,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(201);
@@ -299,10 +308,13 @@ describe('Deal CRUD operations', () => {
                     category: category.slug,
                     price: 90,
                     duration: 60,
+                    sections: 1,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(201);
@@ -323,15 +335,15 @@ describe('Deal CRUD operations', () => {
         });
 
         it('should validate price against new service base price when service is updated', async () => {
-            // Create a new service with different base price
-            const newService = await Service.create({
-                name: 'Premium Service',
-                category: 'Wellness',
-                duration: 90,
-                basePrice: 200,
-                business: business._id.toString(),
-                status: BusinessStatus.ACTIVE,
-            });
+            // Create a new service with different base price using builder
+            const newService = await new ServiceBuilder()
+                .withName('Premium Service')
+                .withCategory('Wellness')
+                .withDuration(90)
+                .withBasePrice(200)
+                .withBusiness(business._id)
+                .withActive()
+                .save();
 
             // Create a deal with first service
             const startDate = new Date();
@@ -346,10 +358,13 @@ describe('Deal CRUD operations', () => {
                     category: category.slug,
                     price: 90,
                     duration: 60,
+                    sections: 1,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(201);
@@ -399,10 +414,13 @@ describe('Deal CRUD operations', () => {
                     category: category.slug,
                     price: 80,
                     duration: 60,
+                    sections: 1,
                     operatingSite: [operateSite._id.toString()],
                     service: service._id.toString(),
+                    allDay: false,
                     startDate: startDate.toISOString(),
                     endDate: endDate.toISOString(),
+                    recurrenceType: 'none',
                     status: 'active',
                 })
                 .expect(201);
@@ -422,14 +440,10 @@ describe('Deal CRUD operations', () => {
             const foundDeal = listResponse.body.data.find((d: any) => d._id === dealId);
             expect(foundDeal).toBeDefined();
 
-            // Verify all fields are populated
-            expect(foundDeal.category).toBeDefined();
-            expect(typeof foundDeal.category).toBe('object');
-            expect(foundDeal.category.name).toBe(category.name);
-
             expect(foundDeal.service).toBeDefined();
             expect(typeof foundDeal.service).toBe('object');
             expect(foundDeal.service.name).toBe(service.name);
+            expect(foundDeal.service.category).toBe(service.category);
 
             expect(foundDeal.operatingSite).toBeDefined();
             expect(Array.isArray(foundDeal.operatingSite)).toBe(true);

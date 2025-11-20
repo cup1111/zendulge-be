@@ -39,6 +39,21 @@ export default class OperateSiteBuilder extends BaseBuilder<IOperateSiteDocument
     return this;
   }
 
+  withLatitude(latitude: number): OperateSiteBuilder {
+    this.properties.latitude = latitude;
+    return this;
+  }
+
+  withLongitude(longitude: number): OperateSiteBuilder {
+    this.properties.longitude = longitude;
+    return this;
+  }
+
+  withOperatingHours(operatingHours: any): OperateSiteBuilder {
+    this.properties.operatingHours = operatingHours;
+    return this;
+  }
+
   build(): any {
     return this.properties;
   }

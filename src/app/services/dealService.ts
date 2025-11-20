@@ -1,24 +1,28 @@
 import Deal, { IDealDocument } from '../model/deal';
 import Business from '../model/business';
 import Service from '../model/service';
-import OperateSite from '../model/operateSite';
-import Category from '../model/category';
 import { BadRequestException } from '../exceptions';
 import { BusinessStatus } from '../enum/businessStatus';
-import mongoose from 'mongoose';
-
-const toUtcMidnight = (date: Date): Date =>
-  new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-
-const normalizeDate = (value: any, fieldName: string): Date => {
-  const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    throw new BadRequestException(`${fieldName} must be a valid date`);
-  }
-
-  return toUtcMidnight(date);
-};
+import { DealAggregationBuilder } from './deals/DealAggregationBuilder';
+import { PublicDealQuery } from './deals/PublicDealQuery';
+import { BusinessLookupStage } from './deals/stages/BusinessLookupStage';
+import { CategoryFilterStage } from './deals/stages/CategoryFilterStage';
+import { CategoryLookupStage } from './deals/stages/CategoryLookupStage';
+import { DateFilterStage } from './deals/stages/DateFilterStage';
+import { DealStatusStage } from './deals/stages/DealStatusStage';
+import { LocationMatchStage } from './deals/stages/LocationMatchStage';
+import { ObjectIdFieldsStage } from './deals/stages/ObjectIdFieldsStage';
+import { OperatingSitesLookupStage } from './deals/stages/OperatingSitesLookupStage';
+import { ProjectStage } from './deals/stages/ProjectStage';
+import { ServiceLookupStage } from './deals/stages/ServiceLookupStage';
+import { SiteFilterStage } from './deals/stages/SiteFilterStage';
+import { SortStage } from './deals/stages/SortStage';
+import { TitleFilterStage } from './deals/stages/TitleFilterStage';
+import { CategoryStage } from './deals/stages/CategoryStage';
+import { DateStage } from './deals/stages/DateStage';
+import { LocationStage } from './deals/stages/LocationStage';
+import OperateSite from '../model/operateSite';
+import { toUtcMidnight, normalizeDate } from '../utils/timeUtils';
 
 const startOfToday = (): Date => toUtcMidnight(new Date());
 
@@ -28,44 +32,6 @@ const ensureFutureDate = (date: Date, fieldName: string) => {
   if (normalized.getTime() < today.getTime()) {
     throw new BadRequestException(`${fieldName} cannot be before today`);
   }
-};
-
-const ensureEndAfterStart = (start: Date, end: Date) => {
-  const normalizedStart = toUtcMidnight(start);
-  const normalizedEnd = toUtcMidnight(end);
-  if (normalizedEnd.getTime() <= normalizedStart.getTime()) {
-    throw new BadRequestException('End date must be after start date');
-  }
-};
-
-const normalizeDiscount = (
-  originalPrice?: number | null,
-  price?: number | null,
-): number | undefined => {
-  if (
-    originalPrice === undefined ||
-    originalPrice === null ||
-    price === undefined ||
-    price === null ||
-    originalPrice === 0
-  ) {
-    return undefined;
-  }
-
-  const rawDiscount = Math.round(((originalPrice - price) / originalPrice) * 100);
-  if (Number.isNaN(rawDiscount)) {
-    return undefined;
-  }
-
-  if (rawDiscount <= 0) {
-    return 0;
-  }
-
-  if (rawDiscount >= 100) {
-    return 100;
-  }
-
-  return rawDiscount;
 };
 
 const getDealsByBusiness = async (businessId: string, userId: string): Promise<IDealDocument[]> => {
@@ -101,7 +67,6 @@ const getDealsByBusiness = async (businessId: string, userId: string): Promise<I
   }
 
   return Deal.find(dealsQuery)
-    .populate('category', 'name slug icon')
     .populate('service', 'name category basePrice duration')
     .populate('operatingSite', 'name address')
     .populate('createdBy', 'firstName lastName email');
@@ -113,7 +78,6 @@ const getDealById = async (businessId: string, dealId: string, userId: string): 
     throw new Error('Business not found or access denied');
   }
   const deal = await Deal.findOne({ _id: dealId, business: businessId })
-    .populate('category', 'name slug icon')
     .populate('service', 'name category basePrice duration')
     .populate('operatingSite', 'name address');
   if (!deal) {
@@ -177,8 +141,8 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
     }
   }
 
-  // Update dealData to use array
-  dealData.operatingSite = operatingSiteIds;
+  // Update dealData to use array, ensuring IDs are strings (schema expects [String])
+  dealData.operatingSite = operatingSiteIds.map((id: any) => String(id));
 
   // Set original price from service if not provided
   if (!dealData.originalPrice) {
@@ -188,6 +152,10 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
   if (!dealData.duration) {
     dealData.duration = service.duration;
   }
+  // Set sections to 1 if not provided
+  if (!dealData.sections) {
+    dealData.sections = 1;
+  }
 
   // Validate that deal price is less than base price
   const dealPrice = dealData.price ?? service.basePrice;
@@ -195,23 +163,13 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
     throw new BadRequestException('Deal price must be less than the service base price');
   }
 
-  // Calculate discount if originalPrice and price are provided
-  if (dealData.originalPrice !== undefined || dealData.price !== undefined) {
-    const normalizedDiscount = normalizeDiscount(
-      dealData.originalPrice ?? service.basePrice,
-      dealData.price ?? service.basePrice,
-    );
-    dealData.discount = normalizedDiscount;
+  // Remove discount from dealData if it exists (we calculate it on-the-fly, not stored)
+  if (dealData.discount !== undefined) {
+    delete dealData.discount;
   }
 
   if (dealData.availability) {
     const legacyAvailability = dealData.availability;
-    if (Object.prototype.hasOwnProperty.call(legacyAvailability, 'startDate')) {
-      dealData.startDate = legacyAvailability.startDate;
-    }
-    if (Object.prototype.hasOwnProperty.call(legacyAvailability, 'endDate')) {
-      dealData.endDate = legacyAvailability.endDate;
-    }
     if (
       Object.prototype.hasOwnProperty.call(legacyAvailability, 'maxBookings')
     ) {
@@ -222,21 +180,22 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
     ) {
       dealData.currentBookings = legacyAvailability.currentBookings;
     }
+    delete dealData.availability;
   }
 
-  const defaultStartDate = dealData.startDate
+  // Handle recurring pattern fields
+  const allDay = dealData.allDay !== undefined ? Boolean(dealData.allDay) : false;
+  const recurrenceType = dealData.recurrenceType || 'none';
+  const validRecurrenceTypes = ['none', 'daily', 'weekly', 'weekdays', 'monthly', 'annually'];
+  if (!validRecurrenceTypes.includes(recurrenceType)) {
+    throw new BadRequestException(`Recurrence type must be one of: ${validRecurrenceTypes.join(', ')}`);
+  }
+
+  const startDate = dealData.startDate
     ? normalizeDate(dealData.startDate, 'Start date')
     : startOfToday();
-  const defaultEndDate = dealData.endDate
-    ? normalizeDate(dealData.endDate, 'End date')
-    : normalizeDate(
-      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      'End date',
-    );
 
-  ensureFutureDate(defaultStartDate, 'Start date');
-  ensureFutureDate(defaultEndDate, 'End date');
-  ensureEndAfterStart(defaultStartDate, defaultEndDate);
+  ensureFutureDate(startDate, 'Start date');
 
   const rawMaxBookings =
     dealData.maxBookings !== undefined && dealData.maxBookings !== null
@@ -254,30 +213,21 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
     ? 0
     : rawCurrentBookings;
 
-  delete dealData.availability;
-
-  // Handle category - if provided as slug, look it up to get ObjectId
   if (dealData.category) {
-    const categoryDoc = await Category.findOne({ slug: dealData.category, isActive: true });
-    if (!categoryDoc) {
-      throw new BadRequestException(`Category with slug '${dealData.category}' not found or is inactive`);
-    }
-    dealData.category = categoryDoc._id;
-  } else {
-    throw new BadRequestException('Category is required');
+    delete dealData.category;
   }
 
   const newDeal = new Deal({
     ...dealData,
-    startDate: defaultStartDate,
-    endDate: defaultEndDate,
+    allDay,
+    startDate,
+    recurrenceType,
     maxBookings,
     currentBookings,
     business: businessId,
     createdBy: userId, // Track who created the deal
   });
   const savedDeal = await newDeal.save();
-  await savedDeal.populate('category', 'name slug icon');
   await savedDeal.populate('service', 'name category basePrice duration');
   await savedDeal.populate('operatingSite', 'name address');
   await savedDeal.populate('createdBy', 'firstName lastName email');
@@ -404,18 +354,12 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
       }
     }
 
-    // Update to use array
-    updateData.operatingSite = operatingSiteIds;
+    // Update to use array, ensuring IDs are strings (schema expects [String])
+    updateData.operatingSite = operatingSiteIds.map((id: any) => String(id));
   }
 
   if (updateData.availability) {
     const availabilityUpdates = updateData.availability;
-    if (Object.prototype.hasOwnProperty.call(availabilityUpdates, 'startDate')) {
-      updateData.startDate = availabilityUpdates.startDate;
-    }
-    if (Object.prototype.hasOwnProperty.call(availabilityUpdates, 'endDate')) {
-      updateData.endDate = availabilityUpdates.endDate;
-    }
     if (
       Object.prototype.hasOwnProperty.call(availabilityUpdates, 'maxBookings')
     ) {
@@ -432,32 +376,41 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
     delete updateData.availability;
   }
 
+  // Handle recurring pattern fields
+  if (Object.prototype.hasOwnProperty.call(updateData, 'allDay')) {
+    updateData.allDay = Boolean(updateData.allDay);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(updateData, 'recurrenceType')) {
+    const validRecurrenceTypes = ['none', 'daily', 'weekly', 'weekdays', 'monthly', 'annually'];
+    if (!validRecurrenceTypes.includes(updateData.recurrenceType)) {
+      throw new BadRequestException(`Recurrence type must be one of: ${validRecurrenceTypes.join(', ')}`);
+    }
+  }
+
   const hasStartDateUpdate = Object.prototype.hasOwnProperty.call(
     updateData,
     'startDate',
   );
-  const hasEndDateUpdate = Object.prototype.hasOwnProperty.call(
+  const hasRecurrenceTypeUpdate = Object.prototype.hasOwnProperty.call(
     updateData,
-    'endDate',
+    'recurrenceType',
   );
 
-  if (hasStartDateUpdate || hasEndDateUpdate) {
+  if (hasStartDateUpdate || hasRecurrenceTypeUpdate) {
     const effectiveStart = hasStartDateUpdate
       ? normalizeDate(updateData.startDate, 'Start date')
       : new Date(existingDeal.startDate);
-    const effectiveEnd = hasEndDateUpdate
-      ? normalizeDate(updateData.endDate, 'End date')
-      : new Date(existingDeal.endDate);
-
-    ensureFutureDate(effectiveEnd, 'End date');
-    ensureEndAfterStart(effectiveStart, effectiveEnd);
 
     if (hasStartDateUpdate) {
+      // No validation - allow any date when editing
       updateData.startDate = effectiveStart;
     }
-    if (hasEndDateUpdate) {
-      updateData.endDate = effectiveEnd;
-    }
+  }
+
+  // Remove endDate if it exists in updateData
+  if (Object.prototype.hasOwnProperty.call(updateData, 'endDate')) {
+    delete updateData.endDate;
   }
 
   if (Object.prototype.hasOwnProperty.call(updateData, 'maxBookings')) {
@@ -478,30 +431,13 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
       : rawCurrentBookings;
   }
 
-  // Recalculate discount if price or originalPrice are updated
-  if (updateData.originalPrice !== undefined || updateData.price !== undefined) {
-    const currentOriginalPrice =
-      updateData.originalPrice !== undefined
-        ? updateData.originalPrice
-        : existingDeal.originalPrice;
-    const currentPrice =
-      updateData.price !== undefined ? updateData.price : existingDeal.price;
-
-    const normalizedDiscount = normalizeDiscount(
-      currentOriginalPrice ?? undefined,
-      currentPrice ?? undefined,
-    );
-
-    updateData.discount = normalizedDiscount;
+  // Remove discount from updateData if it exists (we calculate it on-the-fly, not stored)
+  if (updateData.discount !== undefined) {
+    delete updateData.discount;
   }
 
-  // Handle category - if provided as slug, look it up to get ObjectId
   if (updateData.category) {
-    const categoryDoc = await Category.findOne({ slug: updateData.category, isActive: true });
-    if (!categoryDoc) {
-      throw new BadRequestException(`Category with slug '${updateData.category}' not found or is inactive`);
-    }
-    updateData.category = categoryDoc._id;
+    delete updateData.category;
   }
 
   const deal = await Deal.findOneAndUpdate(
@@ -509,7 +445,6 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
     updateData,
     { new: true, runValidators: true },
   )
-    .populate('category', 'name slug icon')
     .populate('service', 'name category basePrice duration')
     .populate('operatingSite', 'name address')
     .populate('createdBy', 'firstName lastName email');
@@ -641,7 +576,9 @@ const updateDealStatus = async (businessId: string, dealId: string, userId: stri
   return deal;
 };
 
-// Public listing: only deals from ACTIVE businesses and active/current deals
+/**
+ * Main function using Builder Pattern with Fluent Interface
+ */
 const listPublicDeals = async (filters: {
   category?: string;
   limit?: number;
@@ -651,149 +588,27 @@ const listPublicDeals = async (filters: {
   radiusKm?: number;
   title?: string;
 } = {}) => {
-  const { category, title, limit = 20, skip = 0, latitude, longitude, radiusKm } = filters;
+  const query = new PublicDealQuery(filters);
 
-  const match: any = {
-    status: 'active',
-  };
+  const dealAggregationBuilder = new DealAggregationBuilder()
+    .add(new LocationStage())
+    .add(new CategoryStage())
+    .add(new DateStage())
+    .add(new DealStatusStage())
+    .add(new LocationMatchStage())
+    .add(new ObjectIdFieldsStage())
+    .add(new DateFilterStage())
+    .add(new BusinessLookupStage())
+    .add(new ServiceLookupStage())
+    .add(new CategoryFilterStage())
+    .add(new CategoryLookupStage())
+    .add(new TitleFilterStage())
+    .add(new OperatingSitesLookupStage())
+    .add(new SiteFilterStage())
+    .add(new ProjectStage())
+    .add(new SortStage());
 
-  // If category is provided as slug, look it up to get ObjectId
-  let categoryObjectId: mongoose.Types.ObjectId | undefined;
-  if (category) {
-    const categoryDoc = await Category.findOne({ slug: category, isActive: true });
-    if (categoryDoc) {
-      categoryObjectId = categoryDoc._id as mongoose.Types.ObjectId;
-      match.category = categoryObjectId;
-    } else {
-      // If category slug not found, return empty results
-      match.category = new mongoose.Types.ObjectId('000000000000000000000000');
-    }
-  }
-
-  if (title) {
-    match.title = { $regex: title, $options: 'i' };
-  }
-
-  const pipeline: any[] = [
-    { $match: match },
-    // Convert string ids to ObjectId for lookups
-    {
-      $addFields: {
-        businessObjId: { $toObjectId: '$business' },
-        serviceObjId: { $toObjectId: '$service' },
-      },
-    },
-    {
-      $lookup: {
-        from: 'businesses',
-        localField: 'businessObjId',
-        foreignField: '_id',
-        as: 'business',
-      },
-    },
-    { $unwind: '$business' },
-    {
-      $match: {
-        'business.status': BusinessStatus.ACTIVE,
-      },
-    },
-    {
-      $lookup: {
-        from: 'services',
-        localField: 'serviceObjId',
-        foreignField: '_id',
-        as: 'service',
-      },
-    },
-    { $unwind: '$service' },
-    {
-      $lookup: {
-        from: 'categories',
-        localField: 'category',
-        foreignField: '_id',
-        as: 'categoryData',
-      },
-    },
-    { $unwind: { path: '$categoryData', preserveNullAndEmptyArrays: true } },
-    // Optional title-like search on service name too (applied after lookup)
-    ...(title
-      ? [
-        {
-          $match: {
-            $or: [
-              { title: { $regex: title, $options: 'i' } },
-              { 'service.name': { $regex: title, $options: 'i' } },
-            ],
-          },
-        },
-      ]
-      : []),
-    // Optionally filter by proximity using operate sites
-    ...(latitude != null && longitude != null && radiusKm != null
-      ? [
-        {
-          $lookup: {
-            from: 'operateSites',
-            localField: 'operatingSite',
-            foreignField: '_id',
-            as: 'sites',
-          },
-        },
-        { $unwind: '$sites' },
-        {
-          $addFields: {
-            siteLocation: {
-              type: 'Point',
-              coordinates: ['$sites.longitude', '$sites.latitude'],
-            },
-          },
-        },
-        {
-          $geoNear: {
-            near: { type: 'Point', coordinates: [longitude, latitude] },
-            distanceField: 'distance',
-            maxDistance: Math.max(1, radiusKm) * 1000,
-            spherical: true,
-            query: { 'sites.isActive': true },
-          },
-        },
-      ]
-      : []),
-    {
-      $project: {
-        _id: 1,
-        title: 1,
-        description: 1,
-        category: '$categoryData.slug',
-        categoryData: {
-          _id: '$categoryData._id',
-          name: '$categoryData.name',
-          slug: '$categoryData.slug',
-          icon: '$categoryData.icon',
-        },
-        price: 1,
-        originalPrice: 1,
-        duration: 1,
-        startDate: 1,
-        endDate: 1,
-        discount: 1,
-        business: { _id: '$business._id', name: '$business.name', status: '$business.status' },
-        service: {
-          _id: '$service._id',
-          name: '$service.name',
-          category: '$service.category',
-          basePrice: '$service.basePrice',
-          duration: '$service.duration',
-        },
-        distance: 1,
-      },
-    },
-    { $sort: { startDate: 1 } },
-    { $skip: skip },
-    { $limit: limit },
-  ];
-
-  return Deal.aggregate(pipeline);
+  return dealAggregationBuilder.execute(query);
 };
 
 export default {
@@ -806,20 +621,20 @@ export default {
   listPublicDeals,
   async getPublicDealById(dealId: string) {
     const now = new Date();
-    const oneDayFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const todayUtc = toUtcMidnight(now);
+    const twoWeeksFromTodayUtc = toUtcMidnight(twoWeeksFromNow);
+
+    // Get date strings for MongoDB comparison (YYYY-MM-DD format)
+    const todayStr = todayUtc.toISOString().split('T')[0];
+    const twoWeeksFromTodayStr = twoWeeksFromTodayUtc.toISOString().split('T')[0];
+
     const pipeline: any[] = [
       { $match: { _id: new (require('mongoose').Types.ObjectId)(dealId) } },
       {
         $addFields: {
           businessObjId: { $toObjectId: '$business' },
           serviceObjId: { $toObjectId: '$service' },
-          operatingSiteObjIds: {
-            $map: {
-              input: { $ifNull: ['$operatingSite', []] },
-              as: 'sid',
-              in: { $toObjectId: '$$sid' },
-            },
-          },
         },
       },
       {
@@ -834,8 +649,97 @@ export default {
       {
         $match: {
           'business.status': BusinessStatus.ACTIVE,
-          status: 'active',
-          startDate: { $lte: oneDayFromNow },
+          $expr: {
+            $and: [
+              { $eq: ['$status', 'active'] },
+              {
+                $or: [
+                  // Non-recurring: start date within 2 weeks from today onwards, OR started in past but endDate is today or in future
+                  {
+                    $and: [
+                      { $eq: ['$recurrenceType', 'none'] },
+                      {
+                        $or: [
+                          // Starts today or in future within 2 weeks
+                          {
+                            $and: [
+                              {
+                                $gte: [
+                                  {
+                                    $dateToString: {
+                                      format: '%Y-%m-%d',
+                                      date: '$startDate',
+                                    },
+                                  },
+                                  todayStr,
+                                ],
+                              },
+                              {
+                                $lte: [
+                                  {
+                                    $dateToString: {
+                                      format: '%Y-%m-%d',
+                                      date: '$startDate',
+                                    },
+                                  },
+                                  twoWeeksFromTodayStr,
+                                ],
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    ],
+                  },
+                  // Recurring: started in past or today, no end date (ongoing - always available)
+                  {
+                    $and: [
+                      { $ne: ['$recurrenceType', 'none'] },
+                      {
+                        $lte: [
+                          {
+                            $dateToString: {
+                              format: '%Y-%m-%d',
+                              date: '$startDate',
+                            },
+                          },
+                          twoWeeksFromTodayStr,
+                        ],
+                      },
+                    ],
+                  },
+                  // Recurring: starts in future within 2 weeks
+                  {
+                    $and: [
+                      { $ne: ['$recurrenceType', 'none'] },
+                      {
+                        $gte: [
+                          {
+                            $dateToString: {
+                              format: '%Y-%m-%d',
+                              date: '$startDate',
+                            },
+                          },
+                          todayStr,
+                        ],
+                      },
+                      {
+                        $lte: [
+                          {
+                            $dateToString: {
+                              format: '%Y-%m-%d',
+                              date: '$startDate',
+                            },
+                          },
+                          twoWeeksFromTodayStr,
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
         },
       },
       {
@@ -850,8 +754,19 @@ export default {
       {
         $lookup: {
           from: 'categories',
-          localField: 'category',
-          foreignField: '_id',
+          let: { serviceCategoryName: '$service.category' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$name', '$$serviceCategoryName'] },
+                    { $eq: ['$isActive', true] },
+                  ],
+                },
+              },
+            },
+          ],
           as: 'categoryData',
         },
       },
@@ -859,9 +774,28 @@ export default {
       {
         $lookup: {
           from: 'operateSites',
-          localField: 'operatingSiteObjIds',
-          foreignField: '_id',
+          let: { operatingSiteIds: '$operatingSite' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: [{ $toString: '$_id' }, '$$operatingSiteIds'],
+                },
+              },
+            },
+          ],
           as: 'sites',
+        },
+      },
+      {
+        $addFields: {
+          sites: {
+            $filter: {
+              input: '$sites',
+              as: 'site',
+              cond: { $eq: ['$$site.isActive', true] },
+            },
+          },
         },
       },
       {
@@ -879,9 +813,10 @@ export default {
           price: 1,
           originalPrice: 1,
           duration: 1,
+          sections: 1,
+          allDay: 1,
           startDate: 1,
-          endDate: 1,
-          discount: 1,
+          recurrenceType: 1,
           business: { _id: '$business._id', name: '$business.name', status: '$business.status' },
           service: {
             _id: '$service._id',
@@ -893,15 +828,41 @@ export default {
           sites: {
             $map: {
               input: '$sites',
-              as: 's',
-              in: { _id: '$$s._id', name: '$$s.name', address: '$$s.address' },
+              as: 'site',
+              in: {
+                _id: '$$site._id',
+                name: '$$site.name',
+                address: '$$site.address',
+                operatingHours: '$$site.operatingHours',
+              },
             },
           },
+          distance: 1,
         },
       },
       { $limit: 1 },
     ];
     const result = await Deal.aggregate(pipeline);
-    return result[0] || null;
+    const deal = result[0] || null;
+
+    if (!deal) {
+      return null;
+    }
+
+    // Calculate available time slots
+    const { calculateAvailableTimeSlots } = require('../utils/timeSlotUtils');
+    const availableTimeSlots = calculateAvailableTimeSlots({
+      startDate: new Date(deal.startDate),
+      allDay: deal.allDay,
+      recurrenceType: deal.recurrenceType,
+      duration: deal.duration,
+      sections: deal.sections,
+      operatingSites: deal.sites || [],
+    });
+
+    return {
+      ...deal,
+      availableTimeSlots,
+    };
   },
 };

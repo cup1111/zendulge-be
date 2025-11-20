@@ -1,0 +1,290 @@
+<!--
+  ⚠️ CRITICAL: READ THIS FILE FIRST BEFORE ANY CODE CHANGES ⚠️
+  This file contains all development rules and patterns for this codebase.
+  Cursor AI should automatically include this in context, but ALWAYS verify
+  these rules are being followed before making changes.
+  
+  If you're an AI assistant, you MUST:
+  1. Read this entire file before starting any task
+  2. Reference these rules while coding
+  3. Follow ALL patterns listed here
+  4. Update this file if you discover new patterns
+-->
+
+# Cursor AI Development Rules
+
+## 🚨 CRITICAL RULES - ALWAYS FOLLOW
+
+### Testing
+- **ALWAYS USE BUILDERS** for all test data creation
+  - Use `CategoryBuilder`, `ServiceBuilder`, `DealBuilder`, `BusinessBuilder`, `OperateSiteBuilder`, `UserBuilder`
+  - **NEVER** use direct model creation like `Category.create()`, `Service.create()`, `Deal.create()`, etc.
+  - **EXCEPTION**: Only use direct model access when querying existing data (e.g., `Role.findOne()`, `Deal.find()`)
+
+### Code Organization
+- **Controllers** are thin - they ONLY handle HTTP request/response, NO business logic
+- **Services** contain ALL business logic
+- **Models** contain schema definitions and static/instance methods
+- **Validation** lives in `src/app/validation/` files
+
+### Model Patterns
+- Use TypeScript interfaces for model types (`IBusiness`, `IDeal`, etc.)
+- Use Mongoose schemas with proper types
+- Always include `timestamps: true` in schemas
+- **USE ENUMS WHENEVER POSSIBLE** - Prefer enums over string literals for status fields, types, and constants
+- Use enums for status fields (e.g., `BusinessStatus` enum)
+- When defining string literal unions, consider if an enum would be better
+- Example: `status: 'active' | 'inactive'` → Consider `enum BusinessStatus { ACTIVE = 'active', INACTIVE = 'inactive' }`
+- Use `.lean()` for read-only queries to improve performance
+
+### Service Patterns
+- Return plain objects (use `.lean()` or `.toObject()`)
+- Handle population explicitly - await each `.populate()` call separately
+- Use aggregation pipelines for complex queries
+- Always validate input data
+- Throw appropriate exceptions from `src/app/exceptions/`
+
+### Database Patterns
+- `operatingSite` field in Deal model stores **array of strings** (not ObjectIds)
+- **Deals do NOT have a category field** - category comes from the associated Service
+- Service.category is a string slug (not ObjectId)
+- Always convert ObjectIds to strings when matching with string arrays
+- Use `$toString` in aggregation pipelines when comparing ObjectIds with strings
+
+### API Patterns
+- Public endpoints prefix: `/api/v1/public/`
+- Authenticated endpoints prefix: `/api/v1/business/:businessId/`
+- Always return `{ success: boolean, message: string, data: any }` format
+- Use proper HTTP status codes (200, 201, 400, 401, 403, 422, 500)
+- **NEVER USE 404** - Always use 400 (BadRequestException) instead when a resource is not found
+- Example: `throw new BadRequestException('Deal not found')` instead of `res.status(404)`
+
+### Location/Geospatial Queries
+- Always set `location` field on OperateSite documents (GeoJSON Point)
+- Use `$geoNear` as first stage in aggregation pipeline (requires 2dsphere index)
+- Implement fallback using Haversine distance calculation if `$geoNear` fails
+- Convert nearby site ObjectIds to strings before matching with `operatingSite` array
+
+### Validation Rules
+- Deal price MUST be less than service base price (both frontend and backend)
+- Facebook/Twitter URLs can be empty strings
+- Use express-validator for request validation
+- Validate all required fields
+
+### Builder Patterns
+- All builders extend `BaseBuilder`
+- Use fluent API pattern (`.withXxx().withYyy().save()`)
+- Builders should handle ID conversions (ObjectId to string, etc.)
+- Builders should set sensible defaults
+
+### Error Handling
+- Use custom exceptions from `src/app/exceptions/`
+- Never expose internal errors to users
+- Log errors appropriately
+- Return user-friendly error messages
+
+### Clean Code - Early Returns
+- **USE EARLY RETURNS** as much as possible to reduce nesting and improve readability
+- **AVOID** deep nesting - use guard clauses and early exits
+- **PREFER** early returns over nested if-else blocks
+- **VALIDATE FIRST, PROCESS LATER** - check preconditions early
+- Example:
+  ```typescript
+  // ❌ BAD - Deep nesting
+  async function processDeal(dealId: string, userId: string) {
+    const deal = await Deal.findById(dealId);
+    if (deal) {
+      const user = await User.findById(userId);
+      if (user) {
+        if (user.role === 'owner') {
+          // actual logic here
+          return result;
+        }
+      }
+    }
+    throw new Error('Not found');
+  }
+  
+  // ✅ GOOD - Early returns
+  async function processDeal(dealId: string, userId: string) {
+    const deal = await Deal.findById(dealId);
+    if (!deal) {
+      throw new NotFoundException('Deal not found');
+    }
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    
+    if (user.role !== 'owner') {
+      throw new ForbiddenException('Access denied');
+    }
+    
+    // actual logic here
+    return result;
+  }
+  
+  // ✅ ALSO GOOD - Guard clauses for validation
+  function validateDeal(deal: IDeal) {
+    if (!deal.title) throw new ValidationError('Title required');
+    if (!deal.price || deal.price <= 0) throw new ValidationError('Invalid price');
+    if (!deal.service) throw new ValidationError('Service required');
+    
+    // validation passed
+    return true;
+  }
+  ```
+
+### Nested Ternary Expressions - NEVER USE
+- **NEVER USE** nested ternary expressions - ALWAYS AVOID THEM
+- **ALWAYS USE** if-else blocks or immediately invoked function expressions (IIFE) instead
+- **MANDATORY**: When you see nested ternaries in code, refactor them immediately
+- Example:
+  ```typescript
+  // ❌ BAD - NEVER DO THIS
+  const value = condition1 ? value1 : condition2 ? value2 : value3;
+  const result = deal ? (deal.status === 'active' ? 'Yes' : 'No') : 'Unknown';
+  
+  // ✅ GOOD - Use IIFE with early returns
+  const result = (() => {
+    if (!deal) return 'Unknown';
+    if (deal.status === 'active') return 'Yes';
+    return 'No';
+  })();
+  
+  // ✅ ALSO GOOD - Use if-else block
+  let value: string | undefined;
+  if (condition1) {
+    value = value1;
+  } else if (condition2) {
+    value = value2;
+  } else {
+    value = value3;
+  }
+  
+  // ✅ ALSO GOOD - Guard clauses pattern
+  if (!deal) return 'Unknown';
+  if (deal.status === 'active') return 'Yes';
+  return 'No';
+  ```
+
+### TypeScript
+- Avoid `any` type - use proper types or interfaces
+- Use nullish coalescing (`??`) instead of logical OR (`||`) for default values
+- Prefer type-only imports: `import type { AxiosError } from 'axios'`
+- Use ESLint disable comments only when absolutely necessary
+- **NEVER** use nested ternary expressions
+- **USE ENUMS WHENEVER POSSIBLE** - Prefer enums over string literal unions when values are fixed constants
+- When you see `'value1' | 'value2' | 'value3'` consider creating an enum if these are fixed constants
+- Example: Instead of `type Status = 'active' | 'inactive'`, prefer `enum Status { ACTIVE = 'active', INACTIVE = 'inactive' }`
+
+### Frontend Patterns
+- Always expect populated objects from backend
+- For deals, category comes from `service.category` (string slug) or from API's `categoryData` object
+- Use proper TypeScript interfaces for API responses
+- Handle loading and error states
+- Use proper null checks before rendering
+
+### Common Mistakes to Avoid
+- ❌ Chaining `.populate()` calls - must await each separately
+- ❌ Using `isActive: true` - use `status: BusinessStatus.ACTIVE` instead
+- ❌ Creating models directly in tests - use builders
+- ❌ Mixing ObjectId and string comparisons without conversion
+- ❌ Returning raw Mongoose documents - use `.lean()` or `.toObject()`
+- ❌ Adding business logic to controllers
+- ❌ Using `window.confirm` - use proper modals/dialogs
+- ❌ Hardcoding test data - use builders
+- ❌ Using `any` type unnecessarily
+- ❌ Adding category field to deals - category comes from service
+- ❌ Using `.withCategory()` on DealBuilder - deals don't have category
+- ❌ Deep nesting instead of early returns - use guard clauses
+- ❌ Not validating preconditions early in functions
+- ❌ **NEVER** using nested ternary expressions - ALWAYS refactor to IIFE or if-else
+- ❌ Using string literal unions (`'active' | 'inactive'`) when an enum would be better - **USE ENUMS WHENEVER POSSIBLE**
+
+### Test File Structure
+```typescript
+import request from 'supertest';
+import app from '../setup/app';
+import BusinessBuilder from './builders/businessBuilder';
+import CategoryBuilder from './builders/categoryBuilder';
+import ServiceBuilder from './builders/serviceBuilder';
+import DealBuilder from './builders/dealBuilder';
+// ... other builders
+
+describe('Test Suite', () => {
+  beforeEach(async () => {
+    // Use builders to create test data
+    category = await new CategoryBuilder()
+      .withName('Test Category')
+      .withActive()
+      .save();
+    
+    service = await new ServiceBuilder()
+      .withName('Test Service')
+      .withBusiness(business._id)
+      .withActive()
+      .save();
+  });
+  
+  it('should test something', async () => {
+    // Test implementation
+  });
+});
+```
+
+### ESLint - MANDATORY BEFORE COMMITS
+- **MANDATORY**: Run `npm run lint` or `yarn lint` BEFORE completing any code changes
+- **MANDATORY**: Fix ALL linting errors before marking code as complete
+- **MANDATORY**: Fix ALL linting warnings before marking code as complete (unless explicitly approved)
+- **NEVER** commit code with linting errors
+- **NEVER** ignore linting errors without explicit approval
+- **ALWAYS** check lint status after making changes
+
+### When Making Changes
+1. Always check if tests need updating
+2. **ALWAYS** run linting and fix ALL errors - NO EXCEPTIONS
+3. Use builders in all new tests
+4. Follow existing code patterns
+5. Update this file if you discover new patterns or rules
+6. **VERIFY**: Run linter again after fixes to confirm all errors are resolved
+
+### File Locations
+- Models: `src/app/model/`
+- Services: `src/app/services/`
+- Controllers: `src/app/controllers/v1/`
+- Validation: `src/app/validation/`
+- Builders: `test/__test__/builders/`
+- Tests: `test/__test__/`
+- Enums: `src/app/enum/`
+- Exceptions: `src/app/exceptions/`
+
+### ESLint Commands (Backend)
+```bash
+# Check for linting errors
+npm run lint
+
+# Fix auto-fixable errors (if configured)
+npm run lint:fix
+
+# Run tests
+npm test
+```
+
+---
+
+**Last Updated**: After adding ESLint requirements to prevent linting errors in commits
+**Key Principle**: Consistency and maintainability - use builders, follow patterns, keep code clean, **FIX ALL LINTING ERRORS**
+
+### Critical Reminder
+⚠️ **IF YOU SEE LINTING ERRORS, FIX THEM IMMEDIATELY. DO NOT PROCEED UNTIL ALL ERRORS ARE RESOLVED.** ⚠️
+
+### Deal-Category Relationship (IMPORTANT)
+- **Deals DO NOT have a category field** - this was removed in a major refactoring
+- Category information comes from the associated Service (`service.category` - string slug)
+- When filtering deals by category, filter by `service.category` (not `deal.category`)
+- When displaying category, use `deal.service.category` or look up category details from the slug
+- Backend public deals API returns `categoryData` populated from `service.category`
+- Authenticated deal endpoints don't populate category - frontend must derive from `service.category`
+

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import dealService from '../../services/dealService';
+import { BadRequestException } from '../../exceptions';
 
 export const listPublicDeals = async (req: Request, res: Response) => {
   const { category, limit, skip, latitude, longitude, radiusKm, q, title } = req.query;
@@ -30,11 +31,7 @@ export const getPublicDealById = async (req: Request, res: Response) => {
   const { dealId } = req.params;
   const deal = await dealService.getPublicDealById(dealId);
   if (!deal) {
-    return res.status(404).json({
-      success: false,
-      message: 'Deal not found',
-      data: null,
-    });
+    throw new BadRequestException('Deal not found');
   }
   return res.status(200).json({
     success: true,

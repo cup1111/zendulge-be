@@ -49,6 +49,15 @@ export interface IBusinessRegistration {
   facebookUrl?: string;
   twitterUrl?: string;
   logo?: string;
+  operatingHours?: {
+    monday?: { open: string; close: string; isClosed?: boolean };
+    tuesday?: { open: string; close: string; isClosed?: boolean };
+    wednesday?: { open: string; close: string; isClosed?: boolean };
+    thursday?: { open: string; close: string; isClosed?: boolean };
+    friday?: { open: string; close: string; isClosed?: boolean };
+    saturday?: { open: string; close: string; isClosed?: boolean };
+    sunday?: { open: string; close: string; isClosed?: boolean };
+  };
 }
 
 export interface ICustomerRegistration {
@@ -78,6 +87,7 @@ export const businessRegister = async (
     facebookUrl,
     twitterUrl,
     logo,
+    operatingHours,
   } = registrationData;
 
   // Prepare user data
@@ -145,6 +155,7 @@ export const businessRegister = async (
     facebookUrl,
     twitterUrl,
     logo,
+    operatingHours,
     owner: userId,
     status: BusinessStatus.PENDING, // New businesses start with pending status
   };

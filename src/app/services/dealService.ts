@@ -590,7 +590,7 @@ const listPublicDeals = async (filters: {
 } = {}) => {
   const query = new PublicDealQuery(filters);
 
-  const builder = new DealAggregationBuilder()
+  const dealAggregationBuilder = new DealAggregationBuilder()
     .add(new LocationStage())
     .add(new CategoryStage())
     .add(new DateStage())
@@ -608,7 +608,7 @@ const listPublicDeals = async (filters: {
     .add(new ProjectStage())
     .add(new SortStage());
 
-  return builder.execute(query);
+  return dealAggregationBuilder.execute(query);
 };
 
 export default {

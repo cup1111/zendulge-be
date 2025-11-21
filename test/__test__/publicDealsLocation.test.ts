@@ -704,7 +704,6 @@ describe('Public deals listing with location filtering', () => {
       .withOperatingSite(sydneySite._id)
       .withStartDate(now)
       .withEndDate(future)
-      .withMaxBookings(20)
       .withCurrentBookings(5)
       .withActive()
       .withBusiness(business._id)

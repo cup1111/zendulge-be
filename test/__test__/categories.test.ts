@@ -18,11 +18,10 @@ describe('Categories API', () => {
       .withEmail('category-test@example.com')
       .withPassword('TestPass123!')
       .withActive(true)
-      .withRole(ownerRole!._id)
       .save();
 
     // Login to get auth token
-    const loginResponse = await request(app)
+    const loginResponse = await request(app.getApp())
       .post('/api/v1/login')
       .send({
         email: 'category-test@example.com',
@@ -47,7 +46,7 @@ describe('Categories API', () => {
         { name: 'Spa', slug: 'spa', icon: '🛁', isActive: true },
       ]);
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .get('/api/v1/public/categories')
         .expect(200);
 
@@ -65,7 +64,7 @@ describe('Categories API', () => {
         { name: 'Inactive Category', slug: 'inactive', icon: '❌', isActive: false },
       ]);
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .get('/api/v1/public/categories')
         .expect(200);
 
@@ -80,7 +79,7 @@ describe('Categories API', () => {
         { name: 'Inactive Category', slug: 'inactive', icon: '❌', isActive: false },
       ]);
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .get('/api/v1/public/categories?includeInactive=true')
         .expect(200);
 
@@ -89,7 +88,7 @@ describe('Categories API', () => {
     });
 
     it('should return empty array if no categories exist', async () => {
-      const response = await request(app)
+      const response = await request(app.getApp())
         .get('/api/v1/public/categories')
         .expect(200);
 
@@ -107,7 +106,7 @@ describe('Categories API', () => {
         isActive: true,
       };
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .post('/api/v1/categories')
         .set('Authorization', `Bearer ${authToken}`)
         .send(categoryData)
@@ -130,7 +129,7 @@ describe('Categories API', () => {
         icon: '💇',
       };
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .post('/api/v1/categories')
         .set('Authorization', `Bearer ${authToken}`)
         .send(categoryData)
@@ -145,7 +144,7 @@ describe('Categories API', () => {
         icon: '💇',
       };
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .post('/api/v1/categories')
         .set('Authorization', `Bearer ${authToken}`)
         .send(categoryData)
@@ -159,7 +158,7 @@ describe('Categories API', () => {
         name: 'Test Category',
       };
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .post('/api/v1/categories')
         .set('Authorization', `Bearer ${authToken}`)
         .send(categoryData)
@@ -182,7 +181,7 @@ describe('Categories API', () => {
         icon: '💇',
       };
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .post('/api/v1/categories')
         .set('Authorization', `Bearer ${authToken}`)
         .send(categoryData)
@@ -198,7 +197,7 @@ describe('Categories API', () => {
         icon: '💇',
       };
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .post('/api/v1/categories')
         .send(categoryData)
         .expect(401);
@@ -216,7 +215,7 @@ describe('Categories API', () => {
         isActive: true,
       });
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .get(`/api/v1/categories/${category._id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -228,7 +227,7 @@ describe('Categories API', () => {
 
     it('should return 404 if category not found', async () => {
       const fakeId = '507f1f77bcf86cd799439011';
-      const response = await request(app)
+      const response = await request(app.getApp())
         .get(`/api/v1/categories/${fakeId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
@@ -246,7 +245,7 @@ describe('Categories API', () => {
         isActive: true,
       });
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .get('/api/v1/categories/slug/test-category')
         .expect(200);
 
@@ -256,7 +255,7 @@ describe('Categories API', () => {
     });
 
     it('should return 404 if category slug not found', async () => {
-      const response = await request(app)
+      const response = await request(app.getApp())
         .get('/api/v1/categories/slug/non-existent')
         .expect(404);
 
@@ -271,7 +270,7 @@ describe('Categories API', () => {
         isActive: false,
       });
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .get('/api/v1/categories/slug/inactive')
         .expect(404);
 
@@ -293,7 +292,7 @@ describe('Categories API', () => {
         icon: '✅',
       };
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .patch(`/api/v1/categories/${category._id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .send(updateData)
@@ -321,7 +320,7 @@ describe('Categories API', () => {
         name: 'New Category Name',
       };
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .patch(`/api/v1/categories/${category._id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .send(updateData)
@@ -350,7 +349,7 @@ describe('Categories API', () => {
         slug: 'existing', // Conflict with existing category
       };
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .patch(`/api/v1/categories/${category._id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .send(updateData)
@@ -361,7 +360,7 @@ describe('Categories API', () => {
 
     it('should return 404 if category not found', async () => {
       const fakeId = '507f1f77bcf86cd799439011';
-      const response = await request(app)
+      const response = await request(app.getApp())
         .patch(`/api/v1/categories/${fakeId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ name: 'Updated' })
@@ -380,7 +379,7 @@ describe('Categories API', () => {
         isActive: true,
       });
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .patch(`/api/v1/categories/${category._id}/deactivate`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -395,7 +394,7 @@ describe('Categories API', () => {
 
     it('should return 404 if category not found', async () => {
       const fakeId = '507f1f77bcf86cd799439011';
-      const response = await request(app)
+      const response = await request(app.getApp())
         .patch(`/api/v1/categories/${fakeId}/deactivate`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
@@ -413,7 +412,7 @@ describe('Categories API', () => {
         isActive: false,
       });
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .patch(`/api/v1/categories/${category._id}/activate`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -428,7 +427,7 @@ describe('Categories API', () => {
 
     it('should return 404 if category not found', async () => {
       const fakeId = '507f1f77bcf86cd799439011';
-      const response = await request(app)
+      const response = await request(app.getApp())
         .patch(`/api/v1/categories/${fakeId}/activate`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
@@ -446,7 +445,7 @@ describe('Categories API', () => {
         isActive: true,
       });
 
-      const response = await request(app)
+      const response = await request(app.getApp())
         .delete(`/api/v1/categories/${category._id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -460,7 +459,7 @@ describe('Categories API', () => {
 
     it('should return 404 if category not found', async () => {
       const fakeId = '507f1f77bcf86cd799439011';
-      const response = await request(app)
+      const response = await request(app.getApp())
         .delete(`/api/v1/categories/${fakeId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);

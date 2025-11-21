@@ -20,6 +20,10 @@
   - Use `CategoryBuilder`, `ServiceBuilder`, `DealBuilder`, `BusinessBuilder`, `OperateSiteBuilder`, `UserBuilder`
   - **NEVER** use direct model creation like `Category.create()`, `Service.create()`, `Deal.create()`, etc.
   - **EXCEPTION**: Only use direct model access when querying existing data (e.g., `Role.findOne()`, `Deal.find()`)
+- **BACKEND TEST APP USAGE**
+  - Import the test app wrapper from `test/setup/app.ts` as `app`
+  - **ALWAYS** call Supertest with `app.getApp()` (e.g. `request(app.getApp())`)
+  - **NEVER** pass the wrapper object directly to Supertest (i.e. **do not** use `request(app)`) or you'll get `app.address is not a function`
 
 ### Code Organization
 - **Controllers** are thin - they ONLY handle HTTP request/response, NO business logic

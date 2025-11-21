@@ -546,6 +546,95 @@ describe('Public deals listing', () => {
       expect(slotDay <= twoWeeksFromNow).toBe(true);
     }
   });
+
+  it('should not return deals that have no upcoming appointments within the next 2 weeks (Monthly Maintenance Package)', async () => {
+    const ownerRole = await Role.findOne({ name: RoleName.OWNER });
+    expect(ownerRole).toBeTruthy();
+
+    const owner = await new UserBuilder()
+      .withEmail('monthly-maintenance-owner@example.com')
+      .withPassword('OwnerPass123!')
+      .withActive(true)
+      .save();
+
+    const activeBusiness = await new BusinessBuilder()
+      .withName('Zendulge Technologies Pty Ltd')
+      .withOwner(owner._id)
+      .withMember(owner._id, ownerRole!._id)
+      .withActive()
+      .save();
+
+    const siteActive = await new OperateSiteBuilder()
+      .withBusiness(activeBusiness._id)
+      .withName('Zendulge Melbourne CBD')
+      .save();
+
+    await new CategoryBuilder()
+      .withName('Cleaning')
+      .withSlug('cleaning')
+      .withIcon('🧹')
+      .withActive()
+      .save();
+
+    const basicCleaningService = await new ServiceBuilder()
+      .withName('Basic Cleaning Service')
+      .withCategory('Cleaning')
+      .withDuration(60)
+      .withBasePrice(80)
+      .withBusiness(activeBusiness._id)
+      .withActive()
+      .save();
+
+    const weeklyStart = new Date();
+    weeklyStart.setHours(9, 0, 0, 0);
+
+    await new DealBuilder()
+      .withTitle('Carpet Cleaning Package')
+      .withDescription('Professional carpet and upholstery cleaning for residential properties. Includes stain removal and deodorizing.')
+      .withPrice(99)
+      .withOriginalPrice(120)
+      .withDuration(90)
+      .withSections(1)
+      .withOperatingSite(siteActive._id)
+      .withStartDate(weeklyStart)
+      .withRecurrenceType('weekly')
+      .withAllDay(false)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(activeBusiness._id)
+      .withService(basicCleaningService._id)
+      .withCreatedBy(owner._id)
+      .save();
+
+    const monthlyStart = new Date();
+    monthlyStart.setDate(monthlyStart.getDate() + 35);
+    monthlyStart.setHours(13, 0, 0, 0);
+
+    await new DealBuilder()
+      .withTitle('Monthly Maintenance Package')
+      .withDescription('Regular monthly cleaning service to keep your property in top condition. Includes all basic cleaning tasks plus minor maintenance.')
+      .withPrice(65)
+      .withOriginalPrice(80)
+      .withDuration(120)
+      .withSections(1)
+      .withOperatingSite(siteActive._id)
+      .withStartDate(monthlyStart)
+      .withRecurrenceType('monthly')
+      .withAllDay(true)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(activeBusiness._id)
+      .withService(basicCleaningService._id)
+      .withCreatedBy(owner._id)
+      .save();
+
+    const res = await request(app.getApp()).get('/api/v1/public/deals').expect(200);
+    expect(res.body.success).toBe(true);
+    const titles: string[] = res.body.data.map((d: any) => d.title);
+
+    expect(titles).toContain('Carpet Cleaning Package');
+    expect(titles).not.toContain('Monthly Maintenance Package');
+  });
 });
 
 

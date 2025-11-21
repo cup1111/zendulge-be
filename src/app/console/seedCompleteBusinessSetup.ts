@@ -265,7 +265,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
         return date;
       })(),
       recurrenceType: 'none',
-      maxBookings: 50,
       currentBookings: 12,
       status: 'active',
       tags: ['spring', 'cleaning', 'special'],
@@ -288,7 +287,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
         return date;
       })(),
       recurrenceType: 'daily',
-      maxBookings: 20,
       currentBookings: 5,
       status: 'active',
       tags: ['office', 'commercial', 'deep-clean'],
@@ -312,7 +310,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
         return date;
       })(),
       recurrenceType: 'weekly',
-      maxBookings: 30,
       currentBookings: 8,
       status: 'active',
       tags: ['carpet', 'upholstery', 'stain-removal'],
@@ -335,7 +332,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
         return date;
       })(),
       recurrenceType: 'none',
-      maxBookings: 40,
       currentBookings: 15,
       status: 'sold_out',
       tags: ['windows', 'residential', 'commercial'],
@@ -358,7 +354,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
         return date;
       })(),
       recurrenceType: 'none',
-      maxBookings: 10,
       currentBookings: 10,
       status: 'expired',
       tags: ['construction', 'renovation', 'heavy-duty'],
@@ -381,7 +376,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
         return date;
       })(),
       recurrenceType: 'monthly',
-      maxBookings: 100,
       currentBookings: 25,
       status: 'inactive',
       tags: ['monthly', 'maintenance', 'subscription'],
@@ -404,7 +398,6 @@ const createDealsIfNotExists = async (business: any, MelbourneCBDOperateSite: an
         return date;
       })(),
       recurrenceType: 'none',
-      maxBookings: 50,
       currentBookings: 0,
       status: 'active',
       tags: ['sydney', 'cbd', 'next-month'],
@@ -776,7 +769,6 @@ const seedCompleteBusinessSetup = async () => {
         allDay: false,
         startDate: pendingStartDate,
         recurrenceType: 'none',
-        maxBookings: 10,
         currentBookings: 0,
         status: 'inactive',
         tags: ['pending', 'seed'],

@@ -19,7 +19,6 @@ export default class DealBuilder extends BaseBuilder<IDealDocument> {
       startDate: now,
       endDate: future,
       recurrenceType: 'none',
-      maxBookings: 100,
       currentBookings: 0,
       status: 'active',
       images: [],
@@ -93,11 +92,6 @@ export default class DealBuilder extends BaseBuilder<IDealDocument> {
 
   withRecurrenceType(recurrenceType: 'none' | 'daily' | 'weekly' | 'weekdays' | 'monthly' | 'annually'): DealBuilder {
     this.properties.recurrenceType = recurrenceType;
-    return this;
-  }
-
-  withMaxBookings(maxBookings: number): DealBuilder {
-    this.properties.maxBookings = maxBookings;
     return this;
   }
 

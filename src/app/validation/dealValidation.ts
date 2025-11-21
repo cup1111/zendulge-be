@@ -54,10 +54,6 @@ export const createDealValidation = [
     .withMessage('Recurrence type is required')
     .isIn(['none', 'daily', 'weekly', 'weekdays', 'monthly', 'annually'])
     .withMessage('Recurrence type must be one of: none, daily, weekly, weekdays, monthly, annually'),
-  body('maxBookings')
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage('Max bookings must be a positive integer'),
   body('currentBookings')
     .optional()
     .isInt({ min: 0 })
@@ -159,10 +155,6 @@ export const updateDealValidation = [
     .optional()
     .isIn(['none', 'daily', 'weekly', 'weekdays', 'monthly', 'annually'])
     .withMessage('Recurrence type must be one of: none, daily, weekly, weekdays, monthly, annually'),
-  body('maxBookings')
-    .optional()
-    .isInt({ min: 1 })
-    .withMessage('Max bookings must be a positive integer'),
   body('currentBookings')
     .optional()
     .isInt({ min: 0 })

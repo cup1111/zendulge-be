@@ -2,6 +2,7 @@ import request from 'supertest';
 import app from '../setup/app';
 import Category from '../../src/app/model/category';
 import UserBuilder from './builders/userBuilder';
+import CategoryBuilder from './builders/categoryBuilder';
 import Role from '../../src/app/model/role';
 import { RoleName } from '../../src/app/enum/roles';
 
@@ -41,11 +42,26 @@ describe('Categories API', () => {
   describe('GET /api/v1/public/categories', () => {
     it('should return all active categories', async () => {
       // Seed some categories
-      await Category.create([
-        { name: 'Massage', slug: 'massage', icon: '💆', isActive: true },
-        { name: 'Beauty', slug: 'beauty', icon: '💅', isActive: true },
-        { name: 'Spa', slug: 'spa', icon: '🛁', isActive: true },
-      ]);
+      await new CategoryBuilder()
+        .withName('Massage')
+        .withSlug('massage')
+        .withIcon('💆')
+        .withActive(true)
+        .save();
+
+      await new CategoryBuilder()
+        .withName('Beauty')
+        .withSlug('beauty')
+        .withIcon('💅')
+        .withActive(true)
+        .save();
+
+      await new CategoryBuilder()
+        .withName('Spa')
+        .withSlug('spa')
+        .withIcon('🛁')
+        .withActive(true)
+        .save();
 
       const response = await request(app.getApp())
         .get('/api/v1/public/categories')
@@ -60,10 +76,19 @@ describe('Categories API', () => {
     });
 
     it('should not return inactive categories by default', async () => {
-      await Category.create([
-        { name: 'Active Category', slug: 'active', icon: '✅', isActive: true },
-        { name: 'Inactive Category', slug: 'inactive', icon: '❌', isActive: false },
-      ]);
+      await new CategoryBuilder()
+        .withName('Active Category')
+        .withSlug('active')
+        .withIcon('✅')
+        .withActive(true)
+        .save();
+
+      await new CategoryBuilder()
+        .withName('Inactive Category')
+        .withSlug('inactive')
+        .withIcon('❌')
+        .withInactive()
+        .save();
 
       const response = await request(app.getApp())
         .get('/api/v1/public/categories')
@@ -75,10 +100,19 @@ describe('Categories API', () => {
     });
 
     it('should return all categories including inactive when includeInactive=true', async () => {
-      await Category.create([
-        { name: 'Active Category', slug: 'active', icon: '✅', isActive: true },
-        { name: 'Inactive Category', slug: 'inactive', icon: '❌', isActive: false },
-      ]);
+      await new CategoryBuilder()
+        .withName('Active Category')
+        .withSlug('active')
+        .withIcon('✅')
+        .withActive(true)
+        .save();
+
+      await new CategoryBuilder()
+        .withName('Inactive Category')
+        .withSlug('inactive')
+        .withIcon('❌')
+        .withInactive()
+        .save();
 
       const response = await request(app.getApp())
         .get('/api/v1/public/categories?includeInactive=true')
@@ -209,12 +243,12 @@ describe('Categories API', () => {
 
   describe('GET /api/v1/categories/:categoryId', () => {
     it('should return a category by ID', async () => {
-      const category = await Category.create({
-        name: 'Test Category',
-        slug: 'test',
-        icon: '💇',
-        isActive: true,
-      });
+      const category = await new CategoryBuilder()
+        .withName('Test Category')
+        .withSlug('test')
+        .withIcon('💇')
+        .withActive(true)
+        .save();
 
       const response = await request(app.getApp())
         .get(`/api/v1/categories/${category._id}`)
@@ -239,12 +273,12 @@ describe('Categories API', () => {
 
   describe('GET /api/v1/categories/slug/:slug', () => {
     it('should return a category by slug', async () => {
-      await Category.create({
-        name: 'Test Category',
-        slug: 'test-category',
-        icon: '💇',
-        isActive: true,
-      });
+      await new CategoryBuilder()
+        .withName('Test Category')
+        .withSlug('test-category')
+        .withIcon('💇')
+        .withActive(true)
+        .save();
 
       const response = await request(app.getApp())
         .get('/api/v1/categories/slug/test-category')
@@ -264,12 +298,12 @@ describe('Categories API', () => {
     });
 
     it('should not return inactive categories', async () => {
-      await Category.create({
-        name: 'Inactive Category',
-        slug: 'inactive',
-        icon: '❌',
-        isActive: false,
-      });
+      await new CategoryBuilder()
+        .withName('Inactive Category')
+        .withSlug('inactive')
+        .withIcon('❌')
+        .withInactive()
+        .save();
 
       const response = await request(app.getApp())
         .get('/api/v1/categories/slug/inactive')
@@ -281,12 +315,12 @@ describe('Categories API', () => {
 
   describe('PATCH /api/v1/categories/:categoryId', () => {
     it('should update a category', async () => {
-      const category = await Category.create({
-        name: 'Original Name',
-        slug: 'original',
-        icon: '💇',
-        isActive: true,
-      });
+      const category = await new CategoryBuilder()
+        .withName('Original Name')
+        .withSlug('original')
+        .withIcon('💇')
+        .withActive(true)
+        .save();
 
       const updateData = {
         name: 'Updated Name',
@@ -302,7 +336,7 @@ describe('Categories API', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.name).toBe('Updated Name');
       expect(response.body.data.icon).toBe('✅');
-      expect(response.body.data.slug).toBe('original'); // Slug shouldn't change
+      expect(response.body.data.slug).toBe('updated-name'); // Slug auto-updates from name when slug not provided
 
       // Verify it was updated in the database
       const updatedCategory = await Category.findById(category._id);
@@ -310,12 +344,12 @@ describe('Categories API', () => {
     });
 
     it('should auto-update slug if name is updated without slug', async () => {
-      const category = await Category.create({
-        name: 'Original Name',
-        slug: 'original',
-        icon: '💇',
-        isActive: true,
-      });
+      const category = await new CategoryBuilder()
+        .withName('Original Name')
+        .withSlug('original')
+        .withIcon('💇')
+        .withActive(true)
+        .save();
 
       const updateData = {
         name: 'New Category Name',
@@ -332,19 +366,19 @@ describe('Categories API', () => {
     });
 
     it('should return 409 if updated slug conflicts with existing category', async () => {
-      await Category.create({
-        name: 'Existing Category',
-        slug: 'existing',
-        icon: '✅',
-        isActive: true,
-      });
+      await new CategoryBuilder()
+        .withName('Existing Category')
+        .withSlug('existing')
+        .withIcon('✅')
+        .withActive(true)
+        .save();
 
-      const category = await Category.create({
-        name: 'Another Category',
-        slug: 'another',
-        icon: '💇',
-        isActive: true,
-      });
+      const category = await new CategoryBuilder()
+        .withName('Another Category')
+        .withSlug('another')
+        .withIcon('💇')
+        .withActive(true)
+        .save();
 
       const updateData = {
         slug: 'existing', // Conflict with existing category
@@ -373,12 +407,12 @@ describe('Categories API', () => {
 
   describe('PATCH /api/v1/categories/:categoryId/deactivate', () => {
     it('should deactivate a category', async () => {
-      const category = await Category.create({
-        name: 'Active Category',
-        slug: 'active',
-        icon: '✅',
-        isActive: true,
-      });
+      const category = await new CategoryBuilder()
+        .withName('Active Category')
+        .withSlug('active')
+        .withIcon('✅')
+        .withActive(true)
+        .save();
 
       const response = await request(app.getApp())
         .patch(`/api/v1/categories/${category._id}/deactivate`)
@@ -406,12 +440,12 @@ describe('Categories API', () => {
 
   describe('PATCH /api/v1/categories/:categoryId/activate', () => {
     it('should activate a category', async () => {
-      const category = await Category.create({
-        name: 'Inactive Category',
-        slug: 'inactive',
-        icon: '❌',
-        isActive: false,
-      });
+      const category = await new CategoryBuilder()
+        .withName('Inactive Category')
+        .withSlug('inactive')
+        .withIcon('❌')
+        .withInactive()
+        .save();
 
       const response = await request(app.getApp())
         .patch(`/api/v1/categories/${category._id}/activate`)
@@ -439,12 +473,12 @@ describe('Categories API', () => {
 
   describe('DELETE /api/v1/categories/:categoryId', () => {
     it('should delete a category', async () => {
-      const category = await Category.create({
-        name: 'To Delete',
-        slug: 'to-delete',
-        icon: '🗑️',
-        isActive: true,
-      });
+      const category = await new CategoryBuilder()
+        .withName('To Delete')
+        .withSlug('to-delete')
+        .withIcon('🗑️')
+        .withActive(true)
+        .save();
 
       const response = await request(app.getApp())
         .delete(`/api/v1/categories/${category._id}`)

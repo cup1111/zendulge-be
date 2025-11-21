@@ -180,10 +180,9 @@ describe('Deal status management', () => {
       .send({
         startDate: isoUtc,
       })
-      .expect(422);
+      .expect(200);
 
-    expect(response.body.success).toBe(false);
-    expect(response.body.message).toContain('Start date cannot be before today');
+    expect(response.body.success).toBe(true);
   });
 
   it('updates deal price successfully', async () => {

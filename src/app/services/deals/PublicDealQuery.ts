@@ -14,7 +14,16 @@ export class PublicDealQuery {
 
   radiusKm?: number;
 
+  /**
+   * Title / service-name search (explicit `title` query param)
+   */
   title?: string;
+
+  /**
+   * Free-text location search (coming from `q` query param)
+   * Used to search by address / site name rather than title.
+   */
+  locationQuery?: string;
 
   constructor(filters: {
     category?: string;
@@ -24,6 +33,7 @@ export class PublicDealQuery {
     longitude?: number;
     radiusKm?: number;
     title?: string;
+    locationQuery?: string;
   } = {}) {
     this.category = filters.category;
     this.limit = filters.limit ?? 20;
@@ -32,6 +42,7 @@ export class PublicDealQuery {
     this.longitude = filters.longitude;
     this.radiusKm = filters.radiusKm;
     this.title = filters.title;
+    this.locationQuery = filters.locationQuery;
   }
 
   hasLocationFilter(): boolean {
@@ -46,6 +57,10 @@ export class PublicDealQuery {
 
   hasTitleFilter(): boolean {
     return this.title != null && this.title.trim().length > 0;
+  }
+
+  hasLocationSearch(): boolean {
+    return this.locationQuery != null && this.locationQuery.trim().length > 0;
   }
 }
 

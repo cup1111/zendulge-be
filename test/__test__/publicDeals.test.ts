@@ -347,6 +347,115 @@ describe('Public deals listing', () => {
     expect(res.body.message).toBe('Deal not found');
     expect(res.body.statusCode).toBe(400);
   });
+
+  it('should exclude non-recurring deals that have already ended today', async () => {
+    const ownerRole = await Role.findOne({ name: RoleName.OWNER });
+    expect(ownerRole).toBeTruthy();
+
+    const owner = await new UserBuilder()
+      .withEmail('pastdeal-owner@example.com')
+      .withPassword('OwnerPass123!')
+      .withActive(true)
+      .save();
+
+    const activeBusiness = await new BusinessBuilder()
+      .withName('Active Biz for Past Deal Test')
+      .withOwner(owner._id)
+      .withMember(owner._id, ownerRole!._id)
+      .withActive()
+      .save();
+
+    const siteActive = await new OperateSiteBuilder()
+      .withBusiness(activeBusiness._id)
+      .withName('Active Site')
+      .save();
+
+    const cleaningCategory = await new CategoryBuilder()
+      .withName('Cleaning')
+      .withSlug('cleaning')
+      .withIcon('🧹')
+      .withActive()
+      .save();
+
+    const serviceActive = await new ServiceBuilder()
+      .withName('Active Service')
+      .withCategory('Cleaning')
+      .withDuration(60)
+      .withBasePrice(100)
+      .withBusiness(activeBusiness._id)
+      .withActive()
+      .save();
+
+    // Create a deal that started today at 9:00 AM and ended at 10:00 AM (60 minutes duration, 1 section)
+    // This deal should be excluded if current time is past 10:00 AM
+    const today = new Date();
+    const startTime = new Date(today);
+    startTime.setHours(9, 0, 0, 0); // 9:00 AM today
+    const endTime = new Date(startTime);
+    endTime.setHours(10, 0, 0, 0); // 10:00 AM today (60 minutes later)
+
+    // Deal that has already ended (started at 9 AM, ended at 10 AM, duration 60 min, 1 section)
+    const pastDeal = await new DealBuilder()
+      .withTitle('Past Deal - Already Ended')
+      .withDescription('This deal started at 9 AM and ended at 10 AM today')
+      .withPrice(100)
+      .withOriginalPrice(150)
+      .withDuration(60) // 60 minutes
+      .withSections(1) // 1 section = 60 minutes total
+      .withOperatingSite(siteActive._id)
+      .withStartDate(startTime)
+      .withRecurrenceType('none')
+      .withAllDay(false)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(activeBusiness._id)
+      .withService(serviceActive._id)
+      .withCreatedBy(owner._id)
+      .save();
+
+    // Deal that hasn't ended yet (starts in 1 hour, duration 60 min, 1 section)
+    const futureStartTime = new Date();
+    futureStartTime.setHours(today.getHours() + 1, 0, 0, 0); // 1 hour from now
+    const futureDeal = await new DealBuilder()
+      .withTitle('Future Deal - Not Started Yet')
+      .withDescription('This deal starts in 1 hour')
+      .withPrice(120)
+      .withOriginalPrice(180)
+      .withDuration(60)
+      .withSections(1)
+      .withOperatingSite(siteActive._id)
+      .withStartDate(futureStartTime)
+      .withRecurrenceType('none')
+      .withAllDay(false)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(activeBusiness._id)
+      .withService(serviceActive._id)
+      .withCreatedBy(owner._id)
+      .save();
+
+    const res = await request(app.getApp()).get('/api/v1/public/deals').expect(200);
+    expect(res.body.success).toBe(true);
+    const titles: string[] = res.body.data.map((d: any) => d.title);
+
+    // Past deal should be excluded if current time is past end time (10 AM)
+    const currentTime = new Date();
+    if (currentTime > endTime) {
+      expect(titles).not.toContain('Past Deal - Already Ended');
+    }
+
+    // Future deal should be included
+    expect(titles).toContain('Future Deal - Not Started Yet');
+
+    // Test getById endpoint - past deal should return 400
+    if (currentTime > endTime) {
+      const getByIdRes = await request(app.getApp())
+        .get(`/api/v1/public/deals/${pastDeal._id.toString()}`)
+        .expect(400);
+      expect(getByIdRes.body.success).toBe(false);
+      expect(getByIdRes.body.message).toBe('Deal not found');
+    }
+  });
 });
 
 

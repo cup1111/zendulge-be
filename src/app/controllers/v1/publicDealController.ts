@@ -17,7 +17,10 @@ export const listPublicDeals = async (req: Request, res: Response) => {
     latitude: Number.isNaN(parsedLat!) ? undefined : parsedLat,
     longitude: Number.isNaN(parsedLng!) ? undefined : parsedLng,
     radiusKm: Number.isNaN(parsedRadius!) ? undefined : parsedRadius,
-    title: typeof title === 'string' ? title : typeof q === 'string' ? q : undefined,
+    // `title` param is used strictly for title/service-name search
+    title: typeof title === 'string' ? title : undefined,
+    // `q` is used for free-text location/address search (sites.address / sites.name)
+    locationQuery: typeof q === 'string' ? q : undefined,
   });
 
   res.status(200).json({

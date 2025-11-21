@@ -21,6 +21,7 @@ import { TitleFilterStage } from './deals/stages/TitleFilterStage';
 import { CategoryStage } from './deals/stages/CategoryStage';
 import { DateStage } from './deals/stages/DateStage';
 import { LocationStage } from './deals/stages/LocationStage';
+import { LocationTextSearchStage } from './deals/stages/LocationTextSearchStage';
 import OperateSite from '../model/operateSite';
 import { toUtcMidnight, normalizeDate } from '../utils/timeUtils';
 
@@ -587,6 +588,7 @@ const listPublicDeals = async (filters: {
   longitude?: number;
   radiusKm?: number;
   title?: string;
+  locationQuery?: string;
 } = {}) => {
   const query = new PublicDealQuery(filters);
 
@@ -605,6 +607,7 @@ const listPublicDeals = async (filters: {
     .add(new TitleFilterStage())
     .add(new OperatingSitesLookupStage())
     .add(new SiteFilterStage())
+    .add(new LocationTextSearchStage())
     .add(new ProjectStage())
     .add(new SortStage());
 
@@ -635,6 +638,20 @@ export default {
         $addFields: {
           businessObjId: { $toObjectId: '$business' },
           serviceObjId: { $toObjectId: '$service' },
+          // Calculate end time in milliseconds: startDate + (duration * sections) minutes
+          endDateTimeMs: {
+            $add: [
+              { $toLong: '$startDate' }, // Convert startDate to milliseconds
+              { $multiply: [{ $multiply: ['$duration', '$sections'] }, 60 * 1000] }, // Convert minutes to milliseconds
+            ],
+          },
+          // Check if startDate is today (date part only)
+          startDateOnly: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: '$startDate',
+            },
+          },
         },
       },
       {
@@ -654,35 +671,28 @@ export default {
               { $eq: ['$status', 'active'] },
               {
                 $or: [
-                  // Non-recurring: start date within 2 weeks from today onwards, OR started in past but endDate is today or in future
+                  // Non-recurring: start date within 2 weeks from today onwards, AND not already ended if it's today
                   {
                     $and: [
                       { $eq: ['$recurrenceType', 'none'] },
                       {
-                        $or: [
-                          // Starts today or in future within 2 weeks
+                        $and: [
                           {
-                            $and: [
+                            $gte: ['$startDateOnly', todayStr],
+                          },
+                          {
+                            $lte: ['$startDateOnly', twoWeeksFromTodayStr],
+                          },
+                          // If startDate is today, check that current time hasn't passed the end time
+                          {
+                            $or: [
+                              // StartDate is in the future (not today) - always include
+                              { $gt: ['$startDateOnly', todayStr] },
+                              // StartDate is today - only include if deal hasn't ended yet ($$NOW < end time)
                               {
-                                $gte: [
-                                  {
-                                    $dateToString: {
-                                      format: '%Y-%m-%d',
-                                      date: '$startDate',
-                                    },
-                                  },
-                                  todayStr,
-                                ],
-                              },
-                              {
-                                $lte: [
-                                  {
-                                    $dateToString: {
-                                      format: '%Y-%m-%d',
-                                      date: '$startDate',
-                                    },
-                                  },
-                                  twoWeeksFromTodayStr,
+                                $and: [
+                                  { $eq: ['$startDateOnly', todayStr] },
+                                  { $lt: [{ $toLong: '$$NOW' }, '$endDateTimeMs'] }, // current time < end time means deal hasn't ended
                                 ],
                               },
                             ],

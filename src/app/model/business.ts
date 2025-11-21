@@ -2,27 +2,13 @@ import mongoose, { Schema, Types, Document } from 'mongoose';
 import { IUser } from './user';
 import { IRole } from './role';
 import { BusinessStatus } from '../enum/businessStatus';
+import type { IOperatingHours } from './operateSite';
+import { openingHoursSchema } from './operateSite';
 
 export interface IBusinessMember {
   user: Types.ObjectId | Document & IUser;
   role: Types.ObjectId | Document & IRole;
   joinedAt?: Date;
-}
-
-export interface IBusinessHours {
-  open: string; // HH:MM format (e.g., "09:00")
-  close: string; // HH:MM format (e.g., "17:00")
-  isClosed: boolean; // true if business is closed on this day
-}
-
-export interface IBusinessOperatingHours {
-  monday: IBusinessHours;
-  tuesday: IBusinessHours;
-  wednesday: IBusinessHours;
-  thursday: IBusinessHours;
-  friday: IBusinessHours;
-  saturday: IBusinessHours;
-  sunday: IBusinessHours;
 }
 
 export interface IBusiness {
@@ -43,7 +29,7 @@ export interface IBusiness {
   facebookUrl?: string;
   twitterUrl?: string;
   logo?: string;
-  operatingHours?: IBusinessOperatingHours; // Business operating hours
+  operatingHours?: IOperatingHours; // Business operating hours
   owner: Types.ObjectId; // Reference to User who created the business
   members?: IBusinessMember[]; // Other users who can access this business with their roles
   customers?: Types.ObjectId[]; // Customers who have interacted with the business
@@ -279,190 +265,7 @@ const businessSchema = new Schema<IBusinessDocument>(
       },
     },
     operatingHours: {
-      type: {
-        monday: {
-          open: {
-            type: String,
-            trim: true,
-            validate: {
-              validator: function (v: string) {
-                return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-              },
-              message: 'Open time must be in HH:MM format (24-hour)',
-            },
-          },
-          close: {
-            type: String,
-            trim: true,
-            validate: {
-              validator: function (v: string) {
-                return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-              },
-              message: 'Close time must be in HH:MM format (24-hour)',
-            },
-          },
-          isClosed: {
-            type: Boolean,
-            default: false,
-          },
-        },
-        tuesday: {
-          open: {
-            type: String,
-            trim: true,
-            validate: {
-              validator: function (v: string) {
-                return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-              },
-              message: 'Open time must be in HH:MM format (24-hour)',
-            },
-          },
-          close: {
-            type: String,
-            trim: true,
-            validate: {
-              validator: function (v: string) {
-                return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-              },
-              message: 'Close time must be in HH:MM format (24-hour)',
-            },
-          },
-          isClosed: {
-            type: Boolean,
-            default: false,
-          },
-        },
-        wednesday: {
-          open: {
-            type: String,
-            trim: true,
-            validate: {
-              validator: function (v: string) {
-                return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-              },
-              message: 'Open time must be in HH:MM format (24-hour)',
-            },
-          },
-          close: {
-            type: String,
-            trim: true,
-            validate: {
-              validator: function (v: string) {
-                return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-              },
-              message: 'Close time must be in HH:MM format (24-hour)',
-            },
-          },
-          isClosed: {
-            type: Boolean,
-            default: false,
-          },
-        },
-        thursday: {
-          open: {
-            type: String,
-            trim: true,
-            validate: {
-              validator: function (v: string) {
-                return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-              },
-              message: 'Open time must be in HH:MM format (24-hour)',
-            },
-          },
-          close: {
-            type: String,
-            trim: true,
-            validate: {
-              validator: function (v: string) {
-                return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-              },
-              message: 'Close time must be in HH:MM format (24-hour)',
-            },
-          },
-          isClosed: {
-            type: Boolean,
-            default: false,
-          },
-        },
-        friday: {
-          open: {
-            type: String,
-            trim: true,
-            validate: {
-              validator: function (v: string) {
-                return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-              },
-              message: 'Open time must be in HH:MM format (24-hour)',
-            },
-          },
-          close: {
-            type: String,
-            trim: true,
-            validate: {
-              validator: function (v: string) {
-                return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-              },
-              message: 'Close time must be in HH:MM format (24-hour)',
-            },
-          },
-          isClosed: {
-            type: Boolean,
-            default: false,
-          },
-        },
-        saturday: {
-          open: {
-            type: String,
-            trim: true,
-            validate: {
-              validator: function (v: string) {
-                return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-              },
-              message: 'Open time must be in HH:MM format (24-hour)',
-            },
-          },
-          close: {
-            type: String,
-            trim: true,
-            validate: {
-              validator: function (v: string) {
-                return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-              },
-              message: 'Close time must be in HH:MM format (24-hour)',
-            },
-          },
-          isClosed: {
-            type: Boolean,
-            default: false,
-          },
-        },
-        sunday: {
-          open: {
-            type: String,
-            trim: true,
-            validate: {
-              validator: function (v: string) {
-                return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-              },
-              message: 'Open time must be in HH:MM format (24-hour)',
-            },
-          },
-          close: {
-            type: String,
-            trim: true,
-            validate: {
-              validator: function (v: string) {
-                return /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-              },
-              message: 'Close time must be in HH:MM format (24-hour)',
-            },
-          },
-          isClosed: {
-            type: Boolean,
-            default: false,
-          },
-        },
-      },
+      type: openingHoursSchema,
       required: false,
       _id: false,
     },

@@ -114,17 +114,17 @@ function generateRecurringDates(
     // Find the first occurrence of this day of week on or after actualStart
     const current = new Date(actualStart);
     const currentDayOfWeek = current.getDay();
-        
+
     // Calculate days until next occurrence of startDayOfWeek
     let daysUntilNext = (startDayOfWeek - currentDayOfWeek + 7) % 7;
     if (daysUntilNext === 0 && startDateMidnight < todayMidnight) {
       // If today is the day but startDate was in the past, find next week's occurrence
       daysUntilNext = 7;
     }
-        
+
     // Move to the first valid occurrence
     current.setDate(current.getDate() + daysUntilNext);
-        
+
     // Now add all weekly occurrences within the 2-week window
     while (current <= actualEnd) {
       dates.push(new Date(current));
@@ -174,9 +174,10 @@ function getDealStartTime(
     return { startTime: null };
   }
 
-  // Extract time from startDate
-  const hours = startDate.getHours().toString().padStart(2, '0');
-  const minutes = startDate.getMinutes().toString().padStart(2, '0');
+  // Extract time from startDate in a timezone-agnostic way (use UTC clock)
+  // so that "HH:MM" is consistent with how we store and compare operating hours.
+  const hours = startDate.getUTCHours().toString().padStart(2, '0');
+  const minutes = startDate.getUTCMinutes().toString().padStart(2, '0');
   const startTime = `${hours}:${minutes}`;
 
   return { startTime };
@@ -265,51 +266,69 @@ export function calculateAvailableTimeSlots(params: DealTimeSlotParams): TimeSlo
           }
         }
       } else {
-        // Specific time deal - generate sections consecutive slots starting from deal startTime
+        // Specific time deal - generate sections consecutive slots starting from a base start time
         if (dealStartTime) {
-          // Check if the first slot fits within operating site hours
-          const firstSlotEndTime = addMinutesToTime(dealStartTime, duration);
-          const siteOpenMinutes = timeToMinutes(dayHours.open);
-          const siteCloseMinutes = timeToMinutes(dayHours.close);
-          const firstSlotStartMinutes = timeToMinutes(dealStartTime);
-          const firstSlotEndMinutes = timeToMinutes(firstSlotEndTime);
+          const generateSlotsForStartTime = (baseStartTime: string): TimeSlot[] => {
+            const slots: TimeSlot[] = [];
 
-          // Check if first slot is within operating hours
-          if (
-            firstSlotStartMinutes >= siteOpenMinutes &&
-                        firstSlotEndMinutes <= siteCloseMinutes
-          ) {
-            // Calculate total duration needed for all sections
-            const totalDurationMinutes = duration * sections;
-            const lastSlotEndMinutes = firstSlotStartMinutes + totalDurationMinutes;
+            const firstSlotEndTime = addMinutesToTime(baseStartTime, duration);
+            const siteOpenMinutes = timeToMinutes(dayHours.open);
+            const siteCloseMinutes = timeToMinutes(dayHours.close);
+            const firstSlotStartMinutes = timeToMinutes(baseStartTime);
+            const firstSlotEndMinutes = timeToMinutes(firstSlotEndTime);
+
+            // First slot must be fully within operating hours
+            if (
+              firstSlotStartMinutes < siteOpenMinutes ||
+              firstSlotEndMinutes > siteCloseMinutes
+            ) {
+              return slots;
+            }
 
             // Check if all sections fit within operating hours
-            if (lastSlotEndMinutes <= siteCloseMinutes) {
-              // Generate all sections consecutive slots
-              let currentStartTime = dealStartTime;
-              for (let i = 0; i < sections; i += 1) {
-                const slotStartTime = currentStartTime;
-                const slotEndTime = addMinutesToTime(slotStartTime, duration);
-
-                const dateStr = date.toISOString().split('T')[0];
-                const dateTime = new Date(date);
-                const [hours, mins] = slotStartTime.split(':').map(Number);
-                dateTime.setHours(hours, mins, 0, 0);
-
-                timeSlots.push({
-                  date: dateStr,
-                  dateTime: dateTime.toISOString(),
-                  startTime: slotStartTime,
-                  endTime: slotEndTime,
-                  available: true,
-                  siteId: site._id.toString(),
-                });
-
-                // Next slot starts where this one ends
-                currentStartTime = slotEndTime;
-              }
+            const totalDurationMinutes = duration * sections;
+            const lastSlotEndMinutes = firstSlotStartMinutes + totalDurationMinutes;
+            if (lastSlotEndMinutes > siteCloseMinutes) {
+              return slots;
             }
+
+            // Generate all sections consecutive slots
+            let currentStartTime = baseStartTime;
+            for (let i = 0; i < sections; i += 1) {
+              const slotStartTime = currentStartTime;
+              const slotEndTime = addMinutesToTime(slotStartTime, duration);
+
+              const dateStr = date.toISOString().split('T')[0];
+              const dateTime = new Date(date);
+              const [hours, mins] = slotStartTime.split(':').map(Number);
+              dateTime.setHours(hours, mins, 0, 0);
+
+              slots.push({
+                date: dateStr,
+                dateTime: dateTime.toISOString(),
+                startTime: slotStartTime,
+                endTime: slotEndTime,
+                available: true,
+                siteId: site._id.toString(),
+              });
+
+              // Next slot starts where this one ends
+              currentStartTime = slotEndTime;
+            }
+
+            return slots;
+          };
+
+          // Try using the deal's own start time first
+          let siteSlots = generateSlotsForStartTime(dealStartTime);
+
+          // If that fails (e.g., because of timezone offset putting it outside operating hours),
+          // fall back to aligning with the site's opening time for that day.
+          if (siteSlots.length === 0) {
+            siteSlots = generateSlotsForStartTime(dayHours.open);
           }
+
+          timeSlots.push(...siteSlots);
         }
       }
     }

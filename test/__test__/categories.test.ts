@@ -29,7 +29,8 @@ describe('Categories API', () => {
       });
 
     expect(loginResponse.status).toBe(200);
-    authToken = loginResponse.body.data.token;
+    // Auth controller returns accessToken under data.accessToken
+    authToken = loginResponse.body.data.accessToken;
   });
 
   afterEach(async () => {

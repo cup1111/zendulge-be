@@ -1,6 +1,7 @@
 import Deal, { IDealDocument } from '../model/deal';
 import Business from '../model/business';
 import Service from '../model/service';
+import SavedDeal, { type SavedDealRemovedReason } from '../model/savedDeal';
 import { BadRequestException } from '../exceptions';
 import { BusinessStatus } from '../enum/businessStatus';
 import { DealAggregationBuilder } from './deals/DealAggregationBuilder';
@@ -33,6 +34,23 @@ const ensureFutureDate = (date: Date, fieldName: string) => {
   if (normalized.getTime() < today.getTime()) {
     throw new BadRequestException(`${fieldName} cannot be before today`);
   }
+};
+
+const markSavedDealsAsRemoved = async (
+  dealId: string,
+  reason: SavedDealRemovedReason = 'unavailable',
+) => {
+  await SavedDeal.updateMany(
+    { deal: dealId, status: { $ne: 'removed' } },
+    { status: 'removed', removedReason: reason },
+  );
+};
+
+const getRemovalReasonFromStatus = (status?: string): SavedDealRemovedReason => {
+  if (status === 'inactive' || status === 'expired' || status === 'sold_out') {
+    return status;
+  }
+  return 'unavailable';
 };
 
 const getDealsByBusiness = async (businessId: string, userId: string): Promise<IDealDocument[]> => {
@@ -423,6 +441,17 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
   if (!deal) {
     throw new Error('Deal not found');
   }
+
+  if (
+    Object.prototype.hasOwnProperty.call(updateData, 'status') &&
+    updateData.status !== 'active'
+  ) {
+    await markSavedDealsAsRemoved(
+      dealId,
+      getRemovalReasonFromStatus(updateData.status),
+    );
+  }
+
   return deal;
 };
 
@@ -478,6 +507,9 @@ const deleteDeal = async (businessId: string, dealId: string, userId: string): P
   if (result.deletedCount === 0) {
     throw new Error('Deal not found');
   }
+
+  await markSavedDealsAsRemoved(dealId, 'deleted');
+
 };
 
 const updateDealStatus = async (businessId: string, dealId: string, userId: string, status: string): Promise<IDealDocument> => {
@@ -544,6 +576,11 @@ const updateDealStatus = async (businessId: string, dealId: string, userId: stri
   if (!deal) {
     throw new Error('Deal not found');
   }
+
+  if (status !== 'active') {
+    await markSavedDealsAsRemoved(dealId, getRemovalReasonFromStatus(status));
+  }
+
   return deal;
 };
 

@@ -99,6 +99,11 @@ import { validateBusinessAccess } from '../../middleware/businessAccessMiddlewar
 import { RoleName } from '../../enum/roles';
 import { authorizeUserManagementAction } from '../../middleware/userManagementAccessMiddleware';
 import { uploadMulter, uploadImage } from '../../controllers/v1/uploadController';
+import {
+  saveDealForLater,
+  listSavedDeals,
+  deleteSavedDeal,
+} from '../../controllers/v1/savedDealController';
 
 const router = express.Router();
 
@@ -147,6 +152,23 @@ router.get(
   '/business/:businessId/me/role',
   authenticationTokenMiddleware,
   getRole,
+);
+
+// Saved deals
+router.post(
+  '/saved-deals',
+  authenticationTokenMiddleware,
+  saveDealForLater,
+);
+router.get(
+  '/saved-deals',
+  authenticationTokenMiddleware,
+  listSavedDeals,
+);
+router.delete(
+  '/saved-deals/:dealId',
+  authenticationTokenMiddleware,
+  deleteSavedDeal,
 );
 
 router.post(

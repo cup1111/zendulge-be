@@ -7,7 +7,7 @@ import { NotFoundException, BadRequestException } from '../exceptions';
 /**
  * Persist a deal to the current user's saved list after validating deal and business status.
  */
-export const saveDealForLater = async (userId: string, dealId: string) => {
+export const saveUserDeal = async (userId: string, dealId: string) => {
   const deal = await Deal.findById(dealId)
     .select('_id business status')
     .lean();
@@ -35,7 +35,7 @@ export const saveDealForLater = async (userId: string, dealId: string) => {
 /**
  * List saved deals for the user (excluding removed) with optional pagination.
  */
-export const listSavedDeals = async (
+export const listUserDeals = async (
   userId: string,
   options?: { page?: number; limit?: number },
 ) => {
@@ -75,7 +75,7 @@ export const deleteSavedDeal = async (
 ) => {
   const result = await SavedDeal.updateMany(
     { user: userId, deal: dealId, status: { $ne: 'removed' } },
-    { status: 'removed', removedReason: 'user_removed' },
+    { status: 'removed' },
   );
 
   if (!result || result.matchedCount === 0) {
@@ -86,7 +86,7 @@ export const deleteSavedDeal = async (
 };
 
 export default {
-  saveDealForLater,
-  listSavedDeals,
+  saveUserDeal,
+  listUserDeals,
   deleteSavedDeal,
 };

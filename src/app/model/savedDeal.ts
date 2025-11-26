@@ -1,19 +1,11 @@
 import { Schema, model, Types, type Document } from 'mongoose';
 
-export type SavedDealStatus = 'active' | 'removed' | 'unavailable';
-export type SavedDealRemovedReason =
-  | 'inactive'
-  | 'expired'
-  | 'sold_out'
-  | 'deleted'
-  | 'user_removed'
-  | 'unavailable';
+export type SavedDealStatus = 'active' | 'removed';
 
 export interface ISavedDeal extends Document {
   user: Types.ObjectId;
   deal: Types.ObjectId;
   status: SavedDealStatus;
-  removedReason?: SavedDealRemovedReason;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,11 +18,6 @@ const savedDealSchema = new Schema<ISavedDeal>(
       type: String,
       enum: ['active', 'removed'],
       default: 'active',
-    },
-    removedReason: {
-      type: String,
-      trim: true,
-      enum: ['inactive', 'expired', 'sold_out', 'deleted', 'user_removed', 'unavailable'],
     },
   },
   { timestamps: true, collection: 'saved_deals' },

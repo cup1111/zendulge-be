@@ -100,8 +100,8 @@ import { RoleName } from '../../enum/roles';
 import { authorizeUserManagementAction } from '../../middleware/userManagementAccessMiddleware';
 import { uploadMulter, uploadImage } from '../../controllers/v1/uploadController';
 import {
-  saveDealForLater,
-  listSavedDeals,
+  saveUserDeal,
+  listUserDeals,
   deleteSavedDeal,
 } from '../../controllers/v1/savedDealController';
 
@@ -158,12 +158,12 @@ router.get(
 router.post(
   '/saved-deals',
   authenticationTokenMiddleware,
-  saveDealForLater,
+  saveUserDeal,
 );
 router.get(
   '/saved-deals',
   authenticationTokenMiddleware,
-  listSavedDeals,
+  listUserDeals,
 );
 router.delete(
   '/saved-deals/:dealId',

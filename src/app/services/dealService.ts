@@ -1,7 +1,7 @@
 import Deal, { IDealDocument } from '../model/deal';
 import Business from '../model/business';
 import Service from '../model/service';
-import SavedDeal, { type SavedDealRemovedReason } from '../model/savedDeal';
+import SavedDeal from '../model/savedDeal';
 import { BadRequestException } from '../exceptions';
 import { BusinessStatus } from '../enum/businessStatus';
 import { DealAggregationBuilder } from './deals/DealAggregationBuilder';
@@ -36,21 +36,11 @@ const ensureFutureDate = (date: Date, fieldName: string) => {
   }
 };
 
-const markSavedDealsAsRemoved = async (
-  dealId: string,
-  reason: SavedDealRemovedReason = 'unavailable',
-) => {
+const markSavedDealsAsRemoved = async (dealId: string) => {
   await SavedDeal.updateMany(
     { deal: dealId, status: { $ne: 'removed' } },
-    { status: 'removed', removedReason: reason },
+    { status: 'removed' },
   );
-};
-
-const getRemovalReasonFromStatus = (status?: string): SavedDealRemovedReason => {
-  if (status === 'inactive' || status === 'expired' || status === 'sold_out') {
-    return status;
-  }
-  return 'unavailable';
 };
 
 const getDealsByBusiness = async (businessId: string, userId: string): Promise<IDealDocument[]> => {
@@ -446,10 +436,7 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
     Object.prototype.hasOwnProperty.call(updateData, 'status') &&
     updateData.status !== 'active'
   ) {
-    await markSavedDealsAsRemoved(
-      dealId,
-      getRemovalReasonFromStatus(updateData.status),
-    );
+    await markSavedDealsAsRemoved(dealId);
   }
 
   return deal;
@@ -508,7 +495,7 @@ const deleteDeal = async (businessId: string, dealId: string, userId: string): P
     throw new Error('Deal not found');
   }
 
-  await markSavedDealsAsRemoved(dealId, 'deleted');
+  await markSavedDealsAsRemoved(dealId);
 
 };
 
@@ -578,7 +565,7 @@ const updateDealStatus = async (businessId: string, dealId: string, userId: stri
   }
 
   if (status !== 'active') {
-    await markSavedDealsAsRemoved(dealId, getRemovalReasonFromStatus(status));
+    await markSavedDealsAsRemoved(dealId);
   }
 
   return deal;

@@ -172,11 +172,6 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
   if (dealData.availability) {
     const legacyAvailability = dealData.availability;
     if (
-      Object.prototype.hasOwnProperty.call(legacyAvailability, 'maxBookings')
-    ) {
-      dealData.maxBookings = legacyAvailability.maxBookings;
-    }
-    if (
       Object.prototype.hasOwnProperty.call(legacyAvailability, 'currentBookings')
     ) {
       dealData.currentBookings = legacyAvailability.currentBookings;
@@ -198,14 +193,6 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
 
   ensureFutureDate(startDate, 'Start date');
 
-  const rawMaxBookings =
-    dealData.maxBookings !== undefined && dealData.maxBookings !== null
-      ? Number(dealData.maxBookings)
-      : undefined;
-  const maxBookings =
-    rawMaxBookings !== undefined && !Number.isNaN(rawMaxBookings)
-      ? rawMaxBookings
-      : undefined;
   const rawCurrentBookings =
     dealData.currentBookings !== undefined && dealData.currentBookings !== null
       ? Number(dealData.currentBookings)
@@ -223,7 +210,6 @@ const createDeal = async (businessId: string, userId: string, dealData: any): Pr
     allDay,
     startDate,
     recurrenceType,
-    maxBookings,
     currentBookings,
     business: businessId,
     createdBy: userId, // Track who created the deal
@@ -362,11 +348,6 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
   if (updateData.availability) {
     const availabilityUpdates = updateData.availability;
     if (
-      Object.prototype.hasOwnProperty.call(availabilityUpdates, 'maxBookings')
-    ) {
-      updateData.maxBookings = availabilityUpdates.maxBookings;
-    }
-    if (
       Object.prototype.hasOwnProperty.call(
         availabilityUpdates,
         'currentBookings',
@@ -412,17 +393,6 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
   // Remove endDate if it exists in updateData
   if (Object.prototype.hasOwnProperty.call(updateData, 'endDate')) {
     delete updateData.endDate;
-  }
-
-  if (Object.prototype.hasOwnProperty.call(updateData, 'maxBookings')) {
-    const rawMaxBookings =
-      updateData.maxBookings !== undefined && updateData.maxBookings !== null
-        ? Number(updateData.maxBookings)
-        : undefined;
-    updateData.maxBookings =
-      rawMaxBookings !== undefined && !Number.isNaN(rawMaxBookings)
-        ? rawMaxBookings
-        : undefined;
   }
 
   if (Object.prototype.hasOwnProperty.call(updateData, 'currentBookings')) {

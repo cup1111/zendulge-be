@@ -11,7 +11,6 @@ export interface IDeal {
   allDay: boolean; // Whether the deal is available all day
   startDate: Date; // When the deal starts (start of recurring pattern)
   recurrenceType: 'none' | 'daily' | 'weekly' | 'weekdays' | 'monthly' | 'annually';
-  maxBookings?: number;
   currentBookings: number;
   status: 'active' | 'inactive' | 'expired' | 'sold_out';
   images?: string[];
@@ -76,10 +75,6 @@ const dealSchema = new Schema<IDealDocument>({
     enum: ['none', 'daily', 'weekly', 'weekdays', 'monthly', 'annually'],
     required: true,
     default: 'none',
-  },
-  maxBookings: {
-    type: Number,
-    min: 1,
   },
   currentBookings: {
     type: Number,

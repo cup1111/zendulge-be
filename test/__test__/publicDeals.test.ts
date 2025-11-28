@@ -456,6 +456,185 @@ describe('Public deals listing', () => {
       expect(getByIdRes.body.message).toBe('Deal not found');
     }
   });
+
+  it('should return weekly time slots for Carpet Cleaning Package within the next 2 weeks', async () => {
+    const ownerRole = await Role.findOne({ name: RoleName.OWNER });
+    expect(ownerRole).toBeTruthy();
+
+    const owner = await new UserBuilder()
+      .withEmail('carpet-weekly-owner@example.com')
+      .withPassword('OwnerPass123!')
+      .withActive(true)
+      .save();
+
+    const activeBusiness = await new BusinessBuilder()
+      .withName('Active Biz for Carpet Weekly')
+      .withOwner(owner._id)
+      .withMember(owner._id, ownerRole!._id)
+      .withActive()
+      .save();
+
+    const siteActive = await new OperateSiteBuilder()
+      .withBusiness(activeBusiness._id)
+      .withName('Zendulge Melbourne CBD')
+      .save();
+
+    // Category and service to match example data
+    await new CategoryBuilder()
+      .withName('Specialized')
+      .withSlug('specialized')
+      .withIcon('⚙️')
+      .withActive()
+      .save();
+
+    const carpetService = await new ServiceBuilder()
+      .withName('Carpet Cleaning')
+      .withCategory('Specialized')
+      .withDuration(90)
+      .withBasePrice(120)
+      .withBusiness(activeBusiness._id)
+      .withActive()
+      .save();
+
+    // Start date similar to example: 2 days ago at 10:00, weekly recurrence
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 2);
+    startDate.setHours(10, 0, 0, 0);
+
+    const carpetDeal = await new DealBuilder()
+      .withTitle('Carpet Cleaning Package')
+      .withDescription('Professional carpet and upholstery cleaning for residential properties. Includes stain removal and deodorizing.')
+      .withPrice(99)
+      .withOriginalPrice(120)
+      .withDuration(90)
+      .withSections(1)
+      .withOperatingSite(siteActive._id)
+      .withStartDate(startDate)
+      .withRecurrenceType('weekly')
+      .withAllDay(false)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(activeBusiness._id)
+      .withService(carpetService._id)
+      .withCreatedBy(owner._id)
+      .save();
+
+    const res = await request(app.getApp())
+      .get(`/api/v1/public/deals/${carpetDeal._id.toString()}`)
+      .expect(200);
+
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toBeDefined();
+    expect(res.body.data.title).toBe('Carpet Cleaning Package');
+
+    const slots = res.body.data.availableTimeSlots;
+    expect(Array.isArray(slots)).toBe(true);
+    expect(slots.length).toBeGreaterThan(0);
+
+    // All returned slots should be within the next 2 weeks from "now"
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const twoWeeksFromNow = new Date(now);
+    twoWeeksFromNow.setDate(now.getDate() + 14);
+
+    for (const slot of slots) {
+      const slotDateTime = new Date(slot.dateTime);
+      const slotDay = new Date(slotDateTime);
+      slotDay.setHours(0, 0, 0, 0);
+
+      expect(slotDay >= now).toBe(true);
+      expect(slotDay <= twoWeeksFromNow).toBe(true);
+    }
+  });
+
+  it('should not return deals that have no upcoming appointments within the next 2 weeks (Monthly Maintenance Package)', async () => {
+    const ownerRole = await Role.findOne({ name: RoleName.OWNER });
+    expect(ownerRole).toBeTruthy();
+
+    const owner = await new UserBuilder()
+      .withEmail('monthly-maintenance-owner@example.com')
+      .withPassword('OwnerPass123!')
+      .withActive(true)
+      .save();
+
+    const activeBusiness = await new BusinessBuilder()
+      .withName('Zendulge Technologies Pty Ltd')
+      .withOwner(owner._id)
+      .withMember(owner._id, ownerRole!._id)
+      .withActive()
+      .save();
+
+    const siteActive = await new OperateSiteBuilder()
+      .withBusiness(activeBusiness._id)
+      .withName('Zendulge Melbourne CBD')
+      .save();
+
+    await new CategoryBuilder()
+      .withName('Cleaning')
+      .withSlug('cleaning')
+      .withIcon('🧹')
+      .withActive()
+      .save();
+
+    const basicCleaningService = await new ServiceBuilder()
+      .withName('Basic Cleaning Service')
+      .withCategory('Cleaning')
+      .withDuration(60)
+      .withBasePrice(80)
+      .withBusiness(activeBusiness._id)
+      .withActive()
+      .save();
+
+    const weeklyStart = new Date();
+    weeklyStart.setHours(9, 0, 0, 0);
+
+    await new DealBuilder()
+      .withTitle('Carpet Cleaning Package')
+      .withDescription('Professional carpet and upholstery cleaning for residential properties. Includes stain removal and deodorizing.')
+      .withPrice(99)
+      .withOriginalPrice(120)
+      .withDuration(90)
+      .withSections(1)
+      .withOperatingSite(siteActive._id)
+      .withStartDate(weeklyStart)
+      .withRecurrenceType('weekly')
+      .withAllDay(false)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(activeBusiness._id)
+      .withService(basicCleaningService._id)
+      .withCreatedBy(owner._id)
+      .save();
+
+    const monthlyStart = new Date();
+    monthlyStart.setDate(monthlyStart.getDate() + 35);
+    monthlyStart.setHours(13, 0, 0, 0);
+
+    await new DealBuilder()
+      .withTitle('Monthly Maintenance Package')
+      .withDescription('Regular monthly cleaning service to keep your property in top condition. Includes all basic cleaning tasks plus minor maintenance.')
+      .withPrice(65)
+      .withOriginalPrice(80)
+      .withDuration(120)
+      .withSections(1)
+      .withOperatingSite(siteActive._id)
+      .withStartDate(monthlyStart)
+      .withRecurrenceType('monthly')
+      .withAllDay(true)
+      .withCurrentBookings(0)
+      .withActive()
+      .withBusiness(activeBusiness._id)
+      .withService(basicCleaningService._id)
+      .withCreatedBy(owner._id)
+      .save();
+
+    const res = await request(app.getApp()).get('/api/v1/public/deals').expect(200);
+    expect(res.body.success).toBe(true);
+    const titles: string[] = res.body.data.map((d: any) => d.title);
+
+    expect(titles).toContain('Carpet Cleaning Package');
+    expect(titles).not.toContain('Monthly Maintenance Package');
+  });
 });
 
 

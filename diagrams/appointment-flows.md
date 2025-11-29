@@ -21,7 +21,7 @@ flowchart TD
     
     BrowseDeals --> SelectDeal{Customer Selects Deal}
     
-    SelectDeal -->|Deal Available| CheckAvailability{Is Deal Available?<br/>Check:<br/>• Deal status = 'active'<br/>• currentBookings < maxBookings<br/>• Time slot available}
+    SelectDeal -->|Deal Available| CheckAvailability{Is Deal Available?<br/>Check:<br/>• Deal status = 'active'<br/>• currentBookings less than maxBookings<br/>• Time slot available}
     
     CheckAvailability -->|Not Available| DealUnavailable[Show Error:<br/>• Deal sold out<br/>• Deal expired<br/>• Time slot taken]
     
@@ -157,13 +157,12 @@ flowchart TD
     ConfirmedState --> CheckExpiration{Is Appointment Time Past?<br/>Without completion or cancellation}
     
     CheckExpiration -->|Expired| UpdateStatusExpired[Update Status: 'expired']
-    UpdateStatusExpired --> HandleExpiredAppointment[Handle Expired:<br/>• Mark as expired<br/>• Archive appointment<br/>• No refund (unless special case)]
+    UpdateStatusExpired --> HandleExpiredAppointment[Handle Expired:<br/>• Mark as expired<br/>• Archive appointment<br/>• No refund unless special case]
     
     %% Error and Edge Cases
     DealUnavailable --> EndError[Customer tries again]
     ValidationErrors --> EndError
     PaymentFailed --> EndError
-    EmailExistsBiz --> EndError
     
     EndError --> Start
     EndCompleted --> EndFlow[Appointment Flow Complete]
@@ -182,7 +181,7 @@ flowchart TD
     classDef emailClass fill:#fff9c4,stroke:#f57f17,stroke-width:2px,color:#000000
     
     class Start startClass
-    class DealUnavailable,ValidationErrors,PaymentFailed,EmailExistsBiz errorClass
+    class DealUnavailable,ValidationErrors,PaymentFailed errorClass
     class CreateAppointment,ConfirmAppointment,AppointmentComplete,UpdateStatusCompleted successClass
     class SelectTimeSlot,EnterDetails,ProcessPayment,CreateAppointment processClass
     class CheckAvailability,ValidateBooking,ProcessPayment,BusinessAction,CustomerAction,CheckCancellationPolicy decisionClass

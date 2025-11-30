@@ -1,7 +1,6 @@
 import Deal, { IDealDocument } from '../model/deal';
 import Business from '../model/business';
 import Service from '../model/service';
-import BookmarkDeal from '../model/bookmarkDeal';
 import { BadRequestException } from '../exceptions';
 import { BusinessStatus } from '../enum/businessStatus';
 import { DealAggregationBuilder } from './deals/DealAggregationBuilder';
@@ -34,12 +33,6 @@ const ensureFutureDate = (date: Date, fieldName: string) => {
   if (normalized.getTime() < today.getTime()) {
     throw new BadRequestException(`${fieldName} cannot be before today`);
   }
-};
-
-const removeBookmarkDeal = async (dealId: string) => {
-  await BookmarkDeal.deleteMany(
-    { deal: dealId },
-  );
 };
 
 const getDealsByBusiness = async (businessId: string, userId: string): Promise<IDealDocument[]> => {
@@ -431,13 +424,6 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
     throw new Error('Deal not found');
   }
 
-  if (
-    Object.prototype.hasOwnProperty.call(updateData, 'status') &&
-    updateData.status !== 'active'
-  ) {
-    await removeBookmarkDeal(dealId);
-  }
-
   return deal;
 };
 
@@ -493,8 +479,6 @@ const deleteDeal = async (businessId: string, dealId: string, userId: string): P
   if (result.deletedCount === 0) {
     throw new Error('Deal not found');
   }
-
-  await removeBookmarkDeal(dealId);
 
 };
 
@@ -561,10 +545,6 @@ const updateDealStatus = async (businessId: string, dealId: string, userId: stri
 
   if (!deal) {
     throw new Error('Deal not found');
-  }
-
-  if (status !== 'active') {
-    await removeBookmarkDeal(dealId);
   }
 
   return deal;

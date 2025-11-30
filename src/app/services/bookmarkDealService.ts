@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import BookmarkDeal from '../model/bookmarkDeal';
 import Deal from '../model/deal';
 import Business from '../model/business';
@@ -42,16 +43,45 @@ export const listUserBookmarkDeals = async (
   const limit = Math.max(1, Number(options?.limit) || 10);
   const skip = (page - 1) * limit;
 
-  const [items, total] = await Promise.all([
-    BookmarkDeal.find({
-      user: userId,
-    })
-      .sort({ updatedAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
-    BookmarkDeal.countDocuments({ user: userId }),
+  // Filter out bookmarks whose deals are no longer active
+  const [activeBookmarkDeals] = await BookmarkDeal.aggregate<{
+    items: any[];
+    total: { count: number }[];
+  }>([
+    { $match: { user: new Types.ObjectId(userId) } },
+    {
+      $lookup: {
+        from: 'deals',
+        localField: 'deal',
+        foreignField: '_id',
+        as: 'dealsData',
+      },
+    },
+    { $unwind: '$dealsData' },
+    { $match: { 'dealsData.status': 'active' } },
+    {
+      $facet: {
+        items: [
+          { $sort: { updatedAt: -1 } },
+          { $skip: skip },
+          { $limit: limit },
+          {
+            $project: {
+              _id: 1,
+              user: 1,
+              deal: 1,
+              createdAt: 1,
+              updatedAt: 1,
+            },
+          },
+        ],
+        total: [{ $count: 'count' }],
+      },
+    },
   ]);
+
+  const items = activeBookmarkDeals?.items ?? [];
+  const total = activeBookmarkDeals?.total?.[0]?.count ?? 0;
 
   return {
     items,
@@ -71,7 +101,7 @@ export const deleteBookmarkDeal = async (
   userId: string,
   dealId: string,
 ) => {
-  const result = await BookmarkDeal.deleteMany({
+  const result = await BookmarkDeal.deleteOne({
     user: userId,
     deal: dealId,
   });

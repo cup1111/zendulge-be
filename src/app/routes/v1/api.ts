@@ -100,10 +100,10 @@ import { RoleName } from '../../enum/roles';
 import { authorizeUserManagementAction } from '../../middleware/userManagementAccessMiddleware';
 import { uploadMulter, uploadImage } from '../../controllers/v1/uploadController';
 import {
-  saveUserDeal,
-  listUserDeals,
-  deleteSavedDeal,
-} from '../../controllers/v1/savedDealController';
+  saveUserBookmarkDeal,
+  listUserBookmarkDeals,
+  deleteBookmarkDeal,
+} from '../../controllers/v1/bookmarkDealController';
 
 const router = express.Router();
 
@@ -154,21 +154,21 @@ router.get(
   getRole,
 );
 
-// Saved deals
+// Bookmark deals
 router.post(
-  '/saved-deals',
+  '/bookmark-deal',
   authenticationTokenMiddleware,
-  saveUserDeal,
+  saveUserBookmarkDeal,
 );
 router.get(
-  '/saved-deals',
+  '/bookmark-deal',
   authenticationTokenMiddleware,
-  listUserDeals,
+  listUserBookmarkDeals,
 );
 router.delete(
-  '/saved-deals/:dealId',
+  '/bookmark-deal/:dealId',
   authenticationTokenMiddleware,
-  deleteSavedDeal,
+  deleteBookmarkDeal,
 );
 
 router.post(

@@ -1,7 +1,7 @@
 import Deal, { IDealDocument } from '../model/deal';
 import Business from '../model/business';
 import Service from '../model/service';
-import SavedDeal from '../model/savedDeal';
+import BookmarkDeal from '../model/bookmarkDeal';
 import { BadRequestException } from '../exceptions';
 import { BusinessStatus } from '../enum/businessStatus';
 import { DealAggregationBuilder } from './deals/DealAggregationBuilder';
@@ -36,10 +36,9 @@ const ensureFutureDate = (date: Date, fieldName: string) => {
   }
 };
 
-const markSavedDealsAsRemoved = async (dealId: string) => {
-  await SavedDeal.updateMany(
-    { deal: dealId, status: { $ne: 'removed' } },
-    { status: 'removed' },
+const removeBookmarkDeal = async (dealId: string) => {
+  await BookmarkDeal.deleteMany(
+    { deal: dealId },
   );
 };
 
@@ -436,7 +435,7 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
     Object.prototype.hasOwnProperty.call(updateData, 'status') &&
     updateData.status !== 'active'
   ) {
-    await markSavedDealsAsRemoved(dealId);
+    await removeBookmarkDeal(dealId);
   }
 
   return deal;
@@ -495,7 +494,7 @@ const deleteDeal = async (businessId: string, dealId: string, userId: string): P
     throw new Error('Deal not found');
   }
 
-  await markSavedDealsAsRemoved(dealId);
+  await removeBookmarkDeal(dealId);
 
 };
 
@@ -565,7 +564,7 @@ const updateDealStatus = async (businessId: string, dealId: string, userId: stri
   }
 
   if (status !== 'active') {
-    await markSavedDealsAsRemoved(dealId);
+    await removeBookmarkDeal(dealId);
   }
 
   return deal;

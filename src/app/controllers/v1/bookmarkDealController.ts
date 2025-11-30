@@ -1,12 +1,12 @@
 import type { Request, Response } from 'express';
-import savedDealService from '../../services/savedDealService';
+import bookmarkDealService from '../../services/bookmarkDealService';
 
 /**
- * Persist a deal to the current user's saved list.
+ * Persist a deal to the current user's bookmark list.
  * - Validates auth, deal existence, deal status, and business status.
- * - Returns existing record if already saved to keep the operation idempotent.
+ * - Returns existing record if already bookmarked to keep the operation idempotent.
  */
-export const saveUserDeal = async (req: Request, res: Response) => {
+export const saveUserBookmarkDeal = async (req: Request, res: Response) => {
   const userId = (req as any).user?.id;
   const { dealId } = req.body as { dealId?: string };
 
@@ -19,14 +19,14 @@ export const saveUserDeal = async (req: Request, res: Response) => {
       .json({ success: false, message: 'dealId is required' });
   }
 
-  const saved = await savedDealService.saveUserDeal(userId, dealId);
+  const saved = await bookmarkDealService.saveUserBookmarkDeal(userId, dealId);
   return res.status(201).json({ success: true, data: saved });
 };
 
 /**
- * Return the current user's saved deals (excluding removed records).
+ * Return the current user's bookmark deals (excluding removed records).
  */
-export const listUserDeals = async (req: Request, res: Response) => {
+export const listUserBookmarkDeals = async (req: Request, res: Response) => {
   const userId = (req as any).user?.id;
   if (!userId) {
     return res.status(401).json({ success: false, message: 'Unauthorized' });
@@ -34,7 +34,7 @@ export const listUserDeals = async (req: Request, res: Response) => {
 
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 10;
-  const { items, pagination } = await savedDealService.listUserDeals(
+  const { items, pagination } = await bookmarkDealService.listUserBookmarkDeals(
     userId,
     { page, limit },
   );
@@ -44,9 +44,9 @@ export const listUserDeals = async (req: Request, res: Response) => {
 
 
 /**
- * Soft-delete a saved deal for the current user by dealId.
+ * Hard-delete a bookmark deal for the current user by dealId.
  */
-export const deleteSavedDeal = async (req: Request, res: Response) => {
+export const deleteBookmarkDeal = async (req: Request, res: Response) => {
   const userId = (req as any).user?.id;
   const { dealId } = req.params as { dealId?: string };
 
@@ -59,13 +59,13 @@ export const deleteSavedDeal = async (req: Request, res: Response) => {
       .json({ success: false, message: 'dealId is required' });
   }
 
-  await savedDealService.deleteSavedDeal(userId, dealId);
+  await bookmarkDealService.deleteBookmarkDeal(userId, dealId);
 
-  return res.json({ success: true, message: 'Saved deal removed' });
+  return res.json({ success: true, message: 'Bookmark deal removed' });
 };
 
 export default {
-  saveUserDeal,
-  listUserDeals,
-  deleteSavedDeal,
+  saveUserBookmarkDeal,
+  listUserBookmarkDeals,
+  deleteBookmarkDeal,
 };

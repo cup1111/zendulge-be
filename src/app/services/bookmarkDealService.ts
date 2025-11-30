@@ -1,13 +1,13 @@
-import SavedDeal from '../model/savedDeal';
+import BookmarkDeal from '../model/bookmarkDeal';
 import Deal from '../model/deal';
 import Business from '../model/business';
 import { BusinessStatus } from '../enum/businessStatus';
 import { NotFoundException, BadRequestException } from '../exceptions';
 
 /**
- * Persist a deal to the current user's saved list after validating deal and business status.
+ * Persist a deal to the current user's bookmark list after validating deal and business status.
  */
-export const saveUserDeal = async (userId: string, dealId: string) => {
+export const saveUserBookmarkDeal = async (userId: string, dealId: string) => {
   const deal = await Deal.findById(dealId)
     .select('_id business status')
     .lean();
@@ -25,17 +25,16 @@ export const saveUserDeal = async (userId: string, dealId: string) => {
     throw new BadRequestException('Business not found or unavailable');
   }
 
-  return SavedDeal.create({
+  return BookmarkDeal.create({
     user: userId,
     deal: dealId,
-    status: 'active',
   });
 };
 
 /**
- * List saved deals for the user (excluding removed) with optional pagination.
+ * List bookmark deals for the user (excluding removed) with optional pagination.
  */
-export const listUserDeals = async (
+export const listUserBookmarkDeals = async (
   userId: string,
   options?: { page?: number; limit?: number },
 ) => {
@@ -44,15 +43,14 @@ export const listUserDeals = async (
   const skip = (page - 1) * limit;
 
   const [items, total] = await Promise.all([
-    SavedDeal.find({
+    BookmarkDeal.find({
       user: userId,
-      status: { $ne: 'removed' },
     })
       .sort({ updatedAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean(),
-    SavedDeal.countDocuments({ user: userId, status: { $ne: 'removed' } }),
+    BookmarkDeal.countDocuments({ user: userId }),
   ]);
 
   return {
@@ -67,26 +65,26 @@ export const listUserDeals = async (
 };
 
 /**
- * Soft-delete saved deals for a user by dealId.
+ * Hard-delete bookmark deals for a user by dealId.
  */
-export const deleteSavedDeal = async (
+export const deleteBookmarkDeal = async (
   userId: string,
   dealId: string,
 ) => {
-  const result = await SavedDeal.updateMany(
-    { user: userId, deal: dealId, status: { $ne: 'removed' } },
-    { status: 'removed' },
-  );
+  const result = await BookmarkDeal.deleteMany({
+    user: userId,
+    deal: dealId,
+  });
 
-  if (!result || result.matchedCount === 0) {
-    throw new NotFoundException('Saved deal not found');
+  if (!result || result.deletedCount === 0) {
+    throw new NotFoundException('Bookmark deal not found');
   }
 
   return result;
 };
 
 export default {
-  saveUserDeal,
-  listUserDeals,
-  deleteSavedDeal,
+  saveUserBookmarkDeal,
+  listUserBookmarkDeals,
+  deleteBookmarkDeal,
 };

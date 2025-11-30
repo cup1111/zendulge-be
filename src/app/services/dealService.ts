@@ -423,7 +423,6 @@ const updateDeal = async (businessId: string, dealId: string, userId: string, up
   if (!deal) {
     throw new Error('Deal not found');
   }
-
   return deal;
 };
 
@@ -479,7 +478,6 @@ const deleteDeal = async (businessId: string, dealId: string, userId: string): P
   if (result.deletedCount === 0) {
     throw new Error('Deal not found');
   }
-
 };
 
 const updateDealStatus = async (businessId: string, dealId: string, userId: string, status: string): Promise<IDealDocument> => {
@@ -546,7 +544,6 @@ const updateDealStatus = async (businessId: string, dealId: string, userId: stri
   if (!deal) {
     throw new Error('Deal not found');
   }
-
   return deal;
 };
 

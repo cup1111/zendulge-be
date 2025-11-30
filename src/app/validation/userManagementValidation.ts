@@ -103,6 +103,31 @@ export const updateUserValidation = [
     .optional()
     .isMongoId()
     .withMessage('Each operate site ID must be a valid MongoDB ObjectId'),
+
+  body('dutySchedule')
+    .optional()
+    .isArray()
+    .withMessage('Duty schedule must be an array'),
+
+  body('dutySchedule.*.dayOfWeek')
+    .optional()
+    .isInt({ min: 0, max: 6 })
+    .withMessage('Day of week must be between 0 (Sunday) and 6 (Saturday)'),
+
+  body('dutySchedule.*.startTime')
+    .optional()
+    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+    .withMessage('Start time must be in HH:mm format (24-hour)'),
+
+  body('dutySchedule.*.endTime')
+    .optional()
+    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+    .withMessage('End time must be in HH:mm format (24-hour)'),
+
+  body('dutySchedule.*.isActive')
+    .optional()
+    .isBoolean()
+    .withMessage('isActive must be a boolean'),
 ];
 
 // Validation for removing user role

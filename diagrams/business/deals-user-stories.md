@@ -115,3 +115,86 @@
 - → End date must be **after the start date**
 - → Past start dates are allowed for existing deals; past end dates still trigger validation errors
 - → End dates on or before the start date trigger validation error **"End date must be after start date"**
+
+=================================
+
+## Deal Appointment Availability Logic
+
+### Overview
+
+When displaying available appointment times on the deal details page, the system must match:
+1. **Deal availability** - Times when the deal is available (based on recurrence pattern, operating site hours, deal configuration)
+2. **Employee availability** - Times when employees are on duty (based on their duty schedules)
+
+**Both conditions must be met** for an appointment time slot to be displayed to customers.
+
+### Business Rules
+
+#### Time Slot Calculation Process
+
+1. **Calculate Deal Time Slots**:
+   - Generate all possible time slots based on deal's recurrence pattern (daily, weekly, etc.)
+   - Filter by operating site hours
+   - Generate slots for next 1 weeks (or configured period)
+
+2. **Get Employee Duty Schedules**:
+   - Find all employees assigned to the operating site(s) for this deal
+   - Get their active duty schedules (day of week, start time, end time)
+
+3. **Match and Filter**:
+   - Only display time slots where:
+     - Deal is available at that day and time
+     - AND at least one employee is on duty at that day and time
+   - Hide time slots that don't match both conditions
+
+### Availability Matching Scenarios
+
+**Scenario 1: Deal Available + Employee Available → DISPLAY**
+- Deal is available on Tuesday at 10:00 AM
+- Employee has duty schedule: Tuesday, 9:00 AM - 5:00 PM
+- Result: **Display the 10:00 AM appointment slot**
+
+**Scenario 2: Deal Available + Employee Available but NOT that time → HIDE**
+- Deal is available on Tuesday at 10:00 AM
+- Employee has duty schedule: Tuesday, 2:00 PM - 5:00 PM (starts after 10 AM)
+- Result: **Do NOT display the 10:00 AM appointment slot**
+
+**Scenario 3: Deal Available + No Employee Available → HIDE**
+- Deal is available on Tuesday at 10:00 AM
+- No employees assigned to this deal's operating site have duty schedules for Tuesday
+- Result: **Do NOT display any Tuesday appointment slots**
+
+**Scenario 4: Deal NOT Available + Employee Available → HIDE**
+- Deal is NOT available on Tuesday (not in recurrence pattern or outside deal dates)
+- Employee has duty schedule: Tuesday, 9:00 AM - 5:00 PM
+- Result: **Do NOT display Tuesday appointment slots** (deal not available)
+
+**Scenario 5: Deal NOT Available + Employee NOT Available → HIDE**
+- Deal is NOT available on Tuesday at 10:00 AM
+- Employee is NOT on duty Tuesday at 10:00 AM
+- Result: **Do NOT display the appointment slot**
+
+### Multiple Employees
+
+When multiple employees are assigned to an operating site:
+- If **any employee** is on duty at a specific time, that time slot is available
+- Example: Deal available Tuesday 10 AM
+  - Employee A: Tuesday 9 AM - 12 PM → On duty
+  - Employee B: Tuesday 2 PM - 5 PM → Not on duty
+  - Result: **Display 10 AM slot** (Employee A is available)
+
+### Edge Cases
+
+**Split Shifts:**
+- Employee works Tuesday 9 AM - 12 PM and 2 PM - 5 PM
+- Deal available Tuesday 1 PM - 3 PM
+- Result: **Display only 2 PM - 3 PM slot** (matches employee's afternoon shift)
+
+**No Employees Assigned:**
+- Deal is available but no employees assigned to operating site
+- Result: **No appointment slots displayed** (cannot book without staff)
+
+**Multiple Operating Sites:**
+- Deal available at multiple sites
+- Each site's availability calculated separately based on employees at that site
+- Customer can choose site with available time slots

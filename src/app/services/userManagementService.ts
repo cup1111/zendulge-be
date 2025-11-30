@@ -1,4 +1,4 @@
-import User, { IUser } from '../model/user';
+import User, { IUser, IDutySchedule } from '../model/user';
 import Role from '../model/role';
 import Business, { IBusinessDocument } from '../model/business';
 import OperateSite from '../model/operateSite';
@@ -29,6 +29,7 @@ interface UpdateUserRequest {
   phoneNumber?: string;
   jobTitle?: string;
   operateSiteIds?: string[]; // Array of operate site IDs the user should have access to
+  dutySchedule?: IDutySchedule[]; // Array of duty schedules for different days
 }
 
 
@@ -440,6 +441,8 @@ export class UserManagementService {
         userUpdateData.phoneNumber = updateData.phoneNumber;
       if (updateData.jobTitle !== undefined)
         userUpdateData.jobTitle = updateData.jobTitle;
+      if (updateData.dutySchedule !== undefined)
+        userUpdateData.dutySchedule = updateData.dutySchedule;
 
       // Update user information
       const updatedUser = await User.findByIdAndUpdate(userId, userUpdateData, {

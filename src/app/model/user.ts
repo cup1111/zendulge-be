@@ -12,6 +12,13 @@ import type { IRoleDocument } from './role';
 import { BusinessStatus } from '../enum/businessStatus';
 
 
+export interface IDutySchedule {
+  dayOfWeek: number; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime: string; // Format: "HH:mm" (24-hour format, e.g., "09:00")
+  endTime: string; // Format: "HH:mm" (24-hour format, e.g., "17:00")
+  isActive: boolean; // Whether this schedule is currently active
+}
+
 export interface IUser extends mongoose.Document {
   email: string;
   password?: string;
@@ -29,6 +36,7 @@ export interface IUser extends mongoose.Document {
   abbreviation?: string;
   userName?: string;
   role?: Types.ObjectId | IRoleDocument | null;
+  dutySchedule?: IDutySchedule[]; // Array of duty schedules for different days
 }
 
 export interface IUserDocument extends IUser {
@@ -106,6 +114,28 @@ const userSchema = new Schema<IUserDocument>(
       ref: 'roles',
       default: null,
     },
+    dutySchedule: [{
+      dayOfWeek: {
+        type: Number,
+        required: true,
+        min: 0,
+        max: 6,
+      },
+      startTime: {
+        type: String,
+        required: true,
+        match: [/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Start time must be in HH:mm format'],
+      },
+      endTime: {
+        type: String,
+        required: true,
+        match: [/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'End time must be in HH:mm format'],
+      },
+      isActive: {
+        type: Boolean,
+        default: true,
+      },
+    }],
   },
   { timestamps: true },
 );

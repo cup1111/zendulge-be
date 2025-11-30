@@ -99,6 +99,11 @@ import { validateBusinessAccess } from '../../middleware/businessAccessMiddlewar
 import { RoleName } from '../../enum/roles';
 import { authorizeUserManagementAction } from '../../middleware/userManagementAccessMiddleware';
 import { uploadMulter, uploadImage } from '../../controllers/v1/uploadController';
+import {
+  saveUserBookmarkDeal,
+  listUserBookmarkDeals,
+  deleteBookmarkDeal,
+} from '../../controllers/v1/bookmarkDealController';
 
 const router = express.Router();
 
@@ -147,6 +152,23 @@ router.get(
   '/business/:businessId/me/role',
   authenticationTokenMiddleware,
   getRole,
+);
+
+// Bookmark deals
+router.post(
+  '/bookmark-deal',
+  authenticationTokenMiddleware,
+  saveUserBookmarkDeal,
+);
+router.get(
+  '/bookmark-deal',
+  authenticationTokenMiddleware,
+  listUserBookmarkDeals,
+);
+router.delete(
+  '/bookmark-deal/:dealId',
+  authenticationTokenMiddleware,
+  deleteBookmarkDeal,
 );
 
 router.post(

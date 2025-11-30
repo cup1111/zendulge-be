@@ -1,0 +1,120 @@
+import { Types } from 'mongoose';
+import BookmarkDeal from '../model/bookmarkDeal';
+import Deal from '../model/deal';
+import Business from '../model/business';
+import { BusinessStatus } from '../enum/businessStatus';
+import { NotFoundException, BadRequestException } from '../exceptions';
+
+/**
+ * Persist a deal to the current user's bookmark list after validating deal and business status.
+ */
+export const saveUserBookmarkDeal = async (userId: string, dealId: string) => {
+  const deal = await Deal.findById(dealId)
+    .select('_id business status')
+    .lean();
+  if (!deal) {
+    throw new NotFoundException('Deal not found');
+  }
+  if (deal.status !== 'active') {
+    throw new BadRequestException('Deal unavailable or removed');
+  }
+
+  const business = await Business.findById(deal.business)
+    .select('_id status')
+    .lean();
+  if (!business || business.status !== BusinessStatus.ACTIVE) {
+    throw new BadRequestException('Business not found or unavailable');
+  }
+
+  return BookmarkDeal.create({
+    user: userId,
+    deal: dealId,
+  });
+};
+
+/**
+ * List bookmark deals for the user (excluding removed) with optional pagination.
+ */
+export const listUserBookmarkDeals = async (
+  userId: string,
+  options?: { page?: number; limit?: number },
+) => {
+  const page = Math.max(1, Number(options?.page) || 1);
+  const limit = Math.max(1, Number(options?.limit) || 10);
+  const skip = (page - 1) * limit;
+
+  // Filter out bookmarks whose deals are no longer active
+  const [activeBookmarkDeals] = await BookmarkDeal.aggregate<{
+    items: any[];
+    total: { count: number }[];
+  }>([
+    { $match: { user: new Types.ObjectId(userId) } },
+    {
+      $lookup: {
+        from: 'deals',
+        localField: 'deal',
+        foreignField: '_id',
+        as: 'dealsData',
+      },
+    },
+    { $unwind: '$dealsData' },
+    { $match: { 'dealsData.status': 'active' } },
+    {
+      $facet: {
+        items: [
+          { $sort: { updatedAt: -1 } },
+          { $skip: skip },
+          { $limit: limit },
+          {
+            $project: {
+              _id: 1,
+              user: 1,
+              deal: 1,
+              createdAt: 1,
+              updatedAt: 1,
+            },
+          },
+        ],
+        total: [{ $count: 'count' }],
+      },
+    },
+  ]);
+
+  const items = activeBookmarkDeals?.items ?? [];
+  const total = activeBookmarkDeals?.total?.[0]?.count ?? 0;
+
+  return {
+    items,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+/**
+ * Hard-delete bookmark deals for a user by dealId.
+ */
+export const deleteBookmarkDeal = async (
+  userId: string,
+  dealId: string,
+) => {
+  const result = await BookmarkDeal.deleteOne({
+    user: userId,
+    deal: dealId,
+  });
+
+  if (!result || result.deletedCount === 0) {
+    throw new NotFoundException('Bookmark deal not found');
+  }
+
+  return result;
+};
+
+export default {
+  saveUserBookmarkDeal,
+  listUserBookmarkDeals,
+  deleteBookmarkDeal,
+};
